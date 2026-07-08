@@ -74,7 +74,7 @@ def salvar_novo_usuario(df_users):
     conn.update(worksheet="Usuarios", data=df_users)
 
 # ==========================================
-# 3. TELA DE LOGIN PREMIUM
+# 3. TELA DE LOGIN PREMIUM E CENTRALIZADA
 # ==========================================
 if 'logado' not in st.session_state:
     st.session_state['logado'] = False
@@ -114,7 +114,7 @@ if not st.session_state['logado']:
     st.stop()
 
 # ==========================================
-# 4. EXTRAÇÃO DO PDF (FLEXÍVEL)
+# 4. EXTRAÇÃO DO PDF ULTRA-RESISTENTE
 # ==========================================
 def extrair_dados_pdf(texto_bruto):
     dados = []
@@ -122,19 +122,17 @@ def extrair_dados_pdf(texto_bruto):
     match_per = re.search(r'Per[íi]odo de (\d{2}/\d{2}/\d{4}) [àa] (\d{2}/\d{2}/\d{4})', texto_bruto, re.IGNORECASE)
     if match_per: periodo_doc = f"{match_per.group(1)} a {match_per.group(2)}"
 
-    # NOVO: Separa antes de qualquer combinação de "Data + Código longo", 
-    # ignorando se tem quebra de linha ou não
-    blocos = re.split(r'(?=\d{2}/\d{2}/\d{4}\s+\d{4,})', texto_bruto)
+    blocos = re.split(r'(?=\b\d{2}/\d{2}/\d{4}\s+\d{4,}\b)', texto_bruto)
     
     for bloco in blocos:
         if not bloco.strip(): continue
-        linha = {"Data": None, "Código_Paciente": None, "Material_Exame": "Desconhecido", "Resultado": "Negativo", "Bactéria": "N/A", "Indicados (S)": "", "Resistentes (R)": "", "Unidade": None, "Período_Arquivo": periodo_doc}
+        linha = {"Data": None, "Código_Paciente": None, "Material_Exame": "Desconhecido", "Resultado": "Negativo", "Bactéria": "N/A", "Indicados (S)": "", "Resistentes (R)": "", "Unidade": "Não Informada", "Período_Arquivo": periodo_doc}
         
-        # Procura em qualquer lugar do bloco (não apenas no começo)
         match_header = re.search(r'(\d{2}/\d{2}/\d{4})\s+(\d{4,})', bloco)
         if match_header: 
-            linha["Data"] = match_header.group(1)
-            linha["Código_Paciente"] = match_header.group(2)
+            linha["Data"], linha["Código_Paciente"] = match_header.group(1), match_header.group(2)
+        else:
+            continue
         
         match_exame = re.search(r'\[([A-Z]+)\]', bloco)
         if match_exame: linha["Material_Exame"] = match_exame.group(1)
@@ -142,19 +140,29 @@ def extrair_dados_pdf(texto_bruto):
         match_unidade = re.search(r'Unidade Sigla:\s*(\d+)', bloco)
         if match_unidade: linha["Unidade"] = match_unidade.group(1)
             
-        # Deixado mais tolerante a quebras de linha escondidas no PDF
-        match_mic = re.search(r'MIC:\s*(.*?)(?=SERIE:|AMI:|\n|$)', bloco)
-        if match_mic:
-            bacteria = match_mic.group(1).strip()
-            if "Não houve" not in bacteria and "Não Aplicável" not in bacteria:
-                linha["Resultado"] = "Positivo"
-                linha["Bactéria"] = bacteria
-                linha["Indicados (S)"] = ", ".join(re.findall(r'([A-Z]+):\s*S', bloco))
-                linha["Resistentes (R)"] = ", ".join(re.findall(r'([A-Z]+):\s*R', bloco))
-        
-        if linha["Unidade"] and linha["Data"]: 
-            dados.append(linha)
+        if "Micro-organismo identificado" in bloco or "MIC:" in bloco:
+            linha["Resultado"] = "Positivo"
+            match_mic = re.search(r'MIC:\s*(.*?)(?=SERIE|AMI)', bloco, re.IGNORECASE)
+            if match_mic:
+                bac = match_mic.group(1).replace(":", "").strip()
+                if "Não houve" not in bac and "Aplic" not in bac:
+                    linha["Bactéria"] = bac
             
+            if linha["Bactéria"] == "N/A":
+                match_bac = re.search(r'identificado:\s*(.*?)(?=URO|Determ|:)', bloco)
+                if match_bac:
+                    linha["Bactéria"] = match_bac.group(1).strip()
+            
+            linha["Indicados (S)"] = ", ".join(re.findall(r'\b([A-Z]{2,})[\s:]*S\b', bloco))
+            linha["Resistentes (R)"] = ", ".join(re.findall(r'\b([A-Z]{2,})[\s:]*R\b', bloco))
+            
+            if "Não houve" in linha["Bactéria"] or linha["Bactéria"] == "N/A":
+                linha["Resultado"] = "Negativo"
+                linha["Bactéria"] = "N/A"
+                linha["Indicados (S)"] = ""
+                linha["Resistentes (R)"] = ""
+        
+        if linha["Data"]: dados.append(linha)
     return pd.DataFrame(dados)
 
 # ==========================================
@@ -247,32 +255,50 @@ elif menu == "📂 Upload de Dados":
 
 # ----- TELA DASHBOARD -----
 elif menu == "🏢 Dashboard por Unidade":
-    st.title("Análise de Cultura por Unidade")
+    st.title("Análise de Cultura por Unidade e Mês")
     
     if df_historico.empty:
         st.warning("⚠️ Não há dados no sistema. Vá na aba 'Upload de Dados' primeiro.")
     else:
-        periodos = df_historico['Período_Arquivo'].dropna().unique()
-        st.caption(f"**Períodos documentados:** {', '.join(periodos)}")
+        st.markdown("### Filtros de Análise")
         
-        unidades = sorted(list(df_historico['Unidade'].dropna().astype(str).unique()))
-        unidade_sel = st.selectbox("Escolha a unidade para analisar:", unidades)
+        # Cria as caixas de filtro lado a lado
+        col_filtro1, col_filtro2 = st.columns(2)
         
-        df_unidade = df_historico[df_historico['Unidade'].astype(str) == str(unidade_sel)]
-        t_pos = len(df_unidade[df_unidade['Resultado'] == 'Positivo'])
+        with col_filtro1:
+            periodos = ["Todos"] + list(df_historico['Período_Arquivo'].dropna().unique())
+            periodo_sel = st.selectbox("📅 Escolha o Mês/Período:", periodos)
+            
+        with col_filtro2:
+            unidades = ["Todas"] + sorted(list(df_historico['Unidade'].dropna().astype(str).unique()))
+            unidade_sel = st.selectbox("🏢 Escolha a Unidade:", unidades)
+        
+        # Aplica os filtros escolhidos
+        df_filtrado = df_historico.copy()
+        
+        if periodo_sel != "Todos":
+            df_filtrado = df_filtrado[df_filtrado['Período_Arquivo'] == periodo_sel]
+            
+        if unidade_sel != "Todas":
+            df_filtrado = df_filtrado[df_filtrado['Unidade'].astype(str) == str(unidade_sel)]
+            
+        # Calcula as métricas com o DataFrame Filtrado
+        t_exames = len(df_filtrado)
+        t_pos = len(df_filtrado[df_filtrado['Resultado'] == 'Positivo'])
+        t_neg = len(df_filtrado[df_filtrado['Resultado'] == 'Negativo'])
         
         col1, col2, col3 = st.columns(3)
-        col1.metric("Exames na Unidade", len(df_unidade))
+        col1.metric("Exames Encontrados", t_exames)
         col2.metric("Positivos", t_pos)
-        col3.metric("Negativos", len(df_unidade[df_unidade['Resultado'] == 'Negativo']))
+        col3.metric("Negativos", t_neg)
         
         st.markdown("---")
         if t_pos > 0:
-            df_pos = df_unidade[df_unidade['Resultado'] == 'Positivo']
+            df_pos = df_filtrado[df_filtrado['Resultado'] == 'Positivo']
             cA, cB = st.columns(2)
             with cA:
                 st.subheader("Positivos x Negativos (Geral)")
-                fig_pizza = px.pie(df_unidade, names='Resultado', hole=0.4, color='Resultado', color_discrete_map={'Positivo': COR_AZUL_BIC, 'Negativo': COR_CINZA})
+                fig_pizza = px.pie(df_filtrado, names='Resultado', hole=0.4, color='Resultado', color_discrete_map={'Positivo': COR_AZUL_BIC, 'Negativo': COR_CINZA})
                 st.plotly_chart(fig_pizza, use_container_width=True)
             with cB:
                 st.subheader("Gráfico de Bactérias (Positivos)")
@@ -285,9 +311,12 @@ elif menu == "🏢 Dashboard por Unidade":
             st.dataframe(df_percent, use_container_width=True)
             
             st.markdown("### Detalhamento: Resistência e Indicação")
-            st.dataframe(df_pos[['Data', 'Material_Exame', 'Bactéria', 'Indicados (S)', 'Resistentes (R)']], use_container_width=True)
+            st.dataframe(df_pos[['Data', 'Unidade', 'Material_Exame', 'Bactéria', 'Indicados (S)', 'Resistentes (R)']], use_container_width=True)
         else:
-            st.info("Nenhum exame positivo registrado nesta unidade.")
+            if t_exames == 0:
+                st.info("Nenhum exame encontrado para estes filtros.")
+            else:
+                st.info("Nenhum exame positivo registrado com estes filtros.")
 
 # ----- TELA COMPARATIVO -----
 elif menu == "📈 Comparativo Mensal":
