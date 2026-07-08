@@ -51,17 +51,16 @@ COR_CINZA = '#808080'
 PALETA_CORES = ['#002395', '#4A69BD', '#708ad4', '#808080', '#A6A6A6', '#C0C0C0', '#d9d9d9']
 
 # ==========================================
-# 2. FUNÇÕES DE LIMPEZA E PADRONIZAÇÃO 
+# 2. FUNÇÕES DE LIMPEZA E PADRONIZAÇÃO
 # ==========================================
 def padronizar_unidade(unidade):
-    # Se o exame não tiver unidade (como os de sangue), vai para Sede
     if pd.isna(unidade) or str(unidade).strip() == "" or "Não Informada" in str(unidade): 
         return "Sede / Sem Unidade"
     
     numeros = re.findall(r'\d+', str(unidade))
     if not numeros: return "Sede / Sem Unidade"
     
-    u_str = str(int(numeros[0])) # Remove zeros à esquerda
+    u_str = str(int(numeros[0]))
     
     mapa = {
         "1": "1 - Serra Negra",
@@ -73,7 +72,6 @@ def padronizar_unidade(unidade):
         "10": "10 - Amparo Unidade BPA",
         "12": "12 - Águas de Lindóia"
     }
-    # Exclui qualquer número que não seja os oficiais acima
     return mapa.get(u_str, "Excluir")
 
 def padronizar_bacteria(nome):
@@ -105,7 +103,7 @@ def carregar_dados_salvos():
         
         df['Bactéria'] = df['Bactéria'].apply(padronizar_bacteria)
         df['Unidade'] = df['Unidade'].apply(padronizar_unidade)
-        # Remove os lixos e unidades não cadastradas
+        # Limpa da tela qualquer unidade que não seja oficial ou Sede
         df = df[df['Unidade'] != 'Excluir'] 
         return df
     except:
@@ -130,7 +128,7 @@ def salvar_novo_usuario(df_users):
     conn.update(worksheet="Usuarios", data=df_users)
 
 # ==========================================
-# 4. TELA DE LOGIN 
+# 4. TELA DE LOGIN (COM ENTER ATIVADO)
 # ==========================================
 if 'logado' not in st.session_state:
     st.session_state['logado'] = False
@@ -171,7 +169,7 @@ if not st.session_state['logado']:
     st.stop()
 
 # ==========================================
-# 5. EXTRAÇÃO DO PDF (REGRA UNIVERSAL)
+# 5. EXTRAÇÃO BLINDADA DO PDF (MÁQUINA DE DADOS)
 # ==========================================
 def extrair_dados_pdf(texto_bruto):
     dados = []
@@ -196,7 +194,6 @@ def extrair_dados_pdf(texto_bruto):
             
         if unidade_pac == "Excluir": continue 
             
-        # Separa se o paciente tiver múltiplos exames (Urina, Sangue, etc) na mesma data
         sub_blocos = re.split(r'(?=\[\s*[A-Z]+\s*\])', bloco)
         
         for sub in sub_blocos:
@@ -210,43 +207,49 @@ def extrair_dados_pdf(texto_bruto):
                 "Resistentes (R)": "", "Unidade": unidade_pac, "Período_Arquivo": periodo_doc
             }
             
-            # Lê o material escrito no PDF de sangue ou urina
-            match_mat = re.search(r'(?:MAT(?:ERIAL)?):\s*(.*?)(?=RES|1:|\.1:|MOX|\n|$)', sub)
+            # Puxa o material real do exame
+            match_mat = re.search(r'(?:MAT(?:ERIAL)?):\s*(.*?)(?=RES|1:|\.1:|[A-Z]{3}2?:|\n|$)', sub)
             if match_mat:
-                mat_text = match_mat.group(1).strip()
-                mat_text = re.sub(r'\.$', '', mat_text).strip()
+                mat_text = re.sub(r'[\.\d]+$', '', match_mat.group(1)).strip()
                 linha["Material_Exame"] = f"[{tag}] {mat_text}"
             
-            # Universal: Negativo tanto para urina quanto para sangue
+            # Negativos universais (Sangue e Urina)
             if "Não houve desenvolvimento" in sub or "Não houve crescimento" in sub:
                 linha["Resultado"] = "Negativo"
             else:
-                # Regra Universal de Bactéria: Procura pelo padrão (ex: 1: Staphylococcus)
-                match_bac = re.search(r'(?:identificado|MIC|1:|\.1:)\s*([A-Z][a-z]{3,}(?:\s+[a-z]{3,})?(?:\s+sp\.?)?)', sub)
+                linha["Resultado"] = "Positivo"
+                
+                # Caçador de Bactérias (resistente a palavras grudadas)
+                match_bac = re.search(r'(?:identificado|MIC|1:|\.1:|aer[oó]bia.*?:|anaer[oó]bia.*?:)\s*([A-Z][a-z]{3,}(?:\s+[a-z]{3,})?(?:\s+sp\.?)?)', sub, re.IGNORECASE)
                 
                 if match_bac:
                     bac_str = match_bac.group(1).replace(":", "").strip()
                     if "Não houve" not in bac_str and "Aplic" not in bac_str:
-                        linha["Resultado"] = "Positivo"
                         linha["Bactéria"] = padronizar_bacteria(bac_str)
-                        
-                        # Lógica avançada de Antibióticos: Ignora números no meio (ex: MOX2: R ou AMI S)
-                        sensiveis = []
-                        resistentes = []
-                        matches_atb = re.findall(r'\b([A-Z]{2,})\d*[\s:]+([SR])\b', sub)
-                        for atb, status in matches_atb:
-                            if status == 'S': sensiveis.append(atb)
-                            elif status == 'R': resistentes.append(atb)
+                else:
+                    # Sistema de resgate caso a bactéria esteja muito escondida
+                    for bac_name in ["Escherichia", "Proteus", "Enterobacter", "Pseudomonas", "Klebsiella", "Staphylococcus", "Streptococcus", "Enterococcus"]:
+                        if bac_name.lower() in sub.lower():
+                            linha["Bactéria"] = padronizar_bacteria(bac_name)
+                            break
                             
-                        linha["Indicados (S)"] = ", ".join(sorted(list(set(sensiveis))))
-                        linha["Resistentes (R)"] = ", ".join(sorted(list(set(resistentes))))
+                # Extrai antibióticos mesmo se vierem grudados no texto (Sem o bloqueio de \b antes da palavra)
+                sensiveis = []
+                resistentes = []
+                matches_atb = re.findall(r'([A-Z]{2,5})\d*[\s:=]+([SR])\b', sub)
+                for atb, status in matches_atb:
+                    if status == 'S': sensiveis.append(atb)
+                    elif status == 'R': resistentes.append(atb)
+                    
+                linha["Indicados (S)"] = ", ".join(sorted(list(set(sensiveis))))
+                linha["Resistentes (R)"] = ", ".join(sorted(list(set(resistentes))))
                         
             dados.append(linha)
             
     return pd.DataFrame(dados)
 
 # ==========================================
-# 6. MENU LATERAL
+# 6. MENU LATERAL E PREPARAÇÃO
 # ==========================================
 try:
     st.sidebar.image("logo.png", use_container_width=True)
@@ -266,11 +269,6 @@ if st.sidebar.button("Sair da Conta"):
     st.session_state['logado'] = False
     st.rerun()
 st.sidebar.markdown("---")
-
-try:
-    st.sidebar.image("assinatura.png", use_container_width=True)
-except:
-    st.sidebar.caption("Desenvolvido por: Seu Nome")
 
 df_historico = carregar_dados_salvos()
 if not df_historico.empty:
@@ -336,7 +334,7 @@ elif menu == "📂 Upload de Dados":
                     salvar_dados(df_final)
                     st.success(f"✅ Sucesso! {len(df_novo)} registros limpos e salvos na Nuvem.")
                 else:
-                    st.warning("Não foi possível encontrar dados válidos.")
+                    st.warning("Não foi possível encontrar dados válidos neste PDF.")
 
 # ----- TELA DASHBOARD BÁSICO -----
 elif menu == "🏢 Análise por Unidade":
@@ -376,6 +374,10 @@ elif menu == "🏢 Análise por Unidade":
             st.subheader("Gráfico de Positivos")
             fig_bac = px.bar(df_percent, x='Microrganismo (Bactéria)', y='Porcentagem (%)', text_auto=True, color='Microrganismo (Bactéria)', color_discrete_sequence=PALETA_CORES)
             st.plotly_chart(fig_bac, use_container_width=True)
+            
+            st.markdown("### Detalhamento Geral (Urina e Sangue)")
+            # Material adicionado aqui!
+            st.dataframe(df_pos[['Data', 'Unidade', 'Material_Exame', 'Bactéria', 'Indicados (S)', 'Resistentes (R)']], use_container_width=True)
 
 # ----- TELA COMPARATIVO AVANÇADO -----
 elif menu == "📈 Relatório Comparativo Avançado":
@@ -440,11 +442,13 @@ elif menu == "📈 Relatório Comparativo Avançado":
                 st.plotly_chart(fig_bar_bac, use_container_width=True)
 
             st.markdown("### Detalhamento Completo (Aplicando Filtros)")
-            # O Material Exame agora aparece na tabela com grande destaque!
             df_percent_final = df_pos_comp.groupby(['Unidade', 'Material_Exame', 'Bactéria']).size().reset_index(name='Casos')
             df_percent_final['% (Do Total Filtrado)'] = (df_percent_final['Casos'] / len(df_pos_comp) * 100).round(2)
             df_percent_final = df_percent_final.sort_values(by='% (Do Total Filtrado)', ascending=False)
             st.dataframe(df_percent_final, use_container_width=True)
+            
+            st.markdown("### Histórico Individual")
+            st.dataframe(df_pos_comp[['Data', 'Unidade', 'Material_Exame', 'Bactéria', 'Indicados (S)', 'Resistentes (R)']], use_container_width=True)
 
         else:
             st.info("Nenhum caso positivo encontrado para a combinação de filtros selecionada.")
