@@ -78,9 +78,9 @@ def padronizar_bacteria(nome):
     if "enterobacter" in n: return "Enterobacter sp."
     if "pseudomonas" in n: return "Pseudomonas sp."
     if "klebsiella" in n: return "Klebsiella sp."
-    if "staphylococcus" in n: return "Staphylococcus sp."
-    if "streptococcus" in n: return "Streptococcus sp."
-    if "enterococcus" in n: return "Enterococcus sp."
+    if "staphylococcu" in n: return "Staphylococcus sp."
+    if "streptococcu" in n: return "Streptococcus sp."
+    if "enterococcu" in n: return "Enterococcus sp."
     
     return str(nome).strip().title()
 
@@ -111,10 +111,8 @@ def carregar_usuarios():
         df_users = df_users.dropna(how="all")
         if df_users.empty: return pd.DataFrame(columns=["Usuario", "Senha"])
         
-        # Limpeza para garantir que as senhas sejam textos e não percam o zero
         df_users['Usuario'] = df_users['Usuario'].astype(str).str.strip()
         df_users['Senha'] = df_users['Senha'].astype(str).str.replace(r'\.0$', '', regex=True).str.lstrip("'").str.strip()
-        
         return df_users
     except:
         return pd.DataFrame(columns=["Usuario", "Senha"])
@@ -165,7 +163,7 @@ if not st.session_state['logado']:
     st.stop()
 
 # ==========================================
-# 5. EXTRAÇÃO DO PDF 
+# 5. EXTRAÇÃO DO PDF (UNIVERSAL - SANGUE E URINA)
 # ==========================================
 def extrair_dados_pdf(texto_bruto):
     dados = []
@@ -192,33 +190,39 @@ def extrair_dados_pdf(texto_bruto):
         if match_unidade: 
             linha["Unidade"] = padronizar_unidade(match_unidade.group(1))
             
-        if "Micro-organismo identificado" in bloco or "MIC:" in bloco:
-            linha["Resultado"] = "Positivo"
-            match_mic = re.search(r'MIC:\s*(.*?)(?=SERIE|AMI)', bloco, re.IGNORECASE)
-            if match_mic:
-                bac = match_mic.group(1).replace(":", "").strip()
-                if "Não houve" not in bac and "Aplic" not in bac:
-                    linha["Bactéria"] = padronizar_bacteria(bac)
-            
-            if linha["Bactéria"] == "N/A":
-                match_bac = re.search(r'identificado:\s*(.*?)(?=URO|Determ|:)', bloco)
-                if match_bac:
-                    linha["Bactéria"] = padronizar_bacteria(match_bac.group(1).strip())
-            
-            linha["Indicados (S)"] = ", ".join(re.findall(r'\b([A-Z]{2,})[\s:]*S\b', bloco))
-            linha["Resistentes (R)"] = ", ".join(re.findall(r'\b([A-Z]{2,})[\s:]*R\b', bloco))
-            
-            if "Não houve" in linha["Bactéria"] or linha["Bactéria"] == "N/A":
-                linha["Resultado"] = "Negativo"
-                linha["Bactéria"] = "N/A"
-                linha["Indicados (S)"] = ""
-                linha["Resistentes (R)"] = ""
-        
+        # Nova Lógica Universal: Procura por "Não houve crescimento" (Sangue) ou "Não houve desenvolvimento" (Urina)
+        if "Não houve crescimento" in bloco or "Não houve desenvolvimento" in bloco:
+            linha["Resultado"] = "Negativo"
+            linha["Bactéria"] = "N/A"
+        else:
+            # Padrão Científico: Procura por algo classificado (ex: 1: Staphylococcus) ignorando o resto colado
+            match_bac = re.search(r'(?:identificado|1):\s*([A-Z][a-z]+(?:\s+[a-z]+)?(?:\s+sp\.?)?)', bloco)
+            if match_bac:
+                linha["Resultado"] = "Positivo"
+                linha["Bactéria"] = padronizar_bacteria(match_bac.group(1).strip())
+                
+                # Extrai siglas de antibióticos, ignorando números no meio como 'MOX2' e agrupando
+                sensiveis = re.findall(r'\b([A-Z]{2,})\d*[\s:]+S\b', bloco)
+                resistentes = re.findall(r'\b([A-Z]{2,})\d*[\s:]+R\b', bloco)
+                
+                linha["Indicados (S)"] = ", ".join(sorted(list(set(sensiveis))))
+                linha["Resistentes (R)"] = ", ".join(sorted(list(set(resistentes))))
+                
+            elif "MIC:" in bloco: # Fallback de segurança
+                linha["Resultado"] = "Positivo"
+                match_mic = re.search(r'MIC:\s*([A-Z][a-z]+(?:\s+[a-z]+)?(?:\s+sp\.?)?)', bloco)
+                if match_mic:
+                    linha["Bactéria"] = padronizar_bacteria(match_mic.group(1).strip())
+                    sensiveis = re.findall(r'\b([A-Z]{2,})\d*[\s:]+S\b', bloco)
+                    resistentes = re.findall(r'\b([A-Z]{2,})\d*[\s:]+R\b', bloco)
+                    linha["Indicados (S)"] = ", ".join(sorted(list(set(sensiveis))))
+                    linha["Resistentes (R)"] = ", ".join(sorted(list(set(resistentes))))
+
         if linha["Data"]: dados.append(linha)
     return pd.DataFrame(dados)
 
 # ==========================================
-# 6. MENU LATERAL 
+# 6. MENU LATERAL E PREPARAÇÃO DO BD
 # ==========================================
 try:
     st.sidebar.image("logo.png", use_container_width=True)
@@ -271,9 +275,7 @@ if menu == "⚙️ Painel do Administrador":
             if novo_usuario in df_users['Usuario'].values:
                 st.error("❌ Este login já existe no sistema.")
             else:
-                # O truque mágico do apóstrofo para proteger o zero no Google Sheets!
                 senha_salva = f"'{nova_senha}" if nova_senha.isdigit() else nova_senha
-                
                 novo_registro = pd.DataFrame([{"Usuario": novo_usuario, "Senha": senha_salva}])
                 df_users_atualizado = pd.concat([df_users, novo_registro], ignore_index=True)
                 salvar_novo_usuario(df_users_atualizado)
@@ -283,7 +285,6 @@ if menu == "⚙️ Painel do Administrador":
             
     st.markdown("---")
     st.markdown("### Funcionários Cadastrados")
-    # Esconde a formatação do Sheets na hora de mostrar na tabela
     df_mostra = carregar_usuarios()
     st.dataframe(df_mostra, use_container_width=True)
 
@@ -403,8 +404,7 @@ elif menu == "📈 Relatório Comparativo Avançado":
             with col_g1:
                 st.subheader("Crescimento de Positivos ao Longo do Tempo")
                 agrupado_tempo = df_pos_comp.groupby('Mês/Ano').size().reset_index(name='Casos')
-                fig_linha = px.line(agrupado_tempo, x='Mês/Ano', y='Casos', markers=True, 
-                                   color_discrete_sequence=[COR_AZUL_BIC])
+                fig_linha = px.line(agrupado_tempo, x='Mês/Ano', y='Casos', markers=True, color_discrete_sequence=[COR_AZUL_BIC])
                 fig_linha.update_traces(line=dict(width=4), marker=dict(size=10))
                 st.plotly_chart(fig_linha, use_container_width=True)
                 
@@ -412,8 +412,7 @@ elif menu == "📈 Relatório Comparativo Avançado":
                 st.subheader(f"Incidência Bacteriana")
                 agrupado_bac = df_pos_comp['Bactéria'].value_counts(normalize=True).mul(100).round(2).reset_index()
                 agrupado_bac.columns = ['Bactéria', '%']
-                fig_bar_bac = px.bar(agrupado_bac.head(5), x='%', y='Bactéria', orientation='h', text_auto=True,
-                                     color='Bactéria', color_discrete_sequence=PALETA_CORES)
+                fig_bar_bac = px.bar(agrupado_bac.head(5), x='%', y='Bactéria', orientation='h', text_auto=True, color='Bactéria', color_discrete_sequence=PALETA_CORES)
                 fig_bar_bac.update_layout(yaxis={'categoryorder':'total ascending'})
                 st.plotly_chart(fig_bar_bac, use_container_width=True)
 
