@@ -118,6 +118,8 @@ if not st.session_state['logado']:
 # ==========================================
 def extrair_dados_pdf(texto_bruto):
     dados = []
+    
+    # Extrai o período (mantido apenas como backup, não mais como filtro principal)
     periodo_doc = "Período Indefinido"
     match_per = re.search(r'Per[íi]odo de (\d{2}/\d{2}/\d{4}) [àa] (\d{2}/\d{2}/\d{4})', texto_bruto, re.IGNORECASE)
     if match_per: periodo_doc = f"{match_per.group(1)} a {match_per.group(2)}"
@@ -166,7 +168,17 @@ def extrair_dados_pdf(texto_bruto):
     return pd.DataFrame(dados)
 
 # ==========================================
-# 5. MENU LATERAL INTELIGENTE
+# 5. PREPARAÇÃO DO BANCO DE DADOS (COM DATAS INTELIGENTES)
+# ==========================================
+df_historico = carregar_dados_salvos()
+
+# Se existir dados, o sistema força a leitura da coluna 'Data' para separar o Mês/Ano automaticamente
+if not df_historico.empty:
+    df_historico['Data_Obj'] = pd.to_datetime(df_historico['Data'], format="%d/%m/%Y", errors='coerce')
+    df_historico['Mês/Ano'] = df_historico['Data_Obj'].dt.strftime('%m/%Y').fillna('Desconhecido')
+
+# ==========================================
+# 6. MENU LATERAL INTELIGENTE
 # ==========================================
 try:
     st.sidebar.image("logo.png", use_container_width=True)
@@ -192,8 +204,6 @@ try:
 except:
     st.sidebar.caption("Desenvolvido por: Seu Nome")
 
-df_historico = carregar_dados_salvos()
-
 # ==========================================
 # TELAS DO SISTEMA
 # ==========================================
@@ -201,7 +211,7 @@ df_historico = carregar_dados_salvos()
 # ----- TELA ADMIN -----
 if menu == "⚙️ Painel do Administrador":
     st.title("Painel de Controle - Acesso Restrito")
-    st.write("Gerencie os acessos da sua equipe.")
+    st.write("Gerencie os acessos da sua equipe. Apenas usuários listados aqui poderão acessar o sistema.")
     
     st.markdown("### Cadastrar Novo Funcionário")
     col1, col2 = st.columns(2)
@@ -247,7 +257,9 @@ elif menu == "📂 Upload de Dados":
                     
                 df_novo = extrair_dados_pdf(texto_dados)
                 if not df_novo.empty:
-                    df_final = pd.concat([df_historico, df_novo]).drop_duplicates(subset=['Data', 'Código_Paciente', 'Material_Exame', 'Unidade'])
+                    # Garantindo que o df_historico base venha puro (sem as colunas extras que criamos temporariamente)
+                    df_puro = carregar_dados_salvos()
+                    df_final = pd.concat([df_puro, df_novo]).drop_duplicates(subset=['Data', 'Código_Paciente', 'Material_Exame', 'Unidade'])
                     salvar_dados(df_final)
                     st.success(f"✅ Sucesso! {len(df_novo)} registros processados e salvos na Nuvem.")
                 else:
@@ -261,28 +273,25 @@ elif menu == "🏢 Dashboard por Unidade":
         st.warning("⚠️ Não há dados no sistema. Vá na aba 'Upload de Dados' primeiro.")
     else:
         st.markdown("### Filtros de Análise")
-        
-        # Cria as caixas de filtro lado a lado
         col_filtro1, col_filtro2 = st.columns(2)
         
         with col_filtro1:
-            periodos = ["Todos"] + list(df_historico['Período_Arquivo'].dropna().unique())
-            periodo_sel = st.selectbox("📅 Escolha o Mês/Período:", periodos)
+            # AGORA LÊ A DATA EXATA EXTRAIDA (Mês/Ano) DO EXAME
+            periodos = ["Todos"] + sorted(list(df_historico[df_historico['Mês/Ano'] != 'Desconhecido']['Mês/Ano'].unique()))
+            periodo_sel = st.selectbox("📅 Escolha o Mês/Ano (Automático):", periodos)
             
         with col_filtro2:
             unidades = ["Todas"] + sorted(list(df_historico['Unidade'].dropna().astype(str).unique()))
             unidade_sel = st.selectbox("🏢 Escolha a Unidade:", unidades)
         
-        # Aplica os filtros escolhidos
         df_filtrado = df_historico.copy()
         
         if periodo_sel != "Todos":
-            df_filtrado = df_filtrado[df_filtrado['Período_Arquivo'] == periodo_sel]
+            df_filtrado = df_filtrado[df_filtrado['Mês/Ano'] == periodo_sel]
             
         if unidade_sel != "Todas":
             df_filtrado = df_filtrado[df_filtrado['Unidade'].astype(str) == str(unidade_sel)]
             
-        # Calcula as métricas com o DataFrame Filtrado
         t_exames = len(df_filtrado)
         t_pos = len(df_filtrado[df_filtrado['Resultado'] == 'Positivo'])
         t_neg = len(df_filtrado[df_filtrado['Resultado'] == 'Negativo'])
@@ -325,8 +334,6 @@ elif menu == "📈 Comparativo Mensal":
     if df_historico.empty:
         st.warning("⚠️ Não há dados salvos no sistema.")
     else:
-        df_historico['Data_Obj'] = pd.to_datetime(df_historico['Data'], format="%d/%m/%Y", errors='coerce')
-        df_historico['Mês/Ano'] = df_historico['Data_Obj'].dt.strftime('%m/%Y')
         df_pos_hist = df_historico[df_historico['Resultado'] == 'Positivo']
         
         if not df_pos_hist.empty:
