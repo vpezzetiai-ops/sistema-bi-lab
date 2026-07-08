@@ -12,7 +12,6 @@ st.set_page_config(page_title="Sistema BI - Laboratório", layout="wide")
 
 st.markdown("""
     <style>
-    /* Estilização do Botão Principal */
     div.stButton > button:first-child {
         background-color: #002395 !important;
         color: white !important;
@@ -24,8 +23,6 @@ st.markdown("""
         background-color: #00155f !important;
         border: 1px solid #808080;
     }
-    
-    /* Cores do Menu Lateral */
     [data-testid="stSidebar"] {
         background-color: #F0F2F6 !important;
     }
@@ -33,8 +30,6 @@ st.markdown("""
     [data-testid="stSidebar"] label, [data-testid="stSidebar"] div {
         color: #333333 !important;
     }
-    
-    /* Cores de Títulos */
     h1, h2, h3, [data-testid="stSidebar"] h1 {
         color: #002395 !important;
     }
@@ -79,7 +74,7 @@ def salvar_novo_usuario(df_users):
     conn.update(worksheet="Usuarios", data=df_users)
 
 # ==========================================
-# 3. TELA DE LOGIN PREMIUM E CENTRALIZADA
+# 3. TELA DE LOGIN PREMIUM
 # ==========================================
 if 'logado' not in st.session_state:
     st.session_state['logado'] = False
@@ -87,16 +82,11 @@ if 'usuario' not in st.session_state:
     st.session_state['usuario'] = ""
 
 if not st.session_state['logado']:
-    # Cria três colunas para "espremer" o login no centro da tela
     col_vazia_esq, col_login, col_vazia_dir = st.columns([1, 1.2, 1])
     
     with col_login:
-        st.markdown("<br><br>", unsafe_allow_html=True) # Dá um espaço no topo
-        
-        # Cria uma caixa visual (Card) em volta do login
+        st.markdown("<br><br>", unsafe_allow_html=True)
         with st.container(border=True):
-            
-            # Centraliza a Logo do Laboratório dentro do Card
             col_logo1, col_logo2, col_logo3 = st.columns([1, 2, 1])
             with col_logo2:
                 try:
@@ -107,13 +97,10 @@ if not st.session_state['logado']:
             st.markdown("<h4 style='text-align: center; color: #808080;'>Acesso ao Painel Analítico</h4>", unsafe_allow_html=True)
             st.markdown("---")
             
-            # Campos de Login
             usuario_input = st.text_input("👤 Nome de Usuário:")
             senha_input = st.text_input("🔑 Senha de Acesso:", type="password")
-            
             st.markdown("<br>", unsafe_allow_html=True)
             
-            # Botão de Entrar ocupando a largura total
             if st.button("Fazer Login 🚀", use_container_width=True):
                 df_usuarios = carregar_usuarios()
                 usuario_encontrado = df_usuarios[df_usuarios['Usuario'] == usuario_input]
@@ -124,11 +111,10 @@ if not st.session_state['logado']:
                     st.rerun()
                 else:
                     st.error("❌ Usuário ou senha incorretos. Acesso negado.")
-                    
-    st.stop() # Impede que o dashboard seja carregado sem login
+    st.stop()
 
 # ==========================================
-# 4. EXTRAÇÃO DO PDF
+# 4. EXTRAÇÃO DO PDF (FLEXÍVEL)
 # ==========================================
 def extrair_dados_pdf(texto_bruto):
     dados = []
@@ -136,13 +122,19 @@ def extrair_dados_pdf(texto_bruto):
     match_per = re.search(r'Per[íi]odo de (\d{2}/\d{2}/\d{4}) [àa] (\d{2}/\d{2}/\d{4})', texto_bruto, re.IGNORECASE)
     if match_per: periodo_doc = f"{match_per.group(1)} a {match_per.group(2)}"
 
-    blocos = re.split(r'\n(?=\d{2}/\d{2}/\d{4}\s+\d+)', texto_bruto)
+    # NOVO: Separa antes de qualquer combinação de "Data + Código longo", 
+    # ignorando se tem quebra de linha ou não
+    blocos = re.split(r'(?=\d{2}/\d{2}/\d{4}\s+\d{4,})', texto_bruto)
+    
     for bloco in blocos:
         if not bloco.strip(): continue
         linha = {"Data": None, "Código_Paciente": None, "Material_Exame": "Desconhecido", "Resultado": "Negativo", "Bactéria": "N/A", "Indicados (S)": "", "Resistentes (R)": "", "Unidade": None, "Período_Arquivo": periodo_doc}
         
-        match_header = re.search(r'^(\d{2}/\d{2}/\d{4})\s+(\d+)', bloco.strip())
-        if match_header: linha["Data"], linha["Código_Paciente"] = match_header.group(1), match_header.group(2)
+        # Procura em qualquer lugar do bloco (não apenas no começo)
+        match_header = re.search(r'(\d{2}/\d{2}/\d{4})\s+(\d{4,})', bloco)
+        if match_header: 
+            linha["Data"] = match_header.group(1)
+            linha["Código_Paciente"] = match_header.group(2)
         
         match_exame = re.search(r'\[([A-Z]+)\]', bloco)
         if match_exame: linha["Material_Exame"] = match_exame.group(1)
@@ -150,7 +142,8 @@ def extrair_dados_pdf(texto_bruto):
         match_unidade = re.search(r'Unidade Sigla:\s*(\d+)', bloco)
         if match_unidade: linha["Unidade"] = match_unidade.group(1)
             
-        match_mic = re.search(r'MIC:\s*(.*?)(?=SERIE:|AMI:)', bloco)
+        # Deixado mais tolerante a quebras de linha escondidas no PDF
+        match_mic = re.search(r'MIC:\s*(.*?)(?=SERIE:|AMI:|\n|$)', bloco)
         if match_mic:
             bacteria = match_mic.group(1).strip()
             if "Não houve" not in bacteria and "Não Aplicável" not in bacteria:
@@ -159,7 +152,9 @@ def extrair_dados_pdf(texto_bruto):
                 linha["Indicados (S)"] = ", ".join(re.findall(r'([A-Z]+):\s*S', bloco))
                 linha["Resistentes (R)"] = ", ".join(re.findall(r'([A-Z]+):\s*R', bloco))
         
-        if linha["Unidade"] and linha["Data"]: dados.append(linha)
+        if linha["Unidade"] and linha["Data"]: 
+            dados.append(linha)
+            
     return pd.DataFrame(dados)
 
 # ==========================================
@@ -173,7 +168,6 @@ except:
 st.sidebar.title(f"Usuário: {st.session_state['usuario']}")
 
 opcoes_menu = ["📂 Upload de Dados", "🏢 Dashboard por Unidade", "📈 Comparativo Mensal"]
-# Troque "vhpezzeti" pelo login exato que você criou na planilha
 if st.session_state['usuario'] == "vhpezzeti":  
     opcoes_menu.append("⚙️ Painel do Administrador")
 
@@ -188,7 +182,7 @@ st.sidebar.markdown("---")
 try:
     st.sidebar.image("assinatura.png", use_container_width=True)
 except:
-    st.sidebar.caption("Desenvolvido por: Vanessa Pezzeti")
+    st.sidebar.caption("Desenvolvido por: Seu Nome")
 
 df_historico = carregar_dados_salvos()
 
@@ -199,7 +193,7 @@ df_historico = carregar_dados_salvos()
 # ----- TELA ADMIN -----
 if menu == "⚙️ Painel do Administrador":
     st.title("Painel de Controle - Acesso Restrito")
-    st.write("Gerencie os acessos da sua equipe. Apenas usuários listados aqui poderão acessar o sistema.")
+    st.write("Gerencie os acessos da sua equipe.")
     
     st.markdown("### Cadastrar Novo Funcionário")
     col1, col2 = st.columns(2)
@@ -217,7 +211,7 @@ if menu == "⚙️ Painel do Administrador":
                 novo_registro = pd.DataFrame([{"Usuario": novo_usuario, "Senha": nova_senha}])
                 df_users_atualizado = pd.concat([df_users, novo_registro], ignore_index=True)
                 salvar_novo_usuario(df_users_atualizado)
-                st.success(f"✅ Funcionário '{novo_usuario}' cadastrado com sucesso e salvo no banco de dados!")
+                st.success(f"✅ Funcionário cadastrado!")
         else:
             st.warning("Preencha todos os campos.")
             
