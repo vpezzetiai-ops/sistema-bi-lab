@@ -36,15 +36,59 @@ st.markdown("""
     [data-testid="stSidebar"] button * {
         color: white !important;
     }
+    
+    /* Melhoria visual para as métricas em destaque */
+    div[data-testid="metric-container"] {
+        background-color: #ffffff;
+        border: 1px solid #e0e0e0;
+        padding: 15px;
+        border-radius: 8px;
+        box-shadow: 2px 2px 5px rgba(0,0,0,0.05);
+    }
     </style>
 """, unsafe_allow_html=True)
 
 COR_AZUL_BIC = '#002395'
 COR_CINZA = '#808080'
-PALETA_CORES = ['#002395', '#4A69BD', '#808080', '#A6A6A6', '#C0C0C0']
+PALETA_CORES = ['#002395', '#4A69BD', '#708ad4', '#808080', '#A6A6A6', '#C0C0C0', '#d9d9d9']
 
 # ==========================================
-# 2. CONEXÃO COM GOOGLE SHEETS
+# 2. FUNÇÕES DE LIMPEZA E PADRONIZAÇÃO (NOVAS)
+# ==========================================
+def padronizar_unidade(unidade):
+    if pd.isna(unidade) or unidade == "Não Informada": return "Não Informada"
+    # Remove zeros a esquerda para padronizar (001 vira 1)
+    u_str = str(unidade).strip().lstrip('0')
+    mapa = {
+        "1": "1 - Serra Negra",
+        "3": "3 - AME",
+        "4": "4 - Amparo Unidade 4",
+        "5": "5 - Monte Alegre",
+        "6": "6 - Lindóia",
+        "9": "9 - Cenam",
+        "10": "10 - Amparo Unidade BPA",
+        "12": "12 - Águas de Lindóia"
+    }
+    return mapa.get(u_str, f"Unidade {u_str}") # Retorna o nome mapeado, ou o número caso seja uma nova
+
+def padronizar_bacteria(nome):
+    if pd.isna(nome) or nome == "N/A": return "N/A"
+    n = str(nome).strip().lower()
+    
+    # Agrupamentos inteligentes ignorando variações de digitação
+    if "coli" in n or "escherichia" in n: return "Escherichia coli"
+    if "proteus" in n: return "Proteus sp."
+    if "enterobacter" in n: return "Enterobacter sp."
+    if "pseudomonas" in n: return "Pseudomonas sp."
+    if "klebsiella" in n: return "Klebsiella sp."
+    if "staphylococcus" in n: return "Staphylococcus sp."
+    if "streptococcus" in n: return "Streptococcus sp."
+    if "enterococcus" in n: return "Enterococcus sp."
+    
+    return str(nome).strip().title()
+
+# ==========================================
+# 3. CONEXÃO COM GOOGLE SHEETS E DADOS
 # ==========================================
 conn = st.connection("gsheets", type=GSheetsConnection)
 COLUNAS_DB = ["Data", "Código_Paciente", "Material_Exame", "Resultado", "Bactéria", "Indicados (S)", "Resistentes (R)", "Unidade", "Período_Arquivo"]
@@ -54,6 +98,11 @@ def carregar_dados_salvos():
         df = conn.read(worksheet="Página1", ttl=0)
         df = df.dropna(how="all")
         if df.empty: return pd.DataFrame(columns=COLUNAS_DB)
+        
+        # Aplica a padronização no histórico para garantir gráficos unificados
+        df['Bactéria'] = df['Bactéria'].apply(padronizar_bacteria)
+        df['Unidade'] = df['Unidade'].apply(padronizar_unidade)
+        
         return df
     except:
         return pd.DataFrame(columns=COLUNAS_DB)
@@ -74,7 +123,7 @@ def salvar_novo_usuario(df_users):
     conn.update(worksheet="Usuarios", data=df_users)
 
 # ==========================================
-# 3. TELA DE LOGIN PREMIUM E CENTRALIZADA
+# 4. TELA DE LOGIN (COM SUPORTE A "ENTER")
 # ==========================================
 if 'logado' not in st.session_state:
     st.session_state['logado'] = False
@@ -97,29 +146,30 @@ if not st.session_state['logado']:
             st.markdown("<h4 style='text-align: center; color: #808080;'>Acesso ao Painel Analítico</h4>", unsafe_allow_html=True)
             st.markdown("---")
             
-            usuario_input = st.text_input("👤 Nome de Usuário:")
-            senha_input = st.text_input("🔑 Senha de Acesso:", type="password")
-            st.markdown("<br>", unsafe_allow_html=True)
-            
-            if st.button("Fazer Login 🚀", use_container_width=True):
-                df_usuarios = carregar_usuarios()
-                usuario_encontrado = df_usuarios[df_usuarios['Usuario'] == usuario_input]
+            # Form permite enviar ao pressionar "ENTER"
+            with st.form(key="login_form"):
+                usuario_input = st.text_input("👤 Nome de Usuário:")
+                senha_input = st.text_input("🔑 Senha de Acesso:", type="password")
+                st.markdown("<br>", unsafe_allow_html=True)
+                submit_button = st.form_submit_button("Fazer Login 🚀", use_container_width=True)
                 
-                if not usuario_encontrado.empty and str(usuario_encontrado.iloc[0]['Senha']) == senha_input:
-                    st.session_state['logado'] = True
-                    st.session_state['usuario'] = usuario_input
-                    st.rerun()
-                else:
-                    st.error("❌ Usuário ou senha incorretos. Acesso negado.")
+                if submit_button:
+                    df_usuarios = carregar_usuarios()
+                    usuario_encontrado = df_usuarios[df_usuarios['Usuario'] == usuario_input]
+                    
+                    if not usuario_encontrado.empty and str(usuario_encontrado.iloc[0]['Senha']) == senha_input:
+                        st.session_state['logado'] = True
+                        st.session_state['usuario'] = usuario_input
+                        st.rerun()
+                    else:
+                        st.error("❌ Usuário ou senha incorretos. Acesso negado.")
     st.stop()
 
 # ==========================================
-# 4. EXTRAÇÃO DO PDF ULTRA-RESISTENTE
+# 5. EXTRAÇÃO DO PDF ULTRA-RESISTENTE E PADRONIZADA
 # ==========================================
 def extrair_dados_pdf(texto_bruto):
     dados = []
-    
-    # Extrai o período (mantido apenas como backup, não mais como filtro principal)
     periodo_doc = "Período Indefinido"
     match_per = re.search(r'Per[íi]odo de (\d{2}/\d{2}/\d{4}) [àa] (\d{2}/\d{2}/\d{4})', texto_bruto, re.IGNORECASE)
     if match_per: periodo_doc = f"{match_per.group(1)} a {match_per.group(2)}"
@@ -140,7 +190,8 @@ def extrair_dados_pdf(texto_bruto):
         if match_exame: linha["Material_Exame"] = match_exame.group(1)
             
         match_unidade = re.search(r'Unidade Sigla:\s*(\d+)', bloco)
-        if match_unidade: linha["Unidade"] = match_unidade.group(1)
+        if match_unidade: 
+            linha["Unidade"] = padronizar_unidade(match_unidade.group(1)) # Já padroniza aqui
             
         if "Micro-organismo identificado" in bloco or "MIC:" in bloco:
             linha["Resultado"] = "Positivo"
@@ -148,12 +199,12 @@ def extrair_dados_pdf(texto_bruto):
             if match_mic:
                 bac = match_mic.group(1).replace(":", "").strip()
                 if "Não houve" not in bac and "Aplic" not in bac:
-                    linha["Bactéria"] = bac
+                    linha["Bactéria"] = padronizar_bacteria(bac)
             
             if linha["Bactéria"] == "N/A":
                 match_bac = re.search(r'identificado:\s*(.*?)(?=URO|Determ|:)', bloco)
                 if match_bac:
-                    linha["Bactéria"] = match_bac.group(1).strip()
+                    linha["Bactéria"] = padronizar_bacteria(match_bac.group(1).strip())
             
             linha["Indicados (S)"] = ", ".join(re.findall(r'\b([A-Z]{2,})[\s:]*S\b', bloco))
             linha["Resistentes (R)"] = ", ".join(re.findall(r'\b([A-Z]{2,})[\s:]*R\b', bloco))
@@ -168,16 +219,6 @@ def extrair_dados_pdf(texto_bruto):
     return pd.DataFrame(dados)
 
 # ==========================================
-# 5. PREPARAÇÃO DO BANCO DE DADOS (COM DATAS INTELIGENTES)
-# ==========================================
-df_historico = carregar_dados_salvos()
-
-# Se existir dados, o sistema força a leitura da coluna 'Data' para separar o Mês/Ano automaticamente
-if not df_historico.empty:
-    df_historico['Data_Obj'] = pd.to_datetime(df_historico['Data'], format="%d/%m/%Y", errors='coerce')
-    df_historico['Mês/Ano'] = df_historico['Data_Obj'].dt.strftime('%m/%Y').fillna('Desconhecido')
-
-# ==========================================
 # 6. MENU LATERAL INTELIGENTE
 # ==========================================
 try:
@@ -187,7 +228,7 @@ except:
 
 st.sidebar.title(f"Usuário: {st.session_state['usuario']}")
 
-opcoes_menu = ["📂 Upload de Dados", "🏢 Dashboard por Unidade", "📈 Comparativo Mensal"]
+opcoes_menu = ["📂 Upload de Dados", "🏢 Análise por Unidade", "📈 Relatório Comparativo Avançado"]
 if st.session_state['usuario'] == "vhpezzeti":  
     opcoes_menu.append("⚙️ Painel do Administrador")
 
@@ -204,6 +245,11 @@ try:
 except:
     st.sidebar.caption("Desenvolvido por: Seu Nome")
 
+df_historico = carregar_dados_salvos()
+if not df_historico.empty:
+    df_historico['Data_Obj'] = pd.to_datetime(df_historico['Data'], format="%d/%m/%Y", errors='coerce')
+    df_historico['Mês/Ano'] = df_historico['Data_Obj'].dt.strftime('%m/%Y').fillna('Desconhecido')
+
 # ==========================================
 # TELAS DO SISTEMA
 # ==========================================
@@ -211,7 +257,7 @@ except:
 # ----- TELA ADMIN -----
 if menu == "⚙️ Painel do Administrador":
     st.title("Painel de Controle - Acesso Restrito")
-    st.write("Gerencie os acessos da sua equipe. Apenas usuários listados aqui poderão acessar o sistema.")
+    st.write("Gerencie os acessos da sua equipe.")
     
     st.markdown("### Cadastrar Novo Funcionário")
     col1, col2 = st.columns(2)
@@ -224,12 +270,12 @@ if menu == "⚙️ Painel do Administrador":
         if novo_usuario and nova_senha:
             df_users = carregar_usuarios()
             if novo_usuario in df_users['Usuario'].values:
-                st.error("❌ Este login já existe no sistema.")
+                st.error("❌ Este login já existe.")
             else:
                 novo_registro = pd.DataFrame([{"Usuario": novo_usuario, "Senha": nova_senha}])
                 df_users_atualizado = pd.concat([df_users, novo_registro], ignore_index=True)
                 salvar_novo_usuario(df_users_atualizado)
-                st.success(f"✅ Funcionário cadastrado!")
+                st.success("✅ Funcionário cadastrado!")
         else:
             st.warning("Preencha todos os campos.")
             
@@ -240,7 +286,7 @@ if menu == "⚙️ Painel do Administrador":
 # ----- TELA DE UPLOAD -----
 elif menu == "📂 Upload de Dados":
     st.title("Importação de Resultados PDF")
-    st.write("Suba o arquivo do sistema. Os dados serão lidos e salvos na Nuvem.")
+    st.write("Suba o arquivo do sistema. Os dados serão lidos, higienizados e salvos na Nuvem.")
     arquivo_upload = st.file_uploader("Arraste seu arquivo PDF aqui", type=['pdf', 'txt'])
     
     if arquivo_upload is not None:
@@ -257,88 +303,129 @@ elif menu == "📂 Upload de Dados":
                     
                 df_novo = extrair_dados_pdf(texto_dados)
                 if not df_novo.empty:
-                    # Garantindo que o df_historico base venha puro (sem as colunas extras que criamos temporariamente)
-                    df_puro = carregar_dados_salvos()
+                    df_puro = conn.read(worksheet="Página1", ttl=0).dropna(how="all") if not df_historico.empty else pd.DataFrame(columns=COLUNAS_DB)
                     df_final = pd.concat([df_puro, df_novo]).drop_duplicates(subset=['Data', 'Código_Paciente', 'Material_Exame', 'Unidade'])
                     salvar_dados(df_final)
                     st.success(f"✅ Sucesso! {len(df_novo)} registros processados e salvos na Nuvem.")
                 else:
                     st.warning("Não foi possível encontrar dados válidos neste arquivo.")
 
-# ----- TELA DASHBOARD -----
-elif menu == "🏢 Dashboard por Unidade":
-    st.title("Análise de Cultura por Unidade e Mês")
+# ----- TELA DASHBOARD BASICO -----
+elif menu == "🏢 Análise por Unidade":
+    st.title("Análise Geral de Culturas")
     
     if df_historico.empty:
-        st.warning("⚠️ Não há dados no sistema. Vá na aba 'Upload de Dados' primeiro.")
+        st.warning("⚠️ Não há dados no sistema.")
     else:
-        st.markdown("### Filtros de Análise")
-        col_filtro1, col_filtro2 = st.columns(2)
-        
-        with col_filtro1:
-            # AGORA LÊ A DATA EXATA EXTRAIDA (Mês/Ano) DO EXAME
+        st.markdown("### Filtros Rápidos")
+        col_f1, col_f2 = st.columns(2)
+        with col_f1:
             periodos = ["Todos"] + sorted(list(df_historico[df_historico['Mês/Ano'] != 'Desconhecido']['Mês/Ano'].unique()))
-            periodo_sel = st.selectbox("📅 Escolha o Mês/Ano (Automático):", periodos)
+            periodo_sel = st.selectbox("📅 Mês/Ano:", periodos)
+        with col_f2:
+            unidades = ["Todas"] + sorted(list(df_historico['Unidade'].dropna().unique()))
+            unidade_sel = st.selectbox("🏢 Unidade:", unidades)
+        
+        df_f = df_historico.copy()
+        if periodo_sel != "Todos": df_f = df_f[df_f['Mês/Ano'] == periodo_sel]
+        if unidade_sel != "Todas": df_f = df_f[df_f['Unidade'] == unidade_sel]
             
-        with col_filtro2:
-            unidades = ["Todas"] + sorted(list(df_historico['Unidade'].dropna().astype(str).unique()))
-            unidade_sel = st.selectbox("🏢 Escolha a Unidade:", unidades)
+        t_pos = len(df_f[df_f['Resultado'] == 'Positivo'])
         
-        df_filtrado = df_historico.copy()
+        c1, c2, c3 = st.columns(3)
+        c1.metric("Exames Encontrados", len(df_f))
+        c2.metric("Positivos", t_pos)
+        c3.metric("Negativos", len(df_f[df_f['Resultado'] == 'Negativo']))
         
-        if periodo_sel != "Todos":
-            df_filtrado = df_filtrado[df_filtrado['Mês/Ano'] == periodo_sel]
-            
-        if unidade_sel != "Todas":
-            df_filtrado = df_filtrado[df_filtrado['Unidade'].astype(str) == str(unidade_sel)]
-            
-        t_exames = len(df_filtrado)
-        t_pos = len(df_filtrado[df_filtrado['Resultado'] == 'Positivo'])
-        t_neg = len(df_filtrado[df_filtrado['Resultado'] == 'Negativo'])
-        
-        col1, col2, col3 = st.columns(3)
-        col1.metric("Exames Encontrados", t_exames)
-        col2.metric("Positivos", t_pos)
-        col3.metric("Negativos", t_neg)
-        
-        st.markdown("---")
         if t_pos > 0:
-            df_pos = df_filtrado[df_filtrado['Resultado'] == 'Positivo']
-            cA, cB = st.columns(2)
-            with cA:
-                st.subheader("Positivos x Negativos (Geral)")
-                fig_pizza = px.pie(df_filtrado, names='Resultado', hole=0.4, color='Resultado', color_discrete_map={'Positivo': COR_AZUL_BIC, 'Negativo': COR_CINZA})
-                st.plotly_chart(fig_pizza, use_container_width=True)
-            with cB:
-                st.subheader("Gráfico de Bactérias (Positivos)")
-                fig_bac = px.histogram(df_pos, x='Bactéria', color='Bactéria', color_discrete_sequence=PALETA_CORES)
-                st.plotly_chart(fig_bac, use_container_width=True)
-                
-            st.markdown("### Porcentagem de Cada Bactéria")
+            df_pos = df_f[df_f['Resultado'] == 'Positivo']
+            st.markdown("---")
+            st.subheader("Porcentagem de Cada Bactéria")
             df_percent = df_pos['Bactéria'].value_counts(normalize=True).mul(100).round(2).reset_index()
             df_percent.columns = ['Microrganismo (Bactéria)', 'Porcentagem (%)']
             st.dataframe(df_percent, use_container_width=True)
             
-            st.markdown("### Detalhamento: Resistência e Indicação")
-            st.dataframe(df_pos[['Data', 'Unidade', 'Material_Exame', 'Bactéria', 'Indicados (S)', 'Resistentes (R)']], use_container_width=True)
-        else:
-            if t_exames == 0:
-                st.info("Nenhum exame encontrado para estes filtros.")
-            else:
-                st.info("Nenhum exame positivo registrado com estes filtros.")
+            st.subheader("Gráfico de Positivos")
+            fig_bac = px.bar(df_percent, x='Microrganismo (Bactéria)', y='Porcentagem (%)', text_auto=True, color='Microrganismo (Bactéria)', color_discrete_sequence=PALETA_CORES)
+            st.plotly_chart(fig_bac, use_container_width=True)
 
-# ----- TELA COMPARATIVO -----
-elif menu == "📈 Comparativo Mensal":
-    st.title("Evolução Histórica e Comparativo")
+# ----- TELA COMPARATIVO AVANÇADO (NOVO) -----
+elif menu == "📈 Relatório Comparativo Avançado":
+    st.title("Painel de Inteligência Analítica")
     
     if df_historico.empty:
         st.warning("⚠️ Não há dados salvos no sistema.")
     else:
-        df_pos_hist = df_historico[df_historico['Resultado'] == 'Positivo']
+        # Filtros Superiores
+        st.markdown('<div style="background-color: #F0F2F6; padding: 15px; border-radius: 10px;">', unsafe_allow_html=True)
+        col_filtro1, col_filtro2, col_filtro3 = st.columns(3)
         
-        if not df_pos_hist.empty:
-            agrupado = df_pos_hist.groupby(['Mês/Ano', 'Unidade']).size().reset_index(name='Casos Positivos')
-            fig_evolucao = px.bar(agrupado, x='Mês/Ano', y='Casos Positivos', color='Unidade', barmode='group', title="Comparativo Mensal de Exames Positivos por Unidade", color_discrete_sequence=PALETA_CORES)
-            st.plotly_chart(fig_evolucao, use_container_width=True)
+        with col_filtro1:
+            opcoes_mes = ["Todos os Meses"] + sorted(list(df_historico[df_historico['Mês/Ano'] != 'Desconhecido']['Mês/Ano'].unique()))
+            mes_comparativo = st.selectbox("📅 Filtrar Mês:", opcoes_mes)
+            
+        with col_filtro2:
+            opcoes_unidade = ["Todas as Unidades"] + sorted(list(df_historico['Unidade'].unique()))
+            unidade_comparativo = st.selectbox("🏢 Filtrar Unidade:", opcoes_unidade)
+            
+        with col_filtro3:
+            opcoes_exame = ["Todos os Exames"] + sorted(list(df_historico['Material_Exame'].unique()))
+            exame_comparativo = st.selectbox("🧪 Filtrar Exame:", opcoes_exame)
+        st.markdown('</div><br>', unsafe_allow_html=True)
+
+        # Aplicando os filtros para análise
+        df_comp = df_historico.copy()
+        if mes_comparativo != "Todos os Meses": df_comp = df_comp[df_comp['Mês/Ano'] == mes_comparativo]
+        if unidade_comparativo != "Todas as Unidades": df_comp = df_comp[df_comp['Unidade'] == unidade_comparativo]
+        if exame_comparativo != "Todos os Exames": df_comp = df_comp[df_comp['Material_Exame'] == exame_comparativo]
+
+        df_pos_comp = df_comp[df_comp['Resultado'] == 'Positivo']
+
+        # ================== MÉTRICAS DE DESTAQUE ==================
+        if not df_pos_comp.empty:
+            bacteria_top = df_pos_comp['Bactéria'].value_counts().idxmax()
+            
+            # Descobrir o mês com MAIS positivos (se não estiver filtrado por mês)
+            if mes_comparativo == "Todos os Meses":
+                mes_pico = df_pos_comp['Mês/Ano'].value_counts().idxmax()
+                texto_mes_pico = f"Mês de Pico: {mes_pico}"
+            else:
+                texto_mes_pico = f"Mês Analisado: {mes_comparativo}"
+                
+            c_m1, c_m2, c_m3 = st.columns(3)
+            c_m1.metric("Total de Casos Positivos", len(df_pos_comp))
+            c_m2.metric("Bactéria Mais Detectada 🦠", bacteria_top)
+            c_m3.metric("Maior Volume de Casos 📈", texto_mes_pico)
+
+            st.markdown("---")
+            
+            # ================== GRÁFICOS VISUAIS ==================
+            col_g1, col_g2 = st.columns(2)
+            
+            with col_g1:
+                st.subheader("Crescimento de Positivos ao Longo do Tempo")
+                agrupado_tempo = df_pos_comp.groupby('Mês/Ano').size().reset_index(name='Casos')
+                fig_linha = px.line(agrupado_tempo, x='Mês/Ano', y='Casos', markers=True, 
+                                   color_discrete_sequence=[COR_AZUL_BIC])
+                fig_linha.update_traces(line=dict(width=4), marker=dict(size=10))
+                st.plotly_chart(fig_linha, use_container_width=True)
+                
+            with col_g2:
+                st.subheader(f"Incidência Bacteriana ({unidade_comparativo})")
+                agrupado_bac = df_pos_comp['Bactéria'].value_counts(normalize=True).mul(100).round(2).reset_index()
+                agrupado_bac.columns = ['Bactéria', '%']
+                # Pega só o Top 5 para não poluir o gráfico
+                fig_bar_bac = px.bar(agrupado_bac.head(5), x='%', y='Bactéria', orientation='h', text_auto=True,
+                                     color='Bactéria', color_discrete_sequence=PALETA_CORES)
+                fig_bar_bac.update_layout(yaxis={'categoryorder':'total ascending'})
+                st.plotly_chart(fig_bar_bac, use_container_width=True)
+
+            # Tabela Completa para o Biólogo
+            st.markdown("### Detalhamento Completo (Aplicando Filtros)")
+            df_percent_final = df_pos_comp.groupby(['Unidade', 'Bactéria']).size().reset_index(name='Casos')
+            df_percent_final['%'] = (df_percent_final['Casos'] / len(df_pos_comp) * 100).round(2)
+            df_percent_final = df_percent_final.sort_values(by='%', ascending=False)
+            st.dataframe(df_percent_final, use_container_width=True)
+
         else:
-            st.info("Nenhum caso positivo no histórico para gerar evolução mensal.")
+            st.info("Nenhum caso positivo encontrado para a combinação de filtros selecionada.")
