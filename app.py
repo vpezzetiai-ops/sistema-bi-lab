@@ -150,7 +150,7 @@ st.sidebar.title(f"Usuário: {st.session_state['usuario']}")
 
 # Verifica se é o admin para mostrar a aba secreta
 opcoes_menu = ["📂 Upload de Dados", "🏢 Dashboard por Unidade", "📈 Comparativo Mensal"]
-if st.session_state['usuario'] == "admin":  # Se você usou outro nome no Passo 1, mude "admin" para o seu nome aqui
+if st.session_state['usuario'] == "vhpezzeti":  # Se você usou outro nome no Passo 1, mude "admin" para o seu nome aqui
     opcoes_menu.append("⚙️ Painel do Administrador")
 
 menu = st.sidebar.radio("Navegação", opcoes_menu)
