@@ -89,6 +89,11 @@ def padronizar_bacteria(nome):
     
     return str(nome).strip().title()
 
+def padronizar_material(material):
+    if pd.isna(material): return "Desconhecido"
+    # Remove espaços vazios e qualquer ponto final (.) no final da frase
+    return str(material).strip().rstrip('.').strip()
+
 # ==========================================
 # 3. CONEXÃO COM GOOGLE SHEETS
 # ==========================================
@@ -101,9 +106,11 @@ def carregar_dados_salvos():
         df = df.dropna(how="all")
         if df.empty: return pd.DataFrame(columns=COLUNAS_DB)
         
+        # Limpa o histórico em tempo real antes de exibir nos gráficos
         df['Bactéria'] = df['Bactéria'].apply(padronizar_bacteria)
         df['Unidade'] = df['Unidade'].apply(padronizar_unidade)
-        # Limpa da tela qualquer unidade que não seja oficial ou Sede
+        df['Material_Exame'] = df['Material_Exame'].apply(padronizar_material)
+        
         df = df[df['Unidade'] != 'Excluir'] 
         return df
     except:
@@ -128,7 +135,7 @@ def salvar_novo_usuario(df_users):
     conn.update(worksheet="Usuarios", data=df_users)
 
 # ==========================================
-# 4. TELA DE LOGIN (COM ENTER ATIVADO)
+# 4. TELA DE LOGIN 
 # ==========================================
 if 'logado' not in st.session_state:
     st.session_state['logado'] = False
@@ -169,7 +176,7 @@ if not st.session_state['logado']:
     st.stop()
 
 # ==========================================
-# 5. EXTRAÇÃO BLINDADA DO PDF (MÁQUINA DE DADOS)
+# 5. EXTRAÇÃO DO PDF 
 # ==========================================
 def extrair_dados_pdf(texto_bruto):
     dados = []
@@ -207,19 +214,18 @@ def extrair_dados_pdf(texto_bruto):
                 "Resistentes (R)": "", "Unidade": unidade_pac, "Período_Arquivo": periodo_doc
             }
             
-            # Puxa o material real do exame
             match_mat = re.search(r'(?:MAT(?:ERIAL)?):\s*(.*?)(?=RES|1:|\.1:|[A-Z]{3}2?:|\n|$)', sub)
             if match_mat:
                 mat_text = re.sub(r'[\.\d]+$', '', match_mat.group(1)).strip()
-                linha["Material_Exame"] = f"[{tag}] {mat_text}"
+                linha["Material_Exame"] = padronizar_material(f"[{tag}] {mat_text}")
+            else:
+                linha["Material_Exame"] = padronizar_material(linha["Material_Exame"])
             
-            # Negativos universais (Sangue e Urina)
             if "Não houve desenvolvimento" in sub or "Não houve crescimento" in sub:
                 linha["Resultado"] = "Negativo"
             else:
                 linha["Resultado"] = "Positivo"
                 
-                # Caçador de Bactérias (resistente a palavras grudadas)
                 match_bac = re.search(r'(?:identificado|MIC|1:|\.1:|aer[oó]bia.*?:|anaer[oó]bia.*?:)\s*([A-Z][a-z]{3,}(?:\s+[a-z]{3,})?(?:\s+sp\.?)?)', sub, re.IGNORECASE)
                 
                 if match_bac:
@@ -227,13 +233,11 @@ def extrair_dados_pdf(texto_bruto):
                     if "Não houve" not in bac_str and "Aplic" not in bac_str:
                         linha["Bactéria"] = padronizar_bacteria(bac_str)
                 else:
-                    # Sistema de resgate caso a bactéria esteja muito escondida
                     for bac_name in ["Escherichia", "Proteus", "Enterobacter", "Pseudomonas", "Klebsiella", "Staphylococcus", "Streptococcus", "Enterococcus"]:
                         if bac_name.lower() in sub.lower():
                             linha["Bactéria"] = padronizar_bacteria(bac_name)
                             break
                             
-                # Extrai antibióticos mesmo se vierem grudados no texto (Sem o bloqueio de \b antes da palavra)
                 sensiveis = []
                 resistentes = []
                 matches_atb = re.findall(r'([A-Z]{2,5})\d*[\s:=]+([SR])\b', sub)
@@ -249,7 +253,7 @@ def extrair_dados_pdf(texto_bruto):
     return pd.DataFrame(dados)
 
 # ==========================================
-# 6. MENU LATERAL E PREPARAÇÃO
+# 6. MENU LATERAL
 # ==========================================
 try:
     st.sidebar.image("logo.png", use_container_width=True)
@@ -375,8 +379,7 @@ elif menu == "🏢 Análise por Unidade":
             fig_bac = px.bar(df_percent, x='Microrganismo (Bactéria)', y='Porcentagem (%)', text_auto=True, color='Microrganismo (Bactéria)', color_discrete_sequence=PALETA_CORES)
             st.plotly_chart(fig_bac, use_container_width=True)
             
-            st.markdown("### Detalhamento Geral (Urina e Sangue)")
-            # Material adicionado aqui!
+            st.markdown("### Detalhamento Geral")
             st.dataframe(df_pos[['Data', 'Unidade', 'Material_Exame', 'Bactéria', 'Indicados (S)', 'Resistentes (R)']], use_container_width=True)
 
 # ----- TELA COMPARATIVO AVANÇADO -----
