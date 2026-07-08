@@ -12,16 +12,20 @@ st.set_page_config(page_title="Sistema BI - Laboratório", layout="wide")
 
 st.markdown("""
     <style>
+    /* Estilização do Botão Principal */
     div.stButton > button:first-child {
         background-color: #002395 !important;
         color: white !important;
         border: none;
         border-radius: 5px;
+        font-weight: bold;
     }
     div.stButton > button:first-child:hover {
         background-color: #00155f !important;
         border: 1px solid #808080;
     }
+    
+    /* Cores do Menu Lateral */
     [data-testid="stSidebar"] {
         background-color: #F0F2F6 !important;
     }
@@ -29,6 +33,8 @@ st.markdown("""
     [data-testid="stSidebar"] label, [data-testid="stSidebar"] div {
         color: #333333 !important;
     }
+    
+    /* Cores de Títulos */
     h1, h2, h3, [data-testid="stSidebar"] h1 {
         color: #002395 !important;
     }
@@ -48,7 +54,6 @@ PALETA_CORES = ['#002395', '#4A69BD', '#808080', '#A6A6A6', '#C0C0C0']
 conn = st.connection("gsheets", type=GSheetsConnection)
 COLUNAS_DB = ["Data", "Código_Paciente", "Material_Exame", "Resultado", "Bactéria", "Indicados (S)", "Resistentes (R)", "Unidade", "Período_Arquivo"]
 
-# Funções do Banco de Dados Principal
 def carregar_dados_salvos():
     try:
         df = conn.read(worksheet="Página1", ttl=0)
@@ -61,7 +66,6 @@ def carregar_dados_salvos():
 def salvar_dados(df_final):
     conn.update(worksheet="Página1", data=df_final)
 
-# Funções do Banco de Dados de Usuários
 def carregar_usuarios():
     try:
         df_users = conn.read(worksheet="Usuarios", ttl=0)
@@ -75,7 +79,7 @@ def salvar_novo_usuario(df_users):
     conn.update(worksheet="Usuarios", data=df_users)
 
 # ==========================================
-# 3. SISTEMA DE LOGIN SEGURO
+# 3. TELA DE LOGIN PREMIUM E CENTRALIZADA
 # ==========================================
 if 'logado' not in st.session_state:
     st.session_state['logado'] = False
@@ -83,25 +87,45 @@ if 'usuario' not in st.session_state:
     st.session_state['usuario'] = ""
 
 if not st.session_state['logado']:
-    st.title("🔒 Acesso Restrito - Laboratório")
-    st.write("Por favor, insira suas credenciais para acessar o sistema.")
+    # Cria três colunas para "espremer" o login no centro da tela
+    col_vazia_esq, col_login, col_vazia_dir = st.columns([1, 1.2, 1])
     
-    usuario_input = st.text_input("Seu Nome ou Login:")
-    senha_input = st.text_input("Sua Senha:", type="password")
-    
-    if st.button("Entrar"):
-        df_usuarios = carregar_usuarios()
+    with col_login:
+        st.markdown("<br><br>", unsafe_allow_html=True) # Dá um espaço no topo
         
-        # Procura se o usuário existe na planilha e se a senha bate
-        usuario_encontrado = df_usuarios[df_usuarios['Usuario'] == usuario_input]
-        
-        if not usuario_encontrado.empty and str(usuario_encontrado.iloc[0]['Senha']) == senha_input:
-            st.session_state['logado'] = True
-            st.session_state['usuario'] = usuario_input
-            st.rerun()
-        else:
-            st.error("❌ Usuário ou senha incorretos. Acesso negado.")
-    st.stop()
+        # Cria uma caixa visual (Card) em volta do login
+        with st.container(border=True):
+            
+            # Centraliza a Logo do Laboratório dentro do Card
+            col_logo1, col_logo2, col_logo3 = st.columns([1, 2, 1])
+            with col_logo2:
+                try:
+                    st.image("logo.png", use_container_width=True)
+                except:
+                    st.markdown("<h2 style='text-align: center;'>SÃO FRANCISCO</h2>", unsafe_allow_html=True)
+            
+            st.markdown("<h4 style='text-align: center; color: #808080;'>Acesso ao Painel Analítico</h4>", unsafe_allow_html=True)
+            st.markdown("---")
+            
+            # Campos de Login
+            usuario_input = st.text_input("👤 Nome de Usuário:")
+            senha_input = st.text_input("🔑 Senha de Acesso:", type="password")
+            
+            st.markdown("<br>", unsafe_allow_html=True)
+            
+            # Botão de Entrar ocupando a largura total
+            if st.button("Fazer Login 🚀", use_container_width=True):
+                df_usuarios = carregar_usuarios()
+                usuario_encontrado = df_usuarios[df_usuarios['Usuario'] == usuario_input]
+                
+                if not usuario_encontrado.empty and str(usuario_encontrado.iloc[0]['Senha']) == senha_input:
+                    st.session_state['logado'] = True
+                    st.session_state['usuario'] = usuario_input
+                    st.rerun()
+                else:
+                    st.error("❌ Usuário ou senha incorretos. Acesso negado.")
+                    
+    st.stop() # Impede que o dashboard seja carregado sem login
 
 # ==========================================
 # 4. EXTRAÇÃO DO PDF
@@ -148,9 +172,9 @@ except:
 
 st.sidebar.title(f"Usuário: {st.session_state['usuario']}")
 
-# Verifica se é o admin para mostrar a aba secreta
 opcoes_menu = ["📂 Upload de Dados", "🏢 Dashboard por Unidade", "📈 Comparativo Mensal"]
-if st.session_state['usuario'] == "vhpezzeti":  # Se você usou outro nome no Passo 1, mude "admin" para o seu nome aqui
+# Troque "vhpezzeti" pelo login exato que você criou na planilha
+if st.session_state['usuario'] == "vhpezzeti":  
     opcoes_menu.append("⚙️ Painel do Administrador")
 
 menu = st.sidebar.radio("Navegação", opcoes_menu)
@@ -164,7 +188,7 @@ st.sidebar.markdown("---")
 try:
     st.sidebar.image("assinatura.png", use_container_width=True)
 except:
-    st.sidebar.caption("Desenvolvido por: Seu Nome")
+    st.sidebar.caption("Desenvolvido por: Vanessa Pezzeti")
 
 df_historico = carregar_dados_salvos()
 
