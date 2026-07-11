@@ -86,58 +86,63 @@ if 'nivel_acesso' not in st.session_state: st.session_state['nivel_acesso'] = "V
 if 'unidades_permitidas' not in st.session_state: st.session_state['unidades_permitidas'] = "Todas"
 
 # ==========================================
-# 5. TELA DE LOGIN (NOVO MODELO INTEGRADO E HIGH-TECH)
+# 5. TELA DE LOGIN (O VERDADEIRO VIDRO FOSCO)
 # ==========================================
 if not st.session_state['logado']:
     st.markdown("""
     <style>
-    /* Imagem Macro High-Tech (Lente de Microscópio) */
+    /* Imagem Inconfundível de Laboratório (Tubos e Pipeta azuis) */
     .stApp {
-        background-image: linear-gradient(rgba(0, 15, 60, 0.4), rgba(0, 15, 60, 0.8)), url("https://images.unsplash.com/photo-1530026405186-ed1f139313f8?q=80&w=2000&auto=format&fit=crop") !important;
+        background-image: linear-gradient(rgba(0, 15, 60, 0.3), rgba(0, 15, 60, 0.6)), url("https://images.unsplash.com/photo-1532187863486-abf9dbad1b69?q=80&w=2000&auto=format&fit=crop") !important;
         background-size: cover !important;
         background-position: center !important;
         background-attachment: fixed !important;
         animation: panBg 30s infinite alternate ease-in-out !important;
     }
-    @keyframes panBg { from { transform: scale(1); } to { transform: scale(1.03); } }
+    @keyframes panBg { from { transform: scale(1); } to { transform: scale(1.05); } }
     
     [data-testid="stHeader"] { background: transparent !important; }
     
-    /* Novo Card Glassmorphism (Elegante e Único) */
+    /* EFEITO GLASSMORPHISM (Vidro Fosco Real) */
     [data-testid="stForm"] {
-        background-color: rgba(255, 255, 255, 0.95) !important;
-        backdrop-filter: blur(10px) !important;
-        -webkit-backdrop-filter: blur(10px) !important;
+        background: rgba(255, 255, 255, 0.35) !important; /* Fundo transparente */
+        backdrop-filter: blur(16px) !important; /* Desfoque do vidro */
+        -webkit-backdrop-filter: blur(16px) !important;
         border-radius: 20px !important;
-        border: 1px solid rgba(255, 255, 255, 0.4) !important;
-        box-shadow: 0px 30px 60px rgba(0,0,0,0.6) !important;
+        border: 1px solid rgba(255, 255, 255, 0.6) !important; /* Borda de vidro */
+        box-shadow: 0px 30px 60px rgba(0,0,0,0.5) !important;
         padding: 50px 40px 30px 40px !important;
         margin-top: 3vh;
         z-index: 10;
     }
     
-    /* Textos Escuros */
-    [data-testid="stForm"] p, [data-testid="stForm"] label, [data-testid="stForm"] div { color: #333333 !important; }
+    /* Textos Escuros com Sombra Leve para destacar no Vidro */
+    [data-testid="stForm"] p, [data-testid="stForm"] label, [data-testid="stForm"] div { 
+        color: #111827 !important; 
+        font-weight: 600;
+        text-shadow: 0px 1px 2px rgba(255,255,255,0.8) !important;
+    }
     
-    /* Inputs Modernos */
+    /* Inputs Brancos Sólidos com Borda Discreta */
     input[type="text"], input[type="password"] {
-        background-color: #F0F4F8 !important;
-        color: #333333 !important;
-        -webkit-text-fill-color: #333333 !important;
-        border: 1px solid #CBD5E1 !important;
+        background-color: rgba(255, 255, 255, 0.9) !important;
+        color: #111827 !important;
+        -webkit-text-fill-color: #111827 !important;
+        border: 1px solid rgba(255, 255, 255, 0.8) !important;
         border-radius: 8px !important;
         padding: 12px !important;
+        box-shadow: inset 0px 2px 4px rgba(0,0,0,0.05) !important;
     }
     input[type="text"]:focus, input[type="password"]:focus {
         border-color: #002395 !important;
-        box-shadow: 0 0 0 1px #002395 !important;
+        box-shadow: 0 0 0 2px rgba(0, 35, 149, 0.3) !important;
     }
     
-    /* Olho da Senha transparente */
+    /* Olho da Senha Transparente */
     button[kind="secondary"] { background-color: transparent !important; border: none !important; }
-    button[kind="secondary"] * { color: #808080 !important; }
+    button[kind="secondary"] * { color: #4B5563 !important; text-shadow: none !important;}
     
-    /* Botão Azul com mais respiro */
+    /* Botão de Login Azul São Francisco */
     div.stButton > button, button[kind="primaryFormSubmit"] {
         background-color: #002395 !important; 
         background: #002395 !important;
@@ -146,19 +151,20 @@ if not st.session_state['logado']:
         border-radius: 8px !important; 
         padding: 12px !important;
         margin-top: 10px !important;
+        box-shadow: 0px 4px 15px rgba(0, 35, 149, 0.4) !important;
     }
     div.stButton > button *, button[kind="primaryFormSubmit"] * { 
-        color: #FFFFFF !important; font-weight: 900 !important; font-size: 16px !important; 
+        color: #FFFFFF !important; font-weight: 900 !important; font-size: 16px !important; text-shadow: none !important;
     }
     div.stButton > button:hover, button[kind="primaryFormSubmit"]:hover { 
         background-color: #4A69BD !important; transform: scale(1.02); 
     }
     
-    /* Linha divisória para a assinatura */
+    /* Linha divisória de vidro */
     hr.custom-divider {
         border: 0;
         height: 1px;
-        background: linear-gradient(to right, rgba(0,0,0,0), rgba(0, 35, 149, 0.15), rgba(0,0,0,0));
+        background: linear-gradient(to right, rgba(255,255,255,0), rgba(255,255,255,0.8), rgba(255,255,255,0));
         margin: 30px 0 20px 0;
     }
     </style>
@@ -171,9 +177,9 @@ if not st.session_state['logado']:
             col_logo1, col_logo2, col_logo3 = st.columns([1, 2, 1])
             with col_logo2:
                 try: st.image("logo.png", use_container_width=True)
-                except: st.markdown("<h2 style='text-align: center; color:#002395 !important;'>SÃO FRANCISCO</h2>", unsafe_allow_html=True)
+                except: st.markdown("<h2 style='text-align: center; color:#002395 !important; text-shadow: 0px 1px 3px rgba(255,255,255,0.9) !important;'>SÃO FRANCISCO</h2>", unsafe_allow_html=True)
             
-            st.markdown("<h4 style='text-align: center; color:#333333 !important; margin-bottom:30px; font-weight: 700;'>Acesso ao Sistema Analítico</h4>", unsafe_allow_html=True)
+            st.markdown("<h4 style='text-align: center; color:#111827 !important; margin-bottom:30px; font-weight: 800; text-shadow: 0px 1px 2px rgba(255,255,255,0.8);'>Acesso ao Sistema Analítico</h4>", unsafe_allow_html=True)
             
             usuario_input = st.text_input("👤 Nome de Usuário:")
             senha_input = st.text_input("🔑 Senha de Acesso:", type="password")
@@ -183,7 +189,7 @@ if not st.session_state['logado']:
             submit_button = st.form_submit_button("Fazer Login 🚀", type="primary", use_container_width=True)
             
             # ==========================================
-            # ASSINATURA EMBUTIDA DENTRO DO CARD
+            # ASSINATURA EMBUTIDA NO VIDRO
             # ==========================================
             st.markdown("<hr class='custom-divider'>", unsafe_allow_html=True)
             
@@ -193,15 +199,15 @@ if not st.session_state['logado']:
                     img_base64 = base64.b64encode(image_file.read()).decode()
                 st.markdown(f'''
                     <div style="text-align: center; padding-bottom: 10px;">
-                        <p style="color: #94A3B8; font-size: 10px; font-weight: 800; margin-bottom: 5px; text-transform: uppercase; letter-spacing: 2px;">Desenvolvido Por</p>
+                        <p style="color: #4B5563; font-size: 10px; font-weight: 800; margin-bottom: 5px; text-transform: uppercase; letter-spacing: 2px; text-shadow: 0px 1px 1px rgba(255,255,255,0.8);">Desenvolvido Por</p>
                         <img src="data:image/png;base64,{img_base64}" style="max-height: 70px; max-width: 100%; object-fit: contain; margin: 0 auto; display: block; opacity: 0.95;">
                     </div>
                 ''', unsafe_allow_html=True)
             else:
                 st.markdown('''
                     <div style="text-align: center; padding-bottom: 10px;">
-                        <p style="color: #94A3B8; font-size: 10px; font-weight: 800; margin-bottom: 2px; text-transform: uppercase; letter-spacing: 2px;">Desenvolvido Por</p>
-                        <p style="text-align: center; color: #002395; font-weight: 900; margin: 0; font-size: 18px;">V PEZZETI WarMachine</p>
+                        <p style="color: #4B5563; font-size: 10px; font-weight: 800; margin-bottom: 2px; text-transform: uppercase; letter-spacing: 2px; text-shadow: 0px 1px 1px rgba(255,255,255,0.8);">Desenvolvido Por</p>
+                        <p style="text-align: center; color: #002395; font-weight: 900; margin: 0; font-size: 18px; text-shadow: 0px 1px 2px rgba(255,255,255,0.9);">V PEZZETI WarMachine</p>
                     </div>
                 ''', unsafe_allow_html=True)
 
