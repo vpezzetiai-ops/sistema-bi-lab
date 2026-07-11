@@ -8,84 +8,92 @@ from streamlit_gsheets import GSheetsConnection
 # ==========================================
 # 1. CONFIGURAÇÕES INICIAIS E TEMA PREMIUM
 # ==========================================
-st.set_page_config(page_title="Sistema BI - São Francisco", layout="wide", initial_sidebar_state="expanded")
+st.set_page_config(page_title="Sistema BI - Laboratório", layout="wide", initial_sidebar_state="expanded")
 
+# A "Armadura CSS" - Força o tema Light e previne bugs de texto invisível no Dark Mode
 st.markdown("""
     <style>
-    /* Estilização Geral e Fundo */
-    .stApp {
-        background-color: #FAFAFA;
+    /* Força o fundo da página inteiro para um cinza super claro e limpo */
+    .stApp, .stApp > header {
+        background-color: #F8F9FA !important;
     }
     
-    /* Botões Modernos */
-    div.stButton > button {
-        border-radius: 8px !important;
-        font-weight: bold !important;
-        transition: all 0.3s ease !important;
-    }
-    div.stButton > button[kind="primary"] {
-        background-color: #002395 !important;
-        color: white !important;
-        border: none !important;
-        box-shadow: 0 4px 6px rgba(0, 35, 149, 0.2) !important;
-    }
-    div.stButton > button[kind="primary"]:hover {
-        background-color: #00155f !important;
-        box-shadow: 0 6px 12px rgba(0, 35, 149, 0.3) !important;
-        transform: translateY(-2px);
-    }
-
-    /* Cards de Métricas com Sombra e Borda Azul */
-    div[data-testid="metric-container"] {
-        background-color: #FFFFFF;
-        border: 1px solid #E6E9EF;
-        padding: 20px;
-        border-radius: 12px;
-        box-shadow: 0 4px 10px rgba(0,0,0,0.05);
-        border-left: 6px solid #002395;
-        transition: transform 0.2s ease;
-    }
-    div[data-testid="metric-container"]:hover {
-        transform: translateY(-3px);
+    /* Força todas as fontes principais para escuro (Evita texto branco em fundo branco) */
+    .stApp, .stApp p, .stApp span, .stApp label, .stApp li {
+        color: #333333 !important;
     }
     
-    /* Títulos e Textos */
-    h1, h2, h3 {
+    /* Títulos em Azul São Francisco */
+    h1, h2, h3, h4, h5, h6 {
         color: #002395 !important;
-        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        font-weight: 700 !important;
     }
     
     /* Menu Lateral */
     [data-testid="stSidebar"] {
         background-color: #FFFFFF !important;
-        border-right: 1px solid #E6E9EF;
+        border-right: 1px solid #E5E7EB !important;
     }
     
-    /* Abas (Tabs) Modernas */
-    .stTabs [data-baseweb="tab-list"] {
-        gap: 20px;
+    /* Botões Padrão e Primários - Forçando o Azul São Francisco */
+    div.stButton > button {
+        background-color: #002395 !important;
+        color: #FFFFFF !important;
+        border-radius: 8px !important;
+        border: none !important;
+        box-shadow: 0 4px 6px rgba(0, 35, 149, 0.2) !important;
+        font-weight: 600 !important;
+        padding: 0.5rem 1rem !important;
+        transition: all 0.3s ease !important;
     }
+    div.stButton > button:hover {
+        background-color: #00155f !important;
+        transform: translateY(-2px);
+    }
+    
+    /* Caixas de Texto (Inputs e Selects) */
+    .stTextInput input, .stSelectbox div[data-baseweb="select"] {
+        background-color: #FFFFFF !important;
+        color: #333333 !important;
+        border-radius: 6px !important;
+        border: 1px solid #D1D5DB !important;
+    }
+    
+    /* Cards Flutuantes (Métricas) */
+    div[data-testid="metric-container"] {
+        background-color: #FFFFFF !important;
+        border: 1px solid #E5E7EB !important;
+        padding: 20px !important;
+        border-radius: 12px !important;
+        box-shadow: 0 4px 10px rgba(0,0,0,0.05) !important;
+        border-left: 6px solid #002395 !important;
+    }
+    div[data-testid="metric-container"] label {
+        color: #6B7280 !important; /* Cinza para o título da métrica */
+        font-weight: 600 !important;
+    }
+    div[data-testid="metric-container"] div[data-testid="stMetricValue"] {
+        color: #002395 !important; /* Azul para o número */
+        font-weight: 900 !important;
+    }
+    
+    /* Abas (Tabs) do Painel Admin */
     .stTabs [data-baseweb="tab"] {
-        height: 50px;
-        white-space: pre-wrap;
-        background-color: transparent;
-        border-radius: 4px 4px 0px 0px;
-        gap: 1px;
-        padding-top: 10px;
-        padding-bottom: 10px;
+        background-color: transparent !important;
+        color: #6B7280 !important;
     }
     .stTabs [aria-selected="true"] {
-        background-color: #f0f2f6 !important;
-        border-bottom: 3px solid #002395 !important;
+        background-color: #F8F9FA !important;
         color: #002395 !important;
-        font-weight: bold;
+        border-bottom: 3px solid #002395 !important;
+        font-weight: bold !important;
     }
     </style>
 """, unsafe_allow_html=True)
 
 COR_AZUL_BIC = '#002395'
 COR_CINZA = '#808080'
-PALETA_CORES = ['#002395', '#4A69BD', '#708ad4', '#808080', '#A6A6A6', '#C0C0C0', '#E0E0E0']
+PALETA_CORES = ['#002395', '#4A69BD', '#708ad4', '#808080', '#A6A6A6', '#C0C0C0', '#d9d9d9']
 
 # ==========================================
 # 2. FUNÇÕES DE LIMPEZA E PADRONIZAÇÃO
@@ -93,8 +101,10 @@ PALETA_CORES = ['#002395', '#4A69BD', '#708ad4', '#808080', '#A6A6A6', '#C0C0C0'
 def padronizar_unidade(unidade):
     if pd.isna(unidade) or str(unidade).strip() == "" or "Não Informada" in str(unidade): 
         return "Sede / Sem Unidade"
+    
     numeros = re.findall(r'\d+', str(unidade))
     if not numeros: return "Sede / Sem Unidade"
+    
     u_str = str(int(numeros[0]))
     mapa = {
         "1": "1 - Serra Negra", "3": "3 - AME", "4": "4 - Amparo Unidade 4",
@@ -106,6 +116,7 @@ def padronizar_unidade(unidade):
 def padronizar_bacteria(nome):
     if pd.isna(nome) or nome == "N/A": return "N/A"
     n = str(nome).strip().lower()
+    
     if "coli" in n or "escherichia" in n: return "Escherichia coli"
     if "proteus" in n: return "Proteus sp."
     if "enterobact" in n: return "Enterobacter sp."
@@ -114,6 +125,7 @@ def padronizar_bacteria(nome):
     if "staphylococc" in n: return "Staphylococcus sp."
     if "streptococc" in n: return "Streptococcus sp."
     if "enterococc" in n: return "Enterococcus sp."
+    
     return str(nome).strip().title()
 
 def padronizar_material(material):
@@ -130,9 +142,11 @@ def carregar_dados_salvos():
     try:
         df = conn.read(worksheet="Página1", ttl=0).dropna(how="all")
         if df.empty: return pd.DataFrame(columns=COLUNAS_DB)
+        
         df['Bactéria'] = df['Bactéria'].apply(padronizar_bacteria)
         df['Unidade'] = df['Unidade'].apply(padronizar_unidade)
         df['Material_Exame'] = df['Material_Exame'].apply(padronizar_material)
+        
         df = df[df['Unidade'] != 'Excluir'] 
         return df
     except:
@@ -145,6 +159,7 @@ def carregar_usuarios():
     try:
         df_users = conn.read(worksheet="Usuarios", ttl=0).dropna(how="all")
         if df_users.empty: return pd.DataFrame(columns=["Usuario", "Senha"])
+        
         df_users['Usuario'] = df_users['Usuario'].astype(str).str.strip()
         df_users['Senha'] = df_users['Senha'].astype(str).str.replace(r'\.0$', '', regex=True).str.lstrip("'").str.strip()
         return df_users
@@ -155,7 +170,7 @@ def salvar_novo_usuario(df_users):
     conn.update(worksheet="Usuarios", data=df_users)
 
 # ==========================================
-# 4. TELA DE LOGIN PREMIUM
+# 4. TELA DE LOGIN 
 # ==========================================
 if 'logado' not in st.session_state: st.session_state['logado'] = False
 if 'usuario' not in st.session_state: st.session_state['usuario'] = ""
@@ -170,17 +185,18 @@ if not st.session_state['logado']:
                 try: st.image("logo.png", use_container_width=True)
                 except: st.markdown("<h2 style='text-align: center;'>SÃO FRANCISCO</h2>", unsafe_allow_html=True)
             
-            st.markdown("<h4 style='text-align: center; color: #808080; margin-bottom: 20px;'>Acesso ao Painel Analítico</h4>", unsafe_allow_html=True)
+            st.markdown("<h4 style='text-align: center; color: #808080; margin-bottom:20px;'>Acesso ao Painel Analítico</h4>", unsafe_allow_html=True)
             
             with st.form(key="login_form"):
                 usuario_input = st.text_input("👤 Nome de Usuário:")
                 senha_input = st.text_input("🔑 Senha de Acesso:", type="password")
                 st.markdown("<br>", unsafe_allow_html=True)
-                submit_button = st.form_submit_button("Fazer Login 🚀", type="primary", use_container_width=True)
+                submit_button = st.form_submit_button("Fazer Login 🚀", use_container_width=True)
                 
                 if submit_button:
                     df_usuarios = carregar_usuarios()
                     usuario_encontrado = df_usuarios[df_usuarios['Usuario'] == usuario_input]
+                    
                     if not usuario_encontrado.empty and str(usuario_encontrado.iloc[0]['Senha']) == senha_input:
                         st.session_state['logado'] = True
                         st.session_state['usuario'] = usuario_input
@@ -287,7 +303,6 @@ if not df_historico.empty:
 # TELAS DO SISTEMA
 # ==========================================
 
-# ----- TELA ADMIN -----
 if menu == "⚙️ Painel do Administrador":
     st.title("⚙️ Painel de Controle Administrativo")
     st.markdown("Gerencie os acessos da sua equipe e monitore quem pode utilizar a plataforma.")
@@ -303,7 +318,7 @@ if menu == "⚙️ Painel do Administrador":
             with col2: nova_senha = st.text_input("Senha de Acesso:", type="password")
             st.markdown("<br>", unsafe_allow_html=True)
             
-            if st.button("Salvar Cadastro ✔️", type="primary"):
+            if st.button("Salvar Cadastro ✔️", use_container_width=True):
                 if novo_usuario and nova_senha:
                     df_users = carregar_usuarios()
                     if novo_usuario in df_users['Usuario'].values:
@@ -320,10 +335,8 @@ if menu == "⚙️ Painel do Administrador":
     with tab2:
         st.markdown("#### Lista de Acessos")
         df_mostra = carregar_usuarios()
-        # hide_index deixa a tabela mais limpa e elegante
         st.dataframe(df_mostra, use_container_width=True, hide_index=True)
 
-# ----- TELA DE UPLOAD -----
 elif menu == "📂 Upload de Dados":
     st.title("📂 Importação de Resultados PDF")
     st.markdown("Faça o upload dos arquivos gerados pelo sistema do laboratório. O robô irá higienizar e organizar os dados na Nuvem automaticamente.")
@@ -332,7 +345,7 @@ elif menu == "📂 Upload de Dados":
         arquivo_upload = st.file_uploader("Arraste seu arquivo PDF aqui 👇", type=['pdf', 'txt'])
         
         if arquivo_upload is not None:
-            if st.button("Processar e Salvar no Banco de Dados ☁️", type="primary"):
+            if st.button("Processar e Salvar no Banco de Dados ☁️", use_container_width=True):
                 with st.spinner('Lendo arquivo, aplicando filtros de inteligência e salvando...'):
                     texto_dados = ""
                     if arquivo_upload.name.endswith('.pdf'):
@@ -349,18 +362,17 @@ elif menu == "📂 Upload de Dados":
                         df_final = pd.concat([df_puro, df_novo]).drop_duplicates(subset=['Data', 'Código_Paciente', 'Material_Exame', 'Unidade'])
                         salvar_dados(df_final)
                         st.success(f"✅ Extração Concluída! {len(df_novo)} registros limpos e salvos na Nuvem.")
-                        st.balloons() # Animação de sucesso!
+                        st.balloons()
                     else:
                         st.error("Não foi possível encontrar dados válidos neste PDF.")
 
-# ----- TELA DASHBOARD BÁSICO -----
 elif menu == "🏢 Análise por Unidade":
     st.title("🏢 Análise Geral de Culturas")
     
     if df_historico.empty:
         st.info("⚠️ Não há dados no sistema. Faça o upload do primeiro PDF.")
     else:
-        st.markdown('<div style="background-color: #FFFFFF; padding: 20px; border-radius: 10px; border: 1px solid #E6E9EF;">', unsafe_allow_html=True)
+        st.markdown('<div style="background-color: #FFFFFF; padding: 20px; border-radius: 10px; border: 1px solid #E6E9EF; margin-bottom: 20px;">', unsafe_allow_html=True)
         col_f1, col_f2 = st.columns(2)
         with col_f1:
             periodos = ["Todos os Meses"] + sorted(list(df_historico[df_historico['Mês/Ano'] != 'Desconhecido']['Mês/Ano'].unique()))
@@ -368,7 +380,7 @@ elif menu == "🏢 Análise por Unidade":
         with col_f2:
             unidades = ["Todas as Unidades"] + sorted(list(df_historico['Unidade'].unique()))
             unidade_sel = st.selectbox("🏢 Selecione a Unidade:", unidades)
-        st.markdown('</div><br>', unsafe_allow_html=True)
+        st.markdown('</div>', unsafe_allow_html=True)
         
         df_f = df_historico.copy()
         if periodo_sel != "Todos os Meses": df_f = df_f[df_f['Mês/Ano'] == periodo_sel]
@@ -404,14 +416,13 @@ elif menu == "🏢 Análise por Unidade":
             st.markdown("#### 📋 Detalhamento dos Pacientes (Positivos)")
             st.dataframe(df_pos[['Data', 'Unidade', 'Material_Exame', 'Bactéria', 'Indicados (S)', 'Resistentes (R)']], use_container_width=True, hide_index=True)
 
-# ----- TELA COMPARATIVO AVANÇADO -----
 elif menu == "📈 Relatório Comparativo Avançado":
     st.title("📈 Inteligência Analítica e Tendências")
     
     if df_historico.empty:
         st.info("⚠️ Não há dados salvos no sistema.")
     else:
-        st.markdown('<div style="background-color: #FFFFFF; padding: 20px; border-radius: 10px; border: 1px solid #E6E9EF;">', unsafe_allow_html=True)
+        st.markdown('<div style="background-color: #FFFFFF; padding: 20px; border-radius: 10px; border: 1px solid #E6E9EF; margin-bottom: 20px;">', unsafe_allow_html=True)
         col_filtro1, col_filtro2, col_filtro3 = st.columns(3)
         
         with col_filtro1:
@@ -425,7 +436,7 @@ elif menu == "📈 Relatório Comparativo Avançado":
         with col_filtro3:
             opcoes_exame = ["Todos os Exames"] + sorted(list(df_historico['Material_Exame'].unique()))
             exame_comparativo = st.selectbox("🧪 Filtrar Material:", opcoes_exame)
-        st.markdown('</div><br>', unsafe_allow_html=True)
+        st.markdown('</div>', unsafe_allow_html=True)
 
         df_comp = df_historico.copy()
         if mes_comparativo != "Todos os Meses": df_comp = df_comp[df_comp['Mês/Ano'] == mes_comparativo]
@@ -454,7 +465,6 @@ elif menu == "📈 Relatório Comparativo Avançado":
             with col_g1:
                 st.markdown("#### 📊 Crescimento de Positivos ao Longo do Tempo")
                 agrupado_tempo = df_pos_comp.groupby('Mês/Ano').size().reset_index(name='Casos')
-                # Gráfico de área para um visual mais cheio e profissional
                 fig_linha = px.area(agrupado_tempo, x='Mês/Ano', y='Casos', markers=True, color_discrete_sequence=[COR_AZUL_BIC])
                 fig_linha.update_layout(template='plotly_white', margin=dict(t=20, b=20, l=20, r=20))
                 st.plotly_chart(fig_linha, use_container_width=True)
