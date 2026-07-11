@@ -91,7 +91,7 @@ def salvar_novo_usuario(df_users):
     conn.update(worksheet="Usuarios", data=df_users)
 
 # ==========================================
-# 4. TELA DE LOGIN BLINDADA (CSS NUCLEAR)
+# 4. TELA DE LOGIN (CSS FINO E IMAGEM PLACA DE PETRI)
 # ==========================================
 if 'logado' not in st.session_state: st.session_state['logado'] = False
 if 'usuario' not in st.session_state: st.session_state['usuario'] = ""
@@ -101,17 +101,17 @@ if 'unidades_permitidas' not in st.session_state: st.session_state['unidades_per
 if not st.session_state['logado']:
     st.markdown("""
     <style>
-    /* 1. Destrói o fundo branco do Streamlit tornando-o 100% transparente */
+    /* Transparência para ver a imagem */
     body, .stApp, .main, [data-testid="stAppViewContainer"], [data-testid="stHeader"] {
         background: transparent !important;
         background-color: transparent !important;
     }
     
-    /* 2. Injeta a nossa imagem como o único fundo real absoluto */
+    /* Imagem Animada do Cientista com a Placa de Petri (Exatamente como pedido) */
     .fundo-nuclear {
         position: fixed;
         top: 0; left: 0; width: 100vw; height: 100vh;
-        background-image: url('https://images.unsplash.com/photo-1532187863486-abf9dbad1b69?q=80&w=2000&auto=format&fit=crop');
+        background-image: url('https://images.unsplash.com/photo-1614935151651-0bea6508abb0?q=80&w=2000&auto=format&fit=crop');
         background-size: cover;
         background-position: center;
         filter: brightness(0.4) sepia(0.2) hue-rotate(190deg);
@@ -123,7 +123,7 @@ if not st.session_state['logado']:
         to { transform: scale(1.1); }
     }
     
-    /* 3. O Card Branco do Login */
+    /* Card Branco Flutuante do Login */
     [data-testid="stForm"] {
         background-color: #FFFFFF !important;
         border-radius: 12px !important;
@@ -134,14 +134,12 @@ if not st.session_state['logado']:
         z-index: 10;
     }
     
-    /* 4. Força textos e labels a ficarem escuros */
-    [data-testid="stForm"] p, [data-testid="stForm"] label, [data-testid="stForm"] span, [data-testid="stForm"] div {
-        color: #333333 !important;
-        background: transparent !important; /* Corrige o bug do fundo cinza no checkbox */
-    }
+    /* Corrige cores das fontes SEM QUEBRAR o checkbox */
+    [data-testid="stForm"] p { color: #333333 !important; }
+    [data-testid="stForm"] label p { font-weight: 600 !important; color: #333333 !important; }
     
-    /* 5. Estilo das caixas de input */
-    [data-testid="stForm"] input {
+    /* Input Limpo e Claro */
+    input[type="text"], input[type="password"] {
         background-color: #F8F9FA !important;
         color: #333333 !important;
         -webkit-text-fill-color: #333333 !important;
@@ -149,25 +147,34 @@ if not st.session_state['logado']:
         border-radius: 6px !important;
     }
     
-    /* 6. FORÇA O BOTÃO A FICAR AZUL SÃO FRANCISCO (Adeus Vermelho!) */
-    [data-testid="stForm"] button, div.stButton > button {
+    /* Conserta o fundo escuro do "Olhinho" da senha */
+    [data-testid="stForm"] button[kind="secondary"] {
+        background-color: transparent !important;
+        border: none !important;
+        color: #808080 !important;
+    }
+    [data-testid="stForm"] button[kind="secondary"]:hover {
+        background-color: transparent !important;
+    }
+    
+    /* Botão de Login Azul Perfeito */
+    div.stButton > button[kind="primary"] {
         background-color: #002395 !important;
         border: none !important;
         border-radius: 8px !important;
         box-shadow: 0 4px 6px rgba(0,0,0,0.1) !important;
     }
-    [data-testid="stForm"] button p, div.stButton > button p {
+    div.stButton > button[kind="primary"] p {
         color: #FFFFFF !important;
         font-weight: 900 !important;
         font-size: 16px !important;
     }
-    [data-testid="stForm"] button:hover {
+    div.stButton > button[kind="primary"]:hover {
         background-color: #4A69BD !important;
         transform: scale(1.02);
     }
     </style>
     
-    <!-- Aplica a imagem real por HTML -->
     <div class="fundo-nuclear"></div>
     """, unsafe_allow_html=True)
 
@@ -185,7 +192,7 @@ if not st.session_state['logado']:
             usuario_input = st.text_input("👤 Nome de Usuário:")
             senha_input = st.text_input("🔑 Senha de Acesso:", type="password")
             
-            # Checkbox consertado
+            # Checkbox 100% funcional e visível
             lembrar_senha = st.checkbox("Lembrar senha neste computador")
             
             st.markdown("<br>", unsafe_allow_html=True)
@@ -333,7 +340,6 @@ if not df_historico.empty:
     df_historico['Data_Obj'] = pd.to_datetime(df_historico['Data'], format="%d/%m/%Y", errors='coerce')
     df_historico['Mês/Ano'] = df_historico['Data_Obj'].dt.strftime('%m/%Y').fillna('Desconhecido')
     
-    # Aplica o filtro de Unidades que o funcionário pode ver
     if unid_perm != "Todas" and st.session_state['usuario'] != "vhpezzeti":
         unidades_liberadas = [u.strip() for u in unid_perm.split(",")]
         df_historico = df_historico[df_historico['Unidade'].isin(unidades_liberadas)]
@@ -368,7 +374,7 @@ if menu == "⚙️ Painel do Administrador":
                 nova_unid_perm = st.multiselect("Unidades Permitidas (Deixe vazio para dar acesso a TODAS):", UNIDADES_OFICIAIS)
             
             st.markdown("<br>", unsafe_allow_html=True)
-            if st.button("Salvar Cadastro ✔️", use_container_width=True):
+            if st.button("Salvar Cadastro ✔️", type="primary", use_container_width=True):
                 if novo_usuario and nova_senha:
                     if novo_usuario in lista_usuarios:
                         st.error("❌ Este login já existe no sistema.")
@@ -446,7 +452,7 @@ elif menu == "📂 Upload de Dados":
         arquivo_upload = st.file_uploader("Arraste seu arquivo PDF aqui 👇", type=['pdf', 'txt'])
         
         if arquivo_upload is not None:
-            if st.button("Processar e Salvar no Banco de Dados ☁️", use_container_width=True):
+            if st.button("Processar e Salvar no Banco de Dados ☁️", type="primary", use_container_width=True):
                 with st.spinner('Lendo arquivo, aplicando filtros de inteligência e salvando...'):
                     texto_dados = ""
                     if arquivo_upload.name.endswith('.pdf'):
