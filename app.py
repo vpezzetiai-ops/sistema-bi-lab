@@ -86,58 +86,66 @@ if 'nivel_acesso' not in st.session_state: st.session_state['nivel_acesso'] = "V
 if 'unidades_permitidas' not in st.session_state: st.session_state['unidades_permitidas'] = "Todas"
 
 # ==========================================
-# 5. TELA DE LOGIN (O MICROSCÓPIO E A ASSINATURA PREMIUM)
+# 5. TELA DE LOGIN (NOVO MODELO INTEGRADO E HIGH-TECH)
 # ==========================================
 if not st.session_state['logado']:
     st.markdown("""
     <style>
-    /* O Fundo de Microscopia Inconfundível */
+    /* Imagem Macro High-Tech (Lente de Microscópio) */
     .stApp {
-        background-image: linear-gradient(rgba(0, 15, 60, 0.75), rgba(0, 15, 60, 0.75)), url("https://images.unsplash.com/photo-1582719471384-894fbb16e074?q=80&w=2000&auto=format&fit=crop") !important;
+        background-image: linear-gradient(rgba(0, 15, 60, 0.4), rgba(0, 15, 60, 0.8)), url("https://images.unsplash.com/photo-1530026405186-ed1f139313f8?q=80&w=2000&auto=format&fit=crop") !important;
         background-size: cover !important;
         background-position: center !important;
         background-attachment: fixed !important;
-        animation: zoom 20s infinite alternate linear !important;
+        animation: panBg 30s infinite alternate ease-in-out !important;
     }
-    @keyframes zoom { from { transform: scale(1); } to { transform: scale(1.05); } }
+    @keyframes panBg { from { transform: scale(1); } to { transform: scale(1.03); } }
     
     [data-testid="stHeader"] { background: transparent !important; }
     
-    /* Card Branco do Login */
+    /* Novo Card Glassmorphism (Elegante e Único) */
     [data-testid="stForm"] {
-        background-color: #FFFFFF !important;
-        border-radius: 12px !important;
-        border: none !important;
-        box-shadow: 0px 25px 50px rgba(0,0,0,0.8) !important;
-        padding: 40px !important;
-        margin-top: 5vh;
+        background-color: rgba(255, 255, 255, 0.95) !important;
+        backdrop-filter: blur(10px) !important;
+        -webkit-backdrop-filter: blur(10px) !important;
+        border-radius: 20px !important;
+        border: 1px solid rgba(255, 255, 255, 0.4) !important;
+        box-shadow: 0px 30px 60px rgba(0,0,0,0.6) !important;
+        padding: 50px 40px 30px 40px !important;
+        margin-top: 3vh;
         z-index: 10;
     }
     
     /* Textos Escuros */
     [data-testid="stForm"] p, [data-testid="stForm"] label, [data-testid="stForm"] div { color: #333333 !important; }
     
-    /* Inputs Destacados (Azul Gelo) */
+    /* Inputs Modernos */
     input[type="text"], input[type="password"] {
-        background-color: #E8F0FE !important;
+        background-color: #F0F4F8 !important;
         color: #333333 !important;
         -webkit-text-fill-color: #333333 !important;
-        border: 1px solid #B0C4DE !important;
-        border-radius: 6px !important;
+        border: 1px solid #CBD5E1 !important;
+        border-radius: 8px !important;
+        padding: 12px !important;
+    }
+    input[type="text"]:focus, input[type="password"]:focus {
+        border-color: #002395 !important;
+        box-shadow: 0 0 0 1px #002395 !important;
     }
     
     /* Olho da Senha transparente */
     button[kind="secondary"] { background-color: transparent !important; border: none !important; }
     button[kind="secondary"] * { color: #808080 !important; }
     
-    /* Botão Azul Absoluto */
+    /* Botão Azul com mais respiro */
     div.stButton > button, button[kind="primaryFormSubmit"] {
         background-color: #002395 !important; 
         background: #002395 !important;
         color: #FFFFFF !important;
         border: none !important; 
         border-radius: 8px !important; 
-        padding: 10px !important;
+        padding: 12px !important;
+        margin-top: 10px !important;
     }
     div.stButton > button *, button[kind="primaryFormSubmit"] * { 
         color: #FFFFFF !important; font-weight: 900 !important; font-size: 16px !important; 
@@ -145,10 +153,18 @@ if not st.session_state['logado']:
     div.stButton > button:hover, button[kind="primaryFormSubmit"]:hover { 
         background-color: #4A69BD !important; transform: scale(1.02); 
     }
+    
+    /* Linha divisória para a assinatura */
+    hr.custom-divider {
+        border: 0;
+        height: 1px;
+        background: linear-gradient(to right, rgba(0,0,0,0), rgba(0, 35, 149, 0.15), rgba(0,0,0,0));
+        margin: 30px 0 20px 0;
+    }
     </style>
     """, unsafe_allow_html=True)
 
-    col_vazia_esq, col_login, col_vazia_dir = st.columns([1, 1.2, 1])
+    col_vazia_esq, col_login, col_vazia_dir = st.columns([1, 1.3, 1])
     with col_login:
         st.markdown("<br>", unsafe_allow_html=True)
         with st.form(key="login_form"):
@@ -157,16 +173,38 @@ if not st.session_state['logado']:
                 try: st.image("logo.png", use_container_width=True)
                 except: st.markdown("<h2 style='text-align: center; color:#002395 !important;'>SÃO FRANCISCO</h2>", unsafe_allow_html=True)
             
-            st.markdown("<h4 style='text-align: center; color:#333333 !important; margin-bottom:20px;'>Acesso ao Sistema Analítico</h4>", unsafe_allow_html=True)
+            st.markdown("<h4 style='text-align: center; color:#333333 !important; margin-bottom:30px; font-weight: 700;'>Acesso ao Sistema Analítico</h4>", unsafe_allow_html=True)
             
             usuario_input = st.text_input("👤 Nome de Usuário:")
             senha_input = st.text_input("🔑 Senha de Acesso:", type="password")
             
             lembrar_senha = st.checkbox("Lembrar senha neste computador")
             
-            st.markdown("<br>", unsafe_allow_html=True)
             submit_button = st.form_submit_button("Fazer Login 🚀", type="primary", use_container_width=True)
             
+            # ==========================================
+            # ASSINATURA EMBUTIDA DENTRO DO CARD
+            # ==========================================
+            st.markdown("<hr class='custom-divider'>", unsafe_allow_html=True)
+            
+            caminho_imagem = "Gemini_Generated_Image_s8ldfcs8ldfcs8ld-removebg-preview.png"
+            if os.path.exists(caminho_imagem):
+                with open(caminho_imagem, "rb") as image_file:
+                    img_base64 = base64.b64encode(image_file.read()).decode()
+                st.markdown(f'''
+                    <div style="text-align: center; padding-bottom: 10px;">
+                        <p style="color: #94A3B8; font-size: 10px; font-weight: 800; margin-bottom: 5px; text-transform: uppercase; letter-spacing: 2px;">Desenvolvido Por</p>
+                        <img src="data:image/png;base64,{img_base64}" style="max-height: 70px; max-width: 100%; object-fit: contain; margin: 0 auto; display: block; opacity: 0.95;">
+                    </div>
+                ''', unsafe_allow_html=True)
+            else:
+                st.markdown('''
+                    <div style="text-align: center; padding-bottom: 10px;">
+                        <p style="color: #94A3B8; font-size: 10px; font-weight: 800; margin-bottom: 2px; text-transform: uppercase; letter-spacing: 2px;">Desenvolvido Por</p>
+                        <p style="text-align: center; color: #002395; font-weight: 900; margin: 0; font-size: 18px;">V PEZZETI WarMachine</p>
+                    </div>
+                ''', unsafe_allow_html=True)
+
             if submit_button:
                 df_usuarios = carregar_usuarios()
                 usuario_encontrado = df_usuarios[df_usuarios['Usuario'] == usuario_input]
@@ -179,33 +217,6 @@ if not st.session_state['logado']:
                     st.rerun()
                 else:
                     st.error("❌ Usuário ou senha incorretos. Acesso negado.")
-        
-        # ==========================================
-        # A ASSINATURA WARMACHINE EM DESTAQUE TOTAL
-        # ==========================================
-        caminho_imagem = "Gemini_Generated_Image_s8ldfcs8ldfcs8ld-removebg-preview.png"
-        
-        if os.path.exists(caminho_imagem):
-            with open(caminho_imagem, "rb") as image_file:
-                img_base64 = base64.b64encode(image_file.read()).decode()
-            
-            st.markdown(f'''
-                <div style="display: flex; justify-content: center; margin-top: 15px; position: relative; z-index: 10;">
-                    <div style="background-color: #FFFFFF; padding: 20px 40px; border-radius: 12px; box-shadow: 0px 15px 40px rgba(0,0,0,0.7); width: 100%; text-align: center;">
-                        <p style="color: #A0AEC0; font-size: 11px; font-weight: 800; margin-bottom: 8px; text-transform: uppercase; letter-spacing: 2px;">Desenvolvido Por</p>
-                        <img src="data:image/png;base64,{img_base64}" style="max-height: 85px; max-width: 100%; object-fit: contain; margin: 0 auto; display: block;">
-                    </div>
-                </div>
-            ''', unsafe_allow_html=True)
-        else:
-            st.markdown('''
-                <div style="display: flex; justify-content: center; margin-top: 15px; position: relative; z-index: 10;">
-                    <div style="background-color: #FFFFFF; padding: 20px 40px; border-radius: 12px; box-shadow: 0px 15px 40px rgba(0,0,0,0.7); width: 100%; text-align: center;">
-                        <p style="color: #A0AEC0; font-size: 11px; font-weight: 800; margin-bottom: 5px; text-transform: uppercase; letter-spacing: 2px;">Desenvolvido Por</p>
-                        <p style="text-align: center; color: #002395; font-weight: 900; margin: 0; font-size: 20px;">V PEZZETI WarMachine</p>
-                    </div>
-                </div>
-            ''', unsafe_allow_html=True)
 
     st.stop()
 
