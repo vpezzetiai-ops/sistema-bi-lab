@@ -92,49 +92,30 @@ if 'nivel_acesso' not in st.session_state: st.session_state['nivel_acesso'] = "V
 if 'unidades_permitidas' not in st.session_state: st.session_state['unidades_permitidas'] = "Todas"
 
 # ==========================================
-# 5. TELA DE LOGIN 
+# 5. TELA DE LOGIN (BLINDADA COM URL DIRETA)
 # ==========================================
 if not st.session_state['logado']:
-    
-    # Busca a imagem de fundo no GitHub (fundo.jpg ou fundo.png)
-    bg_b64 = get_base64_image("fundo.jpg")
-    if not bg_b64: bg_b64 = get_base64_image("fundo.png")
-    
-    # Injeta o pseudo-elemento antes do app para animar SÓ a imagem (e não a caixa de login)
-    if bg_b64:
-        bg_css = f"""
-        .stApp::before {{
-            content: "";
-            position: fixed;
-            top: -5%; left: -5%; width: 110%; height: 110%; /* Sobra borda para poder dar o zoom sem mostrar branco */
-            background-image: linear-gradient(rgba(0, 15, 60, 0.4), rgba(0, 15, 60, 0.75)), url("data:image/jpeg;base64,{bg_b64}");
-            background-size: cover;
-            background-position: center;
-            z-index: -1;
-            animation: panBg 30s infinite alternate ease-in-out;
-        }}
-        """
-    else:
-        bg_css = """
-        .stApp {
-            background: linear-gradient(135deg, #000c24 0%, #002395 100%) !important;
-        }
-        """
 
-    st.markdown(f"""
+    st.markdown("""
     <style>
-    {bg_css}
+    /* O Fundo de Microscopia Direto da Nuvem - Não falha nunca mais */
+    .stApp {
+        background-image: linear-gradient(rgba(0, 15, 60, 0.4), rgba(0, 15, 60, 0.7)), url("https://images.unsplash.com/photo-1581093458791-9f3c3900df4b?q=80&w=2000&auto=format&fit=crop") !important;
+        background-size: cover !important;
+        background-position: center !important;
+        background-attachment: fixed !important;
+        animation: panBg 25s infinite alternate ease-in-out !important;
+    }
     
-    /* Keyframes para o zoom cinematográfico lento do fundo */
-    @keyframes panBg {{
-        0% {{ transform: scale(1) translate(0, 0); }}
-        100% {{ transform: scale(1.05) translate(-1%, -1%); }}
-    }}
+    @keyframes panBg {
+        0% { background-size: 100% auto; }
+        100% { background-size: 105% auto; }
+    }
     
-    [data-testid="stHeader"] {{ background: transparent !important; }}
+    [data-testid="stHeader"] { background: transparent !important; }
     
-    /* Card de Login (Vidro Fosco) */
-    [data-testid="stForm"] {{
+    /* Card de Login Vidro Fosco e Estreito */
+    [data-testid="stForm"] {
         background: rgba(255, 255, 255, 0.25) !important;
         backdrop-filter: blur(16px) !important;
         -webkit-backdrop-filter: blur(16px) !important;
@@ -144,17 +125,17 @@ if not st.session_state['logado']:
         padding: 40px 30px 20px 30px !important;
         margin-top: 3vh;
         z-index: 10;
-    }}
+    }
     
     /* Textos Escuros no Vidro */
-    [data-testid="stForm"] p, [data-testid="stForm"] label, [data-testid="stForm"] div {{ 
+    [data-testid="stForm"] p, [data-testid="stForm"] label, [data-testid="stForm"] div { 
         color: #111827 !important; 
         font-weight: 600;
         text-shadow: 0px 1px 2px rgba(255,255,255,0.8) !important;
-    }}
+    }
     
     /* Inputs Brancos/Claros */
-    input[type="text"], input[type="password"] {{
+    input[type="text"], input[type="password"] {
         background-color: rgba(255, 255, 255, 0.95) !important;
         color: #111827 !important;
         -webkit-text-fill-color: #111827 !important;
@@ -162,18 +143,18 @@ if not st.session_state['logado']:
         border-radius: 8px !important;
         padding: 10px !important;
         box-shadow: inset 0px 2px 4px rgba(0,0,0,0.05) !important;
-    }}
-    input[type="text"]:focus, input[type="password"]:focus {{
+    }
+    input[type="text"]:focus, input[type="password"]:focus {
         border-color: #002395 !important;
         box-shadow: 0 0 0 2px rgba(0, 35, 149, 0.3) !important;
-    }}
+    }
     
     /* Olho da Senha transparente */
-    button[kind="secondary"] {{ background-color: transparent !important; border: none !important; }}
-    button[kind="secondary"] * {{ color: #4B5563 !important; text-shadow: none !important;}}
+    button[kind="secondary"] { background-color: transparent !important; border: none !important; }
+    button[kind="secondary"] * { color: #4B5563 !important; text-shadow: none !important;}
     
     /* Botão de Login Azul São Francisco */
-    div.stButton > button, button[kind="primaryFormSubmit"] {{
+    div.stButton > button, button[kind="primaryFormSubmit"] {
         background-color: #002395 !important; 
         background: #002395 !important;
         color: #FFFFFF !important;
@@ -182,25 +163,25 @@ if not st.session_state['logado']:
         padding: 10px !important;
         margin-top: 10px !important;
         box-shadow: 0px 4px 15px rgba(0, 35, 149, 0.4) !important;
-    }}
-    div.stButton > button *, button[kind="primaryFormSubmit"] * {{ 
+    }
+    div.stButton > button *, button[kind="primaryFormSubmit"] * { 
         color: #FFFFFF !important; font-weight: 900 !important; font-size: 16px !important; text-shadow: none !important;
-    }}
-    div.stButton > button:hover, button[kind="primaryFormSubmit"]:hover {{ 
+    }
+    div.stButton > button:hover, button[kind="primaryFormSubmit"]:hover { 
         background-color: #4A69BD !important; transform: scale(1.02); 
-    }}
+    }
     
     /* Linha divisória da assinatura */
-    hr.custom-divider {{
+    hr.custom-divider {
         border: 0;
         height: 1px;
         background: linear-gradient(to right, rgba(255,255,255,0), rgba(255,255,255,0.8), rgba(255,255,255,0));
         margin: 25px 0 15px 0;
-    }}
+    }
     </style>
     """, unsafe_allow_html=True)
 
-    # Mantendo o formato estreito
+    # Mantém a caixa estreita (1.5 nas bordas, 1.1 no meio)
     col_vazia_esq, col_login, col_vazia_dir = st.columns([1.5, 1.1, 1.5]) 
     
     with col_login:
@@ -208,11 +189,10 @@ if not st.session_state['logado']:
         with st.form(key="login_form"):
             
             # ==========================================
-            # LOGO MAIOR E COM BRILHO (SEM CAIXA BRANCA)
+            # LOGO LIVRE COM BRILHO/GLOW 
             # ==========================================
             logo_b64 = get_base64_image("logo.png")
             if logo_b64:
-                # max-height foi de 90px para 135px. O filter: drop-shadow cria a aura branca de destaque.
                 st.markdown(f'''
                     <div style="display: flex; justify-content: center; margin-bottom: 25px;">
                         <img src="data:image/png;base64,{logo_b64}" style="max-height: 135px; object-fit: contain; filter: drop-shadow(0px 0px 18px rgba(255, 255, 255, 0.8));">
@@ -273,7 +253,7 @@ else:
     st.markdown("""
         <style>
         .stApp { background-image: none !important; background-color: #F4F6F9 !important; animation: none !important;}
-        .stApp::before { display: none !important; } /* Desliga o fundo animado no sistema */
+        .stApp::before { display: none !important; } 
         header[data-testid="stHeader"] { background: #F4F6F9 !important; }
         
         div[data-testid="metric-container"] {
