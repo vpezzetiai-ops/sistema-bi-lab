@@ -11,7 +11,14 @@ from streamlit_gsheets import GSheetsConnection
 st.set_page_config(page_title="Sistema BI - São Francisco", layout="wide", initial_sidebar_state="expanded")
 
 COR_AZUL_BIC = '#002395'
+COR_CINZA = '#808080' # CORREÇÃO: Variável definida globalmente
 PALETA_CORES = ['#002395', '#4A69BD', '#708ad4', '#808080', '#A6A6A6', '#C0C0C0', '#d9d9d9']
+
+UNIDADES_OFICIAIS = [
+    "1 - Serra Negra", "3 - AME", "4 - Amparo Unidade 4", 
+    "5 - Monte Alegre", "6 - Lindóia", "9 - Cenam", 
+    "10 - Amparo Unidade BPA", "12 - Águas de Lindóia", "Sede / Sem Unidade"
+]
 
 # ==========================================
 # 2. FUNÇÕES DE LIMPEZA E PADRONIZAÇÃO
@@ -21,7 +28,11 @@ def padronizar_unidade(unidade):
     numeros = re.findall(r'\d+', str(unidade))
     if not numeros: return "Sede / Sem Unidade"
     u_str = str(int(numeros[0]))
-    mapa = {"1": "1 - Serra Negra", "3": "3 - AME", "4": "4 - Amparo Unidade 4", "5": "5 - Monte Alegre", "6": "6 - Lindóia", "9": "9 - Cenam", "10": "10 - Amparo Unidade BPA", "12": "12 - Águas de Lindóia"}
+    mapa = {
+        "1": "1 - Serra Negra", "3": "3 - AME", "4": "4 - Amparo Unidade 4",
+        "5": "5 - Monte Alegre", "6": "6 - Lindóia", "9": "9 - Cenam",
+        "10": "10 - Amparo Unidade BPA", "12": "12 - Águas de Lindóia"
+    }
     return mapa.get(u_str, "Excluir")
 
 def padronizar_bacteria(nome):
@@ -65,54 +76,76 @@ def salvar_dados(df_final):
 def carregar_usuarios():
     try:
         df_users = conn.read(worksheet="Usuarios", ttl=0).dropna(how="all")
-        if df_users.empty: return pd.DataFrame(columns=["Usuario", "Senha", "Nivel_Acesso"])
+        if df_users.empty: return pd.DataFrame(columns=["Usuario", "Senha", "Nivel_Acesso", "Unidades_Permitidas"])
+        
+        # Garante que as colunas existam mesmo em planilhas antigas
         if "Nivel_Acesso" not in df_users.columns: df_users["Nivel_Acesso"] = "Administrador"
+        if "Unidades_Permitidas" not in df_users.columns: df_users["Unidades_Permitidas"] = "Todas"
+            
         df_users['Usuario'] = df_users['Usuario'].astype(str).str.strip()
         df_users['Senha'] = df_users['Senha'].astype(str).str.replace(r'\.0$', '', regex=True).str.lstrip("'").str.strip()
         return df_users
     except:
-        return pd.DataFrame(columns=["Usuario", "Senha", "Nivel_Acesso"])
+        return pd.DataFrame(columns=["Usuario", "Senha", "Nivel_Acesso", "Unidades_Permitidas"])
 
 def salvar_novo_usuario(df_users):
     conn.update(worksheet="Usuarios", data=df_users)
 
 # ==========================================
-# 4. TELA DE LOGIN (ANIMAÇÃO + MODO DARK/LIGHT)
+# 4. TELA DE LOGIN COM IMAGEM MICROBIOLÓGICA REAL
 # ==========================================
 if 'logado' not in st.session_state: st.session_state['logado'] = False
 if 'usuario' not in st.session_state: st.session_state['usuario'] = ""
 if 'nivel_acesso' not in st.session_state: st.session_state['nivel_acesso'] = "Visualizador"
+if 'unidades_permitidas' not in st.session_state: st.session_state['unidades_permitidas'] = "Todas"
 
 if not st.session_state['logado']:
     st.markdown("""
     <style>
-    /* Animação de Fundo (Degradê Azul Profissional) */
+    /* Imagem Profissional de Fundo (Células/Microbiologia) */
     .stApp {
-        background: linear-gradient(-45deg, #002395, #4A69BD, #1a2a6c, #00155f) !important;
-        background-size: 400% 400% !important;
-        animation: gradientBG 15s ease infinite !important;
-    }
-    @keyframes gradientBG {
-        0% {background-position: 0% 50%;}
-        50% {background-position: 100% 50%;}
-        100% {background-position: 0% 50%;}
+        background-image: url("https://images.unsplash.com/photo-1532187863486-abf9dbad1b69?q=80&w=2000&auto=format&fit=crop");
+        background-size: cover;
+        background-position: center;
+        background-attachment: fixed;
     }
     
-    /* Deixa o topo transparente para não cortar a animação */
+    /* Overlay para escurecer a imagem e dar contraste */
+    .stApp::before {
+        content: "";
+        position: absolute;
+        top: 0; left: 0; right: 0; bottom: 0;
+        background-color: rgba(0, 35, 149, 0.4); /* Azul escuro semi-transparente */
+        z-index: 0;
+    }
+    
     [data-testid="stHeader"] { background-color: transparent !important; }
     
-    /* Card de Login Adaptável ao Tema Dark/Light */
+    /* Card de Login Branco Flutuante (Independente do Tema) */
     [data-testid="stForm"] {
-        background-color: var(--secondary-background-color) !important;
-        border-radius: 15px !important;
-        border: 1px solid var(--border-color) !important;
-        box-shadow: 0 15px 35px rgba(0,0,0,0.4) !important;
+        background-color: #FFFFFF !important;
+        border-radius: 12px !important;
+        border: none !important;
+        box-shadow: 0 20px 40px rgba(0,0,0,0.5) !important;
         padding: 40px !important;
         margin-top: 5vh;
-        opacity: 0.95;
+        position: relative;
+        z-index: 1;
     }
     
-    /* Botão de Login Azul São Francisco */
+    /* Força os textos do login a serem escuros, ignorando o dark mode do celular */
+    [data-testid="stForm"] p, [data-testid="stForm"] label, [data-testid="stForm"] div {
+        color: #333333 !important;
+    }
+    
+    /* Caixas de input no login */
+    [data-testid="stForm"] input {
+        background-color: #F8F9FA !important;
+        color: #333333 !important;
+        -webkit-text-fill-color: #333333 !important;
+        border: 1px solid #E5E7EB !important;
+    }
+    
     div.stButton > button[kind="primary"] {
         background-color: #002395 !important;
         color: #FFFFFF !important;
@@ -123,7 +156,6 @@ if not st.session_state['logado']:
     }
     div.stButton > button[kind="primary"]:hover {
         background-color: #4A69BD !important;
-        transform: scale(1.02);
     }
     </style>
     """, unsafe_allow_html=True)
@@ -135,9 +167,9 @@ if not st.session_state['logado']:
             col_logo1, col_logo2, col_logo3 = st.columns([1, 2, 1])
             with col_logo2:
                 try: st.image("logo.png", use_container_width=True)
-                except: st.markdown("<h2 style='text-align: center; color:var(--text-color);'>SÃO FRANCISCO</h2>", unsafe_allow_html=True)
+                except: st.markdown("<h2 style='text-align: center; color:#002395 !important;'>SÃO FRANCISCO</h2>", unsafe_allow_html=True)
             
-            st.markdown("<h4 style='text-align: center; color:var(--text-color); margin-bottom:30px;'>Acesso ao Sistema Analítico</h4>", unsafe_allow_html=True)
+            st.markdown("<h4 style='text-align: center; color:#333333 !important; margin-bottom:30px;'>Acesso ao Sistema Analítico</h4>", unsafe_allow_html=True)
             
             usuario_input = st.text_input("👤 Nome de Usuário:")
             senha_input = st.text_input("🔑 Senha de Acesso:", type="password")
@@ -152,33 +184,29 @@ if not st.session_state['logado']:
                     st.session_state['logado'] = True
                     st.session_state['usuario'] = usuario_input
                     st.session_state['nivel_acesso'] = str(usuario_encontrado.iloc[0]['Nivel_Acesso'])
+                    st.session_state['unidades_permitidas'] = str(usuario_encontrado.iloc[0]['Unidades_Permitidas'])
                     st.rerun()
                 else:
                     st.error("❌ Usuário ou senha incorretos. Acesso negado.")
     st.stop()
 
 # ==========================================
-# CSS DO SISTEMA INTERNO (ADAPTÁVEL DARK/LIGHT)
+# CSS DO SISTEMA INTERNO (LIMPO E ADAPTÁVEL)
 # ==========================================
 st.markdown("""
     <style>
-    /* Remove a animação do fundo depois que loga e respeita o tema do usuário */
-    .stApp { background: var(--background-color) !important; animation: none !important; }
+    /* Remove a imagem de fundo pesada quando entra no sistema */
+    .stApp { background-image: none !important; background-color: var(--background-color) !important;}
+    .stApp::before { display: none !important; }
     
-    /* Estilização dos Cartões de Métrica */
     div[data-testid="metric-container"] {
         background-color: var(--secondary-background-color) !important;
         border: 1px solid var(--border-color) !important;
         padding: 20px !important; border-radius: 12px !important;
-        box-shadow: 0 4px 6px rgba(0,0,0,0.1) !important; 
+        box-shadow: 0 4px 6px rgba(0,0,0,0.05) !important; 
         border-left: 5px solid #002395 !important;
     }
-    
-    /* Destaca abas selecionadas com a cor da empresa */
-    .stTabs [aria-selected="true"] {
-        border-bottom-color: #002395 !important;
-        color: #002395 !important;
-    }
+    .stTabs [aria-selected="true"] { border-bottom-color: #002395 !important; color: #002395 !important; }
     </style>
 """, unsafe_allow_html=True)
 
@@ -252,14 +280,16 @@ def extrair_dados_pdf(texto_bruto):
     return pd.DataFrame(dados)
 
 # ==========================================
-# 6. MENU LATERAL
+# 6. MENU LATERAL E DADOS
 # ==========================================
 try: st.sidebar.image("logo.png", use_container_width=True)
 except: st.sidebar.empty() 
 
 nivel_atual = st.session_state.get('nivel_acesso', 'Visualizador')
+unid_perm = st.session_state.get('unidades_permitidas', 'Todas')
+
 st.sidebar.markdown(f"### 👋 Olá, **{st.session_state['usuario'].capitalize()}**")
-st.sidebar.markdown(f"<span style='color:#002395; font-weight:bold;'>• Nível: {nivel_atual}</span>", unsafe_allow_html=True)
+st.sidebar.markdown(f"<span style='color:#002395; font-weight:bold;'>• {nivel_atual}</span>", unsafe_allow_html=True)
 st.sidebar.markdown("---")
 
 opcoes_menu = ["🏢 Análise por Unidade", "📈 Relatório Comparativo Avançado"]
@@ -279,6 +309,11 @@ df_historico = carregar_dados_salvos()
 if not df_historico.empty:
     df_historico['Data_Obj'] = pd.to_datetime(df_historico['Data'], format="%d/%m/%Y", errors='coerce')
     df_historico['Mês/Ano'] = df_historico['Data_Obj'].dt.strftime('%m/%Y').fillna('Desconhecido')
+    
+    # APLICAÇÃO DO FILTRO DE PERMISSÃO DE UNIDADES (Apenas visualizadores sofrem restrição)
+    if unid_perm != "Todas" and st.session_state['usuario'] != "vhpezzeti":
+        unidades_liberadas = [u.strip() for u in unid_perm.split(",")]
+        df_historico = df_historico[df_historico['Unidade'].isin(unidades_liberadas)]
 
 # ==========================================
 # 7. TELAS DO SISTEMA
@@ -287,7 +322,7 @@ if not df_historico.empty:
 # ----- TELA ADMIN -----
 if menu == "⚙️ Painel do Administrador":
     st.title("⚙️ Painel de Controle Administrativo")
-    st.markdown("Gerencie os acessos da sua equipe e os níveis de permissão no sistema.")
+    st.markdown("Gerencie acessos e defina **quais unidades** cada funcionário pode visualizar.")
     st.markdown("<br>", unsafe_allow_html=True)
     
     tab1, tab2, tab3 = st.tabs(["➕ Cadastrar Novo", "✏️ Editar / Excluir", "📋 Lista de Acessos"])
@@ -298,26 +333,34 @@ if menu == "⚙️ Painel do Administrador":
     with tab1:
         st.markdown("#### Criar Nova Credencial")
         with st.container(border=True):
-            col1, col2, col3 = st.columns(3)
+            col1, col2 = st.columns(2)
             with col1: novo_usuario = st.text_input("Login do Funcionário:")
             with col2: nova_senha = st.text_input("Senha de Acesso:", type="password")
-            with col3: novo_nivel = st.selectbox("Nível de Permissão:", ["Visualizador (Apenas Gráficos)", "Operador (Gráficos + Upload)", "Administrador (Acesso Total)"])
+            
+            st.markdown("---")
+            col3, col4 = st.columns(2)
+            with col3: 
+                novo_nivel = st.selectbox("Nível de Permissão:", ["Visualizador (Apenas Gráficos)", "Operador (Gráficos + Upload)", "Administrador (Acesso Total)"])
+            with col4:
+                nova_unid_perm = st.multiselect("Unidades Permitidas (Deixe vazio para dar acesso a TODAS):", UNIDADES_OFICIAIS)
             
             st.markdown("<br>", unsafe_allow_html=True)
-            if st.button("Salvar Cadastro ✔️", use_container_width=True):
+            if st.button("Salvar Cadastro ✔️", type="primary", use_container_width=True):
                 if novo_usuario and nova_senha:
                     if novo_usuario in lista_usuarios:
                         st.error("❌ Este login já existe no sistema.")
                     else:
                         senha_salva = f"'{nova_senha}" if nova_senha.isdigit() else nova_senha
                         nivel_salvo = novo_nivel.split(" ")[0]
-                        novo_registro = pd.DataFrame([{"Usuario": novo_usuario, "Senha": senha_salva, "Nivel_Acesso": nivel_salvo}])
+                        str_unidades = ", ".join(nova_unid_perm) if nova_unid_perm else "Todas"
+                        
+                        novo_registro = pd.DataFrame([{"Usuario": novo_usuario, "Senha": senha_salva, "Nivel_Acesso": nivel_salvo, "Unidades_Permitidas": str_unidades}])
                         df_users_atualizado = pd.concat([df_users_adm, novo_registro], ignore_index=True)
                         salvar_novo_usuario(df_users_atualizado)
-                        st.success(f"✅ Funcionário cadastrado como {nivel_salvo}!")
+                        st.success(f"✅ Funcionário cadastrado com sucesso!")
                         st.rerun()
                 else:
-                    st.warning("Preencha todos os campos antes de salvar.")
+                    st.warning("Preencha Login e Senha antes de salvar.")
                     
     with tab2:
         st.markdown("#### Atualizar Credencial Existente")
@@ -325,18 +368,23 @@ if menu == "⚙️ Painel do Administrador":
             if not lista_usuarios:
                 st.info("Nenhum usuário cadastrado no momento.")
             else:
-                usuario_editar = st.selectbox("Selecione o Usuário:", [""] + lista_usuarios)
+                usuario_editar = st.selectbox("Selecione o Usuário para Editar:", [""] + lista_usuarios)
                 
                 if usuario_editar:
                     user_data = df_users_adm[df_users_adm['Usuario'] == usuario_editar].iloc[0]
                     nivel_atual_ed = user_data.get('Nivel_Acesso', 'Visualizador')
+                    unid_atual_ed = user_data.get('Unidades_Permitidas', 'Todas')
                     
                     opcoes_niveis = ["Visualizador", "Operador", "Administrador"]
                     idx_nivel = opcoes_niveis.index(nivel_atual_ed) if nivel_atual_ed in opcoes_niveis else 0
                     
+                    vetor_unid_atual = [] if unid_atual_ed == "Todas" else [u.strip() for u in str(unid_atual_ed).split(",")]
+                    
                     col_e1, col_e2 = st.columns(2)
                     with col_e1: nova_senha_ed = st.text_input("Nova Senha (deixe em branco para manter a atual):", type="password")
                     with col_e2: novo_nivel_ed = st.selectbox("Novo Nível:", opcoes_niveis, index=idx_nivel)
+                    
+                    novo_vetor_unid = st.multiselect("Alterar Unidades Permitidas (Vazio = Todas):", UNIDADES_OFICIAIS, default=[u for u in vetor_unid_atual if u in UNIDADES_OFICIAIS])
                     
                     st.markdown("<br>", unsafe_allow_html=True)
                     col_btn1, col_btn2 = st.columns(2)
@@ -347,6 +395,7 @@ if menu == "⚙️ Painel do Administrador":
                             if nova_senha_ed:
                                 df_users_adm.at[idx_row, 'Senha'] = f"'{nova_senha_ed}" if nova_senha_ed.isdigit() else nova_senha_ed
                             df_users_adm.at[idx_row, 'Nivel_Acesso'] = novo_nivel_ed
+                            df_users_adm.at[idx_row, 'Unidades_Permitidas'] = ", ".join(novo_vetor_unid) if novo_vetor_unid else "Todas"
                             salvar_novo_usuario(df_users_adm)
                             st.success(f"✅ Conta de {usuario_editar} atualizada!")
                             st.rerun()
@@ -358,7 +407,7 @@ if menu == "⚙️ Painel do Administrador":
                             else:
                                 df_users_adm = df_users_adm[df_users_adm['Usuario'] != usuario_editar]
                                 salvar_novo_usuario(df_users_adm)
-                                st.success(f"✅ Conta excluída com sucesso!")
+                                st.success("✅ Conta excluída com sucesso!")
                                 st.rerun()
 
     with tab3:
@@ -400,7 +449,7 @@ elif menu == "🏢 Análise por Unidade":
     st.title("🏢 Análise Geral de Culturas")
     
     if df_historico.empty:
-        st.info("⚠️ Não há dados no sistema. Faça o upload do primeiro PDF.")
+        st.info("⚠️ Não há dados disponíveis para as unidades que você tem permissão.")
     else:
         with st.container(border=True):
             col_f1, col_f2 = st.columns(2)
@@ -432,7 +481,6 @@ elif menu == "🏢 Análise por Unidade":
             with c_graf1:
                 st.markdown("#### 📊 Distribuição Positivos x Negativos")
                 fig_pizza = px.pie(df_f, names='Resultado', hole=0.5, color='Resultado', color_discrete_map={'Positivo': COR_AZUL_BIC, 'Negativo': COR_CINZA})
-                # O theme="streamlit" garante que o gráfico obedeça o Dark Mode do usuário
                 st.plotly_chart(fig_pizza, use_container_width=True, theme="streamlit")
                 
             with c_graf2:
@@ -451,7 +499,7 @@ elif menu == "📈 Relatório Comparativo Avançado":
     st.title("📈 Inteligência Analítica e Tendências")
     
     if df_historico.empty:
-        st.info("⚠️ Não há dados salvos no sistema.")
+        st.info("⚠️ Não há dados disponíveis para as unidades que você tem permissão.")
     else:
         with st.container(border=True):
             col_filtro1, col_filtro2, col_filtro3 = st.columns(3)
@@ -474,7 +522,6 @@ elif menu == "📈 Relatório Comparativo Avançado":
 
         if not df_pos_comp.empty:
             bacteria_top = df_pos_comp['Bactéria'].value_counts().idxmax()
-            
             if mes_comparativo == "Todos os Meses":
                 mes_pico = df_pos_comp['Mês/Ano'].value_counts().idxmax()
                 texto_mes_pico = f"Mês de Pico: {mes_pico}"
