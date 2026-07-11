@@ -47,7 +47,7 @@ def padronizar_material(material):
     return str(material).strip().rstrip('.').strip()
 
 # ==========================================
-# 3. CONEXÃO COM GOOGLE SHEETS
+# 3. CONEXÃO COM GOOGLE SHEETS E FUNÇÕES B64
 # ==========================================
 conn = st.connection("gsheets", type=GSheetsConnection)
 COLUNAS_DB = ["Data", "Código_Paciente", "Material_Exame", "Resultado", "Bactéria", "Indicados (S)", "Resistentes (R)", "Unidade", "Período_Arquivo"]
@@ -77,6 +77,12 @@ def carregar_usuarios():
 
 def salvar_novo_usuario(df_users): conn.update(worksheet="Usuarios", data=df_users)
 
+def get_base64_image(image_path):
+    if os.path.exists(image_path):
+        with open(image_path, "rb") as img_file:
+            return base64.b64encode(img_file.read()).decode()
+    return None
+
 # ==========================================
 # 4. CONTROLE DE ESTADO (SESSÃO)
 # ==========================================
@@ -86,119 +92,125 @@ if 'nivel_acesso' not in st.session_state: st.session_state['nivel_acesso'] = "V
 if 'unidades_permitidas' not in st.session_state: st.session_state['unidades_permitidas'] = "Todas"
 
 # ==========================================
-# 5. TELA DE LOGIN (MICROSCOPIA + CÁPSULA BRANCA NO LOGO)
+# 5. TELA DE LOGIN 
 # ==========================================
 if not st.session_state['logado']:
-    st.markdown("""
+    
+    # Busca a imagem de fundo no GitHub (fundo.jpg ou fundo.png)
+    bg_b64 = get_base64_image("fundo.jpg")
+    if not bg_b64: bg_b64 = get_base64_image("fundo.png") # Tenta PNG caso você suba em PNG
+    
+    # Se achou a imagem no Git, usa ela. Se não, usa um degradê azul escuro elegante.
+    if bg_b64:
+        bg_css = f"""
+        .stApp {{
+            background-image: linear-gradient(rgba(0, 15, 60, 0.4), rgba(0, 15, 60, 0.7)), url("data:image/jpeg;base64,{bg_b64}") !important;
+            background-size: cover !important;
+            background-position: center !important;
+            background-attachment: fixed !important;
+        }}
+        """
+    else:
+        bg_css = """
+        .stApp {
+            background: linear-gradient(135deg, #000c24 0%, #002395 100%) !important;
+        }
+        """
+
+    st.markdown(f"""
     <style>
-    /* Imagem Inconfundível: Microscópio Real do National Cancer Institute */
-    .stApp {
-        background-image: linear-gradient(rgba(0, 15, 60, 0.4), rgba(0, 15, 60, 0.7)), url("https://images.unsplash.com/photo-1581093458791-9f3c3900df4b?q=80&w=2000&auto=format&fit=crop") !important;
-        background-size: cover !important;
-        background-position: center !important;
-        background-attachment: fixed !important;
-        animation: panBg 30s infinite alternate ease-in-out !important;
-    }
-    @keyframes panBg { from { transform: scale(1); } to { transform: scale(1.05); } }
+    {bg_css}
     
-    [data-testid="stHeader"] { background: transparent !important; }
+    [data-testid="stHeader"] {{ background: transparent !important; }}
     
-    /* O SEU VIDRO FOSCO AMADO */
-    [data-testid="stForm"] {
+    /* Card de Login mais estreito e elegante */
+    [data-testid="stForm"] {{
         background: rgba(255, 255, 255, 0.25) !important;
         backdrop-filter: blur(16px) !important;
         -webkit-backdrop-filter: blur(16px) !important;
         border-radius: 20px !important;
         border: 1px solid rgba(255, 255, 255, 0.4) !important;
         box-shadow: 0px 30px 60px rgba(0,0,0,0.6) !important;
-        padding: 50px 40px 30px 40px !important;
-        margin-top: 2vh;
+        padding: 40px 30px 20px 30px !important; /* Reduzi o padding para não ficar gigante */
+        margin-top: 3vh;
         z-index: 10;
-    }
+    }}
     
     /* Textos Escuros no Vidro */
-    [data-testid="stForm"] p, [data-testid="stForm"] label, [data-testid="stForm"] div { 
+    [data-testid="stForm"] p, [data-testid="stForm"] label, [data-testid="stForm"] div {{ 
         color: #111827 !important; 
         font-weight: 600;
         text-shadow: 0px 1px 2px rgba(255,255,255,0.8) !important;
-    }
+    }}
     
     /* Inputs Brancos/Claros */
-    input[type="text"], input[type="password"] {
+    input[type="text"], input[type="password"] {{
         background-color: rgba(255, 255, 255, 0.95) !important;
         color: #111827 !important;
         -webkit-text-fill-color: #111827 !important;
         border: 1px solid rgba(255, 255, 255, 0.8) !important;
         border-radius: 8px !important;
-        padding: 12px !important;
+        padding: 10px !important;
         box-shadow: inset 0px 2px 4px rgba(0,0,0,0.05) !important;
-    }
-    input[type="text"]:focus, input[type="password"]:focus {
+    }}
+    input[type="text"]:focus, input[type="password"]:focus {{
         border-color: #002395 !important;
         box-shadow: 0 0 0 2px rgba(0, 35, 149, 0.3) !important;
-    }
+    }}
     
     /* Olho da Senha transparente */
-    button[kind="secondary"] { background-color: transparent !important; border: none !important; }
-    button[kind="secondary"] * { color: #4B5563 !important; text-shadow: none !important;}
+    button[kind="secondary"] {{ background-color: transparent !important; border: none !important; }}
+    button[kind="secondary"] * {{ color: #4B5563 !important; text-shadow: none !important;}}
     
     /* Botão de Login Azul São Francisco */
-    div.stButton > button, button[kind="primaryFormSubmit"] {
+    div.stButton > button, button[kind="primaryFormSubmit"] {{
         background-color: #002395 !important; 
         background: #002395 !important;
         color: #FFFFFF !important;
         border: none !important; 
         border-radius: 8px !important; 
-        padding: 12px !important;
+        padding: 10px !important;
         margin-top: 10px !important;
         box-shadow: 0px 4px 15px rgba(0, 35, 149, 0.4) !important;
-    }
-    div.stButton > button *, button[kind="primaryFormSubmit"] * { 
+    }}
+    div.stButton > button *, button[kind="primaryFormSubmit"] * {{ 
         color: #FFFFFF !important; font-weight: 900 !important; font-size: 16px !important; text-shadow: none !important;
-    }
-    div.stButton > button:hover, button[kind="primaryFormSubmit"]:hover { 
+    }}
+    div.stButton > button:hover, button[kind="primaryFormSubmit"]:hover {{ 
         background-color: #4A69BD !important; transform: scale(1.02); 
-    }
+    }}
     
     /* Linha divisória da assinatura */
-    hr.custom-divider {
+    hr.custom-divider {{
         border: 0;
         height: 1px;
         background: linear-gradient(to right, rgba(255,255,255,0), rgba(255,255,255,0.8), rgba(255,255,255,0));
-        margin: 30px 0 20px 0;
-    }
+        margin: 25px 0 15px 0;
+    }}
     </style>
     """, unsafe_allow_html=True)
 
-    col_vazia_esq, col_login, col_vazia_dir = st.columns([1, 1.3, 1])
+    # Mudança aqui: [1.5, 1.1, 1.5] empurra a coluna do meio (login) para ficar mais fina
+    col_vazia_esq, col_login, col_vazia_dir = st.columns([1.5, 1.1, 1.5]) 
+    
     with col_login:
         st.markdown("<br>", unsafe_allow_html=True)
         with st.form(key="login_form"):
             
             # ==========================================
-            # A CÁPSULA BRANCA DO LOGO
+            # LOGO LIMPO (Sem caixa branca esquisita)
             # ==========================================
-            caminho_logo = "logo.png"
-            if os.path.exists(caminho_logo):
-                with open(caminho_logo, "rb") as image_file:
-                    logo_b64 = base64.b64encode(image_file.read()).decode()
+            logo_b64 = get_base64_image("logo.png")
+            if logo_b64:
                 st.markdown(f'''
-                    <div style="display: flex; justify-content: center; margin-bottom: 25px;">
-                        <div style="background-color: rgba(255, 255, 255, 0.95); padding: 15px 35px; border-radius: 16px; box-shadow: 0px 8px 20px rgba(0,0,0,0.2); text-align: center;">
-                            <img src="data:image/png;base64,{logo_b64}" style="max-height: 85px; object-fit: contain;">
-                        </div>
+                    <div style="display: flex; justify-content: center; margin-bottom: 20px;">
+                        <img src="data:image/png;base64,{logo_b64}" style="max-height: 90px; object-fit: contain;">
                     </div>
                 ''', unsafe_allow_html=True)
             else:
-                st.markdown('''
-                    <div style="display: flex; justify-content: center; margin-bottom: 25px;">
-                        <div style="background-color: rgba(255, 255, 255, 0.95); padding: 15px 35px; border-radius: 16px; box-shadow: 0px 8px 20px rgba(0,0,0,0.2); text-align: center;">
-                            <h2 style='margin: 0; color:#002395 !important; font-weight: 900; text-shadow: none;'>SÃO FRANCISCO</h2>
-                        </div>
-                    </div>
-                ''', unsafe_allow_html=True)
+                st.markdown("<h2 style='text-align: center; color:#002395 !important; font-weight: 900; margin-bottom: 20px;'>SÃO FRANCISCO</h2>", unsafe_allow_html=True)
             
-            st.markdown("<h4 style='text-align: center; color:#111827 !important; margin-bottom:30px; font-weight: 800; text-shadow: 0px 1px 2px rgba(255,255,255,0.8);'>Acesso ao Sistema Analítico</h4>", unsafe_allow_html=True)
+            st.markdown("<h5 style='text-align: center; color:#111827 !important; margin-bottom:25px; font-weight: 800; text-shadow: 0px 1px 2px rgba(255,255,255,0.8);'>Acesso ao Sistema Analítico</h5>", unsafe_allow_html=True)
             
             usuario_input = st.text_input("👤 Nome de Usuário:")
             senha_input = st.text_input("🔑 Senha de Acesso:", type="password")
@@ -208,25 +220,23 @@ if not st.session_state['logado']:
             submit_button = st.form_submit_button("Fazer Login 🚀", type="primary", use_container_width=True)
             
             # ==========================================
-            # ASSINATURA EMBUTIDA NO VIDRO
+            # ASSINATURA WARMACHINE
             # ==========================================
             st.markdown("<hr class='custom-divider'>", unsafe_allow_html=True)
             
-            caminho_imagem = "Gemini_Generated_Image_s8ldfcs8ldfcs8ld-removebg-preview.png"
-            if os.path.exists(caminho_imagem):
-                with open(caminho_imagem, "rb") as image_file:
-                    img_base64 = base64.b64encode(image_file.read()).decode()
+            assinatura_b64 = get_base64_image("Gemini_Generated_Image_s8ldfcs8ldfcs8ld-removebg-preview.png")
+            if assinatura_b64:
                 st.markdown(f'''
-                    <div style="text-align: center; padding-bottom: 10px;">
-                        <p style="color: #4B5563; font-size: 10px; font-weight: 800; margin-bottom: 5px; text-transform: uppercase; letter-spacing: 2px; text-shadow: 0px 1px 1px rgba(255,255,255,0.8);">Desenvolvido Por</p>
-                        <img src="data:image/png;base64,{img_base64}" style="max-height: 70px; max-width: 100%; object-fit: contain; margin: 0 auto; display: block; opacity: 0.95;">
+                    <div style="text-align: center; padding-bottom: 5px;">
+                        <p style="color: #4B5563; font-size: 9px; font-weight: 800; margin-bottom: 5px; text-transform: uppercase; letter-spacing: 2px; text-shadow: 0px 1px 1px rgba(255,255,255,0.8);">Desenvolvido Por</p>
+                        <img src="data:image/png;base64,{assinatura_b64}" style="max-height: 60px; max-width: 100%; object-fit: contain; margin: 0 auto; display: block; opacity: 0.95;">
                     </div>
                 ''', unsafe_allow_html=True)
             else:
                 st.markdown('''
-                    <div style="text-align: center; padding-bottom: 10px;">
-                        <p style="color: #4B5563; font-size: 10px; font-weight: 800; margin-bottom: 2px; text-transform: uppercase; letter-spacing: 2px; text-shadow: 0px 1px 1px rgba(255,255,255,0.8);">Desenvolvido Por</p>
-                        <p style="text-align: center; color: #002395; font-weight: 900; margin: 0; font-size: 18px; text-shadow: 0px 1px 2px rgba(255,255,255,0.9);">V PEZZETI WarMachine</p>
+                    <div style="text-align: center; padding-bottom: 5px;">
+                        <p style="color: #4B5563; font-size: 9px; font-weight: 800; margin-bottom: 2px; text-transform: uppercase; letter-spacing: 2px; text-shadow: 0px 1px 1px rgba(255,255,255,0.8);">Desenvolvido Por</p>
+                        <p style="text-align: center; color: #002395; font-weight: 900; margin: 0; font-size: 16px; text-shadow: 0px 1px 2px rgba(255,255,255,0.9);">V PEZZETI WarMachine</p>
                     </div>
                 ''', unsafe_allow_html=True)
 
