@@ -78,20 +78,20 @@ def padronizar_bacteria(nome):
     if pd.isna(nome) or nome == "N/A": return "N/A"
     n = str(nome).strip().lower()
     
+    # Dicionário de Correção Universal (Pega qualquer variação de erro do PDF)
     if "coli" in n or "escherichia" in n: return "Escherichia coli"
     if "proteus" in n: return "Proteus sp."
-    if "enterobacter" in n: return "Enterobacter sp."
-    if "pseudomonas" in n: return "Pseudomonas sp."
+    if "enterobact" in n: return "Enterobacter sp."
+    if "pseudomon" in n: return "Pseudomonas sp."
     if "klebsiella" in n: return "Klebsiella sp."
-    if "staphylococcu" in n: return "Staphylococcus sp."
-    if "streptococcu" in n: return "Streptococcus sp."
-    if "enterococcu" in n: return "Enterococcus sp."
+    if "staphylococc" in n: return "Staphylococcus sp."
+    if "streptococc" in n: return "Streptococcus sp."
+    if "enterococc" in n: return "Enterococcus sp."
     
     return str(nome).strip().title()
 
 def padronizar_material(material):
     if pd.isna(material): return "Desconhecido"
-    # Remove espaços vazios e qualquer ponto final (.) no final da frase
     return str(material).strip().rstrip('.').strip()
 
 # ==========================================
@@ -106,7 +106,6 @@ def carregar_dados_salvos():
         df = df.dropna(how="all")
         if df.empty: return pd.DataFrame(columns=COLUNAS_DB)
         
-        # Limpa o histórico em tempo real antes de exibir nos gráficos
         df['Bactéria'] = df['Bactéria'].apply(padronizar_bacteria)
         df['Unidade'] = df['Unidade'].apply(padronizar_unidade)
         df['Material_Exame'] = df['Material_Exame'].apply(padronizar_material)
@@ -226,13 +225,16 @@ def extrair_dados_pdf(texto_bruto):
             else:
                 linha["Resultado"] = "Positivo"
                 
-                match_bac = re.search(r'(?:identificado|MIC|1:|\.1:|aer[oó]bia.*?:|anaer[oó]bia.*?:)\s*([A-Z][a-z]{3,}(?:\s+[a-z]{3,})?(?:\s+sp\.?)?)', sub, re.IGNORECASE)
+                # Caçador 100% blindado contra "Micro" e "Micrp" (Exige os dois pontos :)
+                regex_bac = r'(?i:identificado|MIC|\b1|\.1|aer[oó]bia[^:]*|anaer[oó]bia[^:]*)\s*:\s*([A-Z][a-z]{2,}(?:\s+[a-z]{2,})?(?:\s+sp\.?)?)'
+                match_bac = re.search(regex_bac, sub)
                 
                 if match_bac:
                     bac_str = match_bac.group(1).replace(":", "").strip()
                     if "Não houve" not in bac_str and "Aplic" not in bac_str:
                         linha["Bactéria"] = padronizar_bacteria(bac_str)
                 else:
+                    # Plano B (Garante que nunca fique em branco)
                     for bac_name in ["Escherichia", "Proteus", "Enterobacter", "Pseudomonas", "Klebsiella", "Staphylococcus", "Streptococcus", "Enterococcus"]:
                         if bac_name.lower() in sub.lower():
                             linha["Bactéria"] = padronizar_bacteria(bac_name)
@@ -274,11 +276,6 @@ if st.sidebar.button("Sair da Conta"):
     st.rerun()
 st.sidebar.markdown("---")
 
-try:
-    st.sidebar.image("assinatura.png", use_container_width=True)
-except:
-    st.sidebar.caption("Desenvolvido por: Seu Nome")
-
 df_historico = carregar_dados_salvos()
 if not df_historico.empty:
     df_historico['Data_Obj'] = pd.to_datetime(df_historico['Data'], format="%d/%m/%Y", errors='coerce')
@@ -288,7 +285,6 @@ if not df_historico.empty:
 # TELAS DO SISTEMA
 # ==========================================
 
-# ----- TELA ADMIN -----
 if menu == "⚙️ Painel do Administrador":
     st.title("Painel de Controle - Acesso Restrito")
     st.write("Gerencie os acessos da sua equipe.")
@@ -318,7 +314,6 @@ if menu == "⚙️ Painel do Administrador":
     st.markdown("### Funcionários Cadastrados")
     st.dataframe(carregar_usuarios(), use_container_width=True)
 
-# ----- TELA DE UPLOAD -----
 elif menu == "📂 Upload de Dados":
     st.title("Importação de Resultados PDF")
     st.write("Suba o arquivo do sistema. Os dados serão lidos, higienizados e salvos na Nuvem.")
@@ -345,7 +340,6 @@ elif menu == "📂 Upload de Dados":
                 else:
                     st.warning("Não foi possível encontrar dados válidos neste PDF.")
 
-# ----- TELA DASHBOARD BÁSICO -----
 elif menu == "🏢 Análise por Unidade":
     st.title("Análise Geral de Culturas")
     
@@ -387,7 +381,6 @@ elif menu == "🏢 Análise por Unidade":
             st.markdown("### Detalhamento Geral")
             st.dataframe(df_pos[['Data', 'Unidade', 'Material_Exame', 'Bactéria', 'Indicados (S)', 'Resistentes (R)']], use_container_width=True)
 
-# ----- TELA COMPARATIVO AVANÇADO -----
 elif menu == "📈 Relatório Comparativo Avançado":
     st.title("Painel de Inteligência Analítica")
     
