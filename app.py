@@ -91,7 +91,7 @@ def salvar_novo_usuario(df_users):
     conn.update(worksheet="Usuarios", data=df_users)
 
 # ==========================================
-# 4. TELA DE LOGIN BLINDADA
+# 4. TELA DE LOGIN BLINDADA (CSS NUCLEAR)
 # ==========================================
 if 'logado' not in st.session_state: st.session_state['logado'] = False
 if 'usuario' not in st.session_state: st.session_state['usuario'] = ""
@@ -101,44 +101,47 @@ if 'unidades_permitidas' not in st.session_state: st.session_state['unidades_per
 if not st.session_state['logado']:
     st.markdown("""
     <style>
-    /* Injeção forçada do fundo via HTML (Placa de Petri em Microbiologia) */
-    .fundo-animado {
-        position: fixed;
-        top: 0; left: 0; width: 100vw; height: 100vh;
-        background-image: url("https://images.unsplash.com/photo-1576086213369-97a306d36557?q=80&w=2000&auto=format&fit=crop");
-        background-size: cover;
-        background-position: center;
-        filter: brightness(0.4) sepia(0.1) hue-rotate(190deg); /* Azul profundo de laboratório */
-        z-index: -9999;
-        animation: panCamera 20s infinite alternate ease-in-out;
-    }
-    
-    @keyframes panCamera {
-        0% { transform: scale(1); }
-        100% { transform: scale(1.08); }
-    }
-    
-    /* Deixa o fundo padrão transparente */
-    [data-testid="stAppViewContainer"], [data-testid="stHeader"] {
+    /* 1. Destrói o fundo branco do Streamlit tornando-o 100% transparente */
+    body, .stApp, .main, [data-testid="stAppViewContainer"], [data-testid="stHeader"] {
+        background: transparent !important;
         background-color: transparent !important;
     }
     
-    /* Card de Login Branco Flutuante */
+    /* 2. Injeta a nossa imagem como o único fundo real absoluto */
+    .fundo-nuclear {
+        position: fixed;
+        top: 0; left: 0; width: 100vw; height: 100vh;
+        background-image: url('https://images.unsplash.com/photo-1532187863486-abf9dbad1b69?q=80&w=2000&auto=format&fit=crop');
+        background-size: cover;
+        background-position: center;
+        filter: brightness(0.4) sepia(0.2) hue-rotate(190deg);
+        z-index: -99999;
+        animation: zoom 20s infinite alternate ease-in-out;
+    }
+    @keyframes zoom {
+        from { transform: scale(1); }
+        to { transform: scale(1.1); }
+    }
+    
+    /* 3. O Card Branco do Login */
     [data-testid="stForm"] {
         background-color: #FFFFFF !important;
         border-radius: 12px !important;
-        border: none !important;
-        box-shadow: 0 20px 40px rgba(0,0,0,0.6) !important;
+        border: 2px solid #E5E7EB !important;
+        box-shadow: 0px 20px 50px rgba(0,0,0,0.8) !important;
         padding: 40px !important;
         margin-top: 5vh;
+        z-index: 10;
     }
     
-    /* Títulos e Labels para Escuro */
-    [data-testid="stForm"] p { color: #333333 !important; }
-    [data-testid="stForm"] label p { color: #333333 !important; font-weight: 600 !important; }
+    /* 4. Força textos e labels a ficarem escuros */
+    [data-testid="stForm"] p, [data-testid="stForm"] label, [data-testid="stForm"] span, [data-testid="stForm"] div {
+        color: #333333 !important;
+        background: transparent !important; /* Corrige o bug do fundo cinza no checkbox */
+    }
     
-    /* Apenas as Caixas de Texto (Sem afetar checkboxes ou botões secundários) */
-    input[type="text"], input[type="password"] {
+    /* 5. Estilo das caixas de input */
+    [data-testid="stForm"] input {
         background-color: #F8F9FA !important;
         color: #333333 !important;
         -webkit-text-fill-color: #333333 !important;
@@ -146,36 +149,26 @@ if not st.session_state['logado']:
         border-radius: 6px !important;
     }
     
-    /* Correção do Olho de Senha (Discreto e Fundo Transparente) */
-    [data-testid="stForm"] button[kind="secondary"] {
-        background-color: transparent !important;
-        border: none !important;
-        color: #A0AEC0 !important;
-    }
-    [data-testid="stForm"] button[kind="secondary"]:hover {
-        background-color: #E2E8F0 !important;
-    }
-    
-    /* Botão de Login Principal (Azul com Texto Branco) */
-    div.stButton > button[kind="primary"] {
+    /* 6. FORÇA O BOTÃO A FICAR AZUL SÃO FRANCISCO (Adeus Vermelho!) */
+    [data-testid="stForm"] button, div.stButton > button {
         background-color: #002395 !important;
-        border-radius: 8px !important; 
-        border: none !important; 
-        transition: transform 0.2s ease !important;
-        padding: 10px !important;
+        border: none !important;
+        border-radius: 8px !important;
+        box-shadow: 0 4px 6px rgba(0,0,0,0.1) !important;
     }
-    div.stButton > button[kind="primary"] p {
+    [data-testid="stForm"] button p, div.stButton > button p {
         color: #FFFFFF !important;
-        font-weight: bold !important;
+        font-weight: 900 !important;
         font-size: 16px !important;
     }
-    div.stButton > button[kind="primary"]:hover { 
-        background-color: #4A69BD !important; 
+    [data-testid="stForm"] button:hover {
+        background-color: #4A69BD !important;
         transform: scale(1.02);
     }
     </style>
     
-    <div class="fundo-animado"></div>
+    <!-- Aplica a imagem real por HTML -->
+    <div class="fundo-nuclear"></div>
     """, unsafe_allow_html=True)
 
     col_vazia_esq, col_login, col_vazia_dir = st.columns([1, 1.2, 1])
@@ -192,11 +185,11 @@ if not st.session_state['logado']:
             usuario_input = st.text_input("👤 Nome de Usuário:")
             senha_input = st.text_input("🔑 Senha de Acesso:", type="password")
             
-            # Checkbox funcionando visualmente perfeito
+            # Checkbox consertado
             lembrar_senha = st.checkbox("Lembrar senha neste computador")
             
             st.markdown("<br>", unsafe_allow_html=True)
-            submit_button = st.form_submit_button("Fazer Login 🚀", type="primary", use_container_width=True)
+            submit_button = st.form_submit_button("Fazer Login 🚀", use_container_width=True)
             
             if submit_button:
                 df_usuarios = carregar_usuarios()
@@ -217,18 +210,26 @@ if not st.session_state['logado']:
 # ==========================================
 st.markdown("""
     <style>
-    /* Esconde o fundo da placa de petri depois do login */
-    .fundo-animado { display: none !important; }
-    .stApp { background-color: var(--background-color) !important;}
+    /* Mata a imagem do laboratório para o Dashboard ficar limpo */
+    .fundo-nuclear { display: none !important; }
+    body, .stApp, .main, [data-testid="stAppViewContainer"] { 
+        background: #F4F6F9 !important; 
+        background-color: #F4F6F9 !important; 
+    }
     
     div[data-testid="metric-container"] {
-        background-color: var(--secondary-background-color) !important;
-        border: 1px solid var(--border-color) !important;
+        background-color: #FFFFFF !important;
+        border: 1px solid #E5E7EB !important;
         padding: 20px !important; border-radius: 12px !important;
         box-shadow: 0 4px 6px rgba(0,0,0,0.05) !important; 
         border-left: 5px solid #002395 !important;
     }
     .stTabs [aria-selected="true"] { border-bottom-color: #002395 !important; color: #002395 !important; }
+    
+    /* Garante botões azuis dentro do sistema */
+    div.stButton > button { background-color: #002395 !important; border: none !important; }
+    div.stButton > button p { color: #FFFFFF !important; font-weight: bold !important; }
+    div.stButton > button:hover { background-color: #4A69BD !important; }
     </style>
 """, unsafe_allow_html=True)
 
@@ -367,7 +368,7 @@ if menu == "⚙️ Painel do Administrador":
                 nova_unid_perm = st.multiselect("Unidades Permitidas (Deixe vazio para dar acesso a TODAS):", UNIDADES_OFICIAIS)
             
             st.markdown("<br>", unsafe_allow_html=True)
-            if st.button("Salvar Cadastro ✔️", type="primary", use_container_width=True):
+            if st.button("Salvar Cadastro ✔️", use_container_width=True):
                 if novo_usuario and nova_senha:
                     if novo_usuario in lista_usuarios:
                         st.error("❌ Este login já existe no sistema.")
@@ -445,7 +446,7 @@ elif menu == "📂 Upload de Dados":
         arquivo_upload = st.file_uploader("Arraste seu arquivo PDF aqui 👇", type=['pdf', 'txt'])
         
         if arquivo_upload is not None:
-            if st.button("Processar e Salvar no Banco de Dados ☁️", type="primary", use_container_width=True):
+            if st.button("Processar e Salvar no Banco de Dados ☁️", use_container_width=True):
                 with st.spinner('Lendo arquivo, aplicando filtros de inteligência e salvando...'):
                     texto_dados = ""
                     if arquivo_upload.name.endswith('.pdf'):
