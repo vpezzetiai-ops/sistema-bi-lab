@@ -11,7 +11,6 @@ from streamlit_gsheets import GSheetsConnection
 st.set_page_config(page_title="Sistema BI - São Francisco", layout="wide", initial_sidebar_state="expanded")
 
 COR_AZUL_BIC = '#002395'
-COR_CINZA = '#808080'
 PALETA_CORES = ['#002395', '#4A69BD', '#708ad4', '#808080', '#A6A6A6', '#C0C0C0', '#d9d9d9']
 
 # ==========================================
@@ -78,42 +77,53 @@ def salvar_novo_usuario(df_users):
     conn.update(worksheet="Usuarios", data=df_users)
 
 # ==========================================
-# 4. TELA DE LOGIN COM DESIGN PROFISSIONAL
+# 4. TELA DE LOGIN (ANIMAÇÃO + MODO DARK/LIGHT)
 # ==========================================
 if 'logado' not in st.session_state: st.session_state['logado'] = False
 if 'usuario' not in st.session_state: st.session_state['usuario'] = ""
 if 'nivel_acesso' not in st.session_state: st.session_state['nivel_acesso'] = "Visualizador"
 
 if not st.session_state['logado']:
-    # CSS Específico para a Tela de Login (Imagem de Fundo e Glassmorphism)
     st.markdown("""
     <style>
+    /* Animação de Fundo (Degradê Azul Profissional) */
     .stApp {
-        background-image: url("https://images.unsplash.com/photo-1581093458791-9f3c3900df4b?q=80&w=2000&auto=format&fit=crop");
-        background-size: cover;
-        background-position: center;
-        background-attachment: fixed;
+        background: linear-gradient(-45deg, #002395, #4A69BD, #1a2a6c, #00155f) !important;
+        background-size: 400% 400% !important;
+        animation: gradientBG 15s ease infinite !important;
     }
+    @keyframes gradientBG {
+        0% {background-position: 0% 50%;}
+        50% {background-position: 100% 50%;}
+        100% {background-position: 0% 50%;}
+    }
+    
+    /* Deixa o topo transparente para não cortar a animação */
     [data-testid="stHeader"] { background-color: transparent !important; }
     
+    /* Card de Login Adaptável ao Tema Dark/Light */
     [data-testid="stForm"] {
-        background: rgba(255, 255, 255, 0.90) !important;
-        backdrop-filter: blur(10px) !important;
-        -webkit-backdrop-filter: blur(10px) !important;
+        background-color: var(--secondary-background-color) !important;
         border-radius: 15px !important;
-        border: 1px solid rgba(255,255,255,0.3) !important;
-        box-shadow: 0 15px 35px rgba(0, 35, 149, 0.3) !important;
+        border: 1px solid var(--border-color) !important;
+        box-shadow: 0 15px 35px rgba(0,0,0,0.4) !important;
         padding: 40px !important;
         margin-top: 5vh;
+        opacity: 0.95;
     }
+    
+    /* Botão de Login Azul São Francisco */
     div.stButton > button[kind="primary"] {
-        background-color: #002395 !important; color: #FFFFFF !important;
-        border-radius: 8px !important; border: none !important;
-        font-weight: bold !important; font-size: 16px !important;
-        padding: 10px !important; transition: all 0.3s ease !important;
+        background-color: #002395 !important;
+        color: #FFFFFF !important;
+        border-radius: 8px !important;
+        border: none !important;
+        font-weight: bold !important;
+        transition: all 0.3s ease !important;
     }
     div.stButton > button[kind="primary"]:hover {
-        background-color: #00155f !important; transform: scale(1.02);
+        background-color: #4A69BD !important;
+        transform: scale(1.02);
     }
     </style>
     """, unsafe_allow_html=True)
@@ -125,9 +135,9 @@ if not st.session_state['logado']:
             col_logo1, col_logo2, col_logo3 = st.columns([1, 2, 1])
             with col_logo2:
                 try: st.image("logo.png", use_container_width=True)
-                except: st.markdown("<h2 style='text-align: center; color:#002395;'>SÃO FRANCISCO</h2>", unsafe_allow_html=True)
+                except: st.markdown("<h2 style='text-align: center; color:var(--text-color);'>SÃO FRANCISCO</h2>", unsafe_allow_html=True)
             
-            st.markdown("<h4 style='text-align: center; color: #333333; margin-bottom:30px;'>Acesso ao Sistema Analítico</h4>", unsafe_allow_html=True)
+            st.markdown("<h4 style='text-align: center; color:var(--text-color); margin-bottom:30px;'>Acesso ao Sistema Analítico</h4>", unsafe_allow_html=True)
             
             usuario_input = st.text_input("👤 Nome de Usuário:")
             senha_input = st.text_input("🔑 Senha de Acesso:", type="password")
@@ -148,26 +158,27 @@ if not st.session_state['logado']:
     st.stop()
 
 # ==========================================
-# CSS DO SISTEMA INTERNO (LIMPO E CLARO)
+# CSS DO SISTEMA INTERNO (ADAPTÁVEL DARK/LIGHT)
 # ==========================================
 st.markdown("""
     <style>
-    .stApp { background-image: none !important; background-color: #F4F6F9 !important; }
-    h1, h2, h3, h4 { color: #002395 !important; font-weight: bold !important; }
+    /* Remove a animação do fundo depois que loga e respeita o tema do usuário */
+    .stApp { background: var(--background-color) !important; animation: none !important; }
     
+    /* Estilização dos Cartões de Métrica */
     div[data-testid="metric-container"] {
-        background-color: #FFFFFF !important; border: 1px solid #E5E7EB !important;
+        background-color: var(--secondary-background-color) !important;
+        border: 1px solid var(--border-color) !important;
         padding: 20px !important; border-radius: 12px !important;
-        box-shadow: 0 4px 6px rgba(0,0,0,0.05) !important; border-left: 5px solid #002395 !important;
+        box-shadow: 0 4px 6px rgba(0,0,0,0.1) !important; 
+        border-left: 5px solid #002395 !important;
     }
-    div[data-testid="metric-container"] label { color: #6B7280 !important; font-weight: bold !important; }
-    div[data-testid="metric-container"] div[data-testid="stMetricValue"] { color: #002395 !important; }
     
-    div.stButton > button {
-        background-color: #002395 !important; color: #FFFFFF !important;
-        border-radius: 8px !important; border: none !important; font-weight: bold !important;
+    /* Destaca abas selecionadas com a cor da empresa */
+    .stTabs [aria-selected="true"] {
+        border-bottom-color: #002395 !important;
+        color: #002395 !important;
     }
-    div.stButton > button:hover { background-color: #00155f !important; }
     </style>
 """, unsafe_allow_html=True)
 
@@ -241,7 +252,7 @@ def extrair_dados_pdf(texto_bruto):
     return pd.DataFrame(dados)
 
 # ==========================================
-# 6. MENU LATERAL E DADOS
+# 6. MENU LATERAL
 # ==========================================
 try: st.sidebar.image("logo.png", use_container_width=True)
 except: st.sidebar.empty() 
@@ -320,7 +331,6 @@ if menu == "⚙️ Painel do Administrador":
                     user_data = df_users_adm[df_users_adm['Usuario'] == usuario_editar].iloc[0]
                     nivel_atual_ed = user_data.get('Nivel_Acesso', 'Visualizador')
                     
-                    # Identifica o índice atual no selectbox
                     opcoes_niveis = ["Visualizador", "Operador", "Administrador"]
                     idx_nivel = opcoes_niveis.index(nivel_atual_ed) if nivel_atual_ed in opcoes_niveis else 0
                     
@@ -364,7 +374,7 @@ elif menu == "📂 Upload de Dados":
         arquivo_upload = st.file_uploader("Arraste seu arquivo PDF aqui 👇", type=['pdf', 'txt'])
         
         if arquivo_upload is not None:
-            if st.button("Processar e Salvar no Banco de Dados ☁️", use_container_width=True):
+            if st.button("Processar e Salvar no Banco de Dados ☁️", type="primary", use_container_width=True):
                 with st.spinner('Lendo arquivo, aplicando filtros de inteligência e salvando...'):
                     texto_dados = ""
                     if arquivo_upload.name.endswith('.pdf'):
@@ -392,15 +402,14 @@ elif menu == "🏢 Análise por Unidade":
     if df_historico.empty:
         st.info("⚠️ Não há dados no sistema. Faça o upload do primeiro PDF.")
     else:
-        st.markdown('<div style="background-color: #FFFFFF; padding: 20px; border-radius: 10px; border: 1px solid #E6E9EF; margin-bottom: 20px;">', unsafe_allow_html=True)
-        col_f1, col_f2 = st.columns(2)
-        with col_f1:
-            periodos = ["Todos os Meses"] + sorted(list(df_historico[df_historico['Mês/Ano'] != 'Desconhecido']['Mês/Ano'].unique()))
-            periodo_sel = st.selectbox("📅 Selecione o Mês:", periodos)
-        with col_f2:
-            unidades = ["Todas as Unidades"] + sorted(list(df_historico['Unidade'].unique()))
-            unidade_sel = st.selectbox("🏢 Selecione a Unidade:", unidades)
-        st.markdown('</div>', unsafe_allow_html=True)
+        with st.container(border=True):
+            col_f1, col_f2 = st.columns(2)
+            with col_f1:
+                periodos = ["Todos os Meses"] + sorted(list(df_historico[df_historico['Mês/Ano'] != 'Desconhecido']['Mês/Ano'].unique()))
+                periodo_sel = st.selectbox("📅 Selecione o Mês:", periodos)
+            with col_f2:
+                unidades = ["Todas as Unidades"] + sorted(list(df_historico['Unidade'].unique()))
+                unidade_sel = st.selectbox("🏢 Selecione a Unidade:", unidades)
         
         df_f = df_historico.copy()
         if periodo_sel != "Todos os Meses": df_f = df_f[df_f['Mês/Ano'] == periodo_sel]
@@ -408,6 +417,7 @@ elif menu == "🏢 Análise por Unidade":
             
         t_pos = len(df_f[df_f['Resultado'] == 'Positivo'])
         
+        st.markdown("<br>", unsafe_allow_html=True)
         c1, c2, c3 = st.columns(3)
         c1.metric("Total de Exames Lidos", len(df_f))
         c2.metric("Resultados Positivos 🦠", t_pos)
@@ -422,16 +432,16 @@ elif menu == "🏢 Análise por Unidade":
             with c_graf1:
                 st.markdown("#### 📊 Distribuição Positivos x Negativos")
                 fig_pizza = px.pie(df_f, names='Resultado', hole=0.5, color='Resultado', color_discrete_map={'Positivo': COR_AZUL_BIC, 'Negativo': COR_CINZA})
-                fig_pizza.update_layout(template='plotly_white', margin=dict(t=20, b=20, l=20, r=20))
-                st.plotly_chart(fig_pizza, use_container_width=True, theme=None)
+                # O theme="streamlit" garante que o gráfico obedeça o Dark Mode do usuário
+                st.plotly_chart(fig_pizza, use_container_width=True, theme="streamlit")
                 
             with c_graf2:
                 st.markdown("#### 🧫 Frequência Bacteriana")
                 df_percent = df_pos['Bactéria'].value_counts(normalize=True).mul(100).round(2).reset_index()
                 df_percent.columns = ['Bactéria', '%']
                 fig_bac = px.bar(df_percent, x='%', y='Bactéria', orientation='h', text_auto=True, color='Bactéria', color_discrete_sequence=PALETA_CORES)
-                fig_bac.update_layout(template='plotly_white', yaxis={'categoryorder':'total ascending'}, margin=dict(t=20, b=20, l=20, r=20), showlegend=False)
-                st.plotly_chart(fig_bac, use_container_width=True, theme=None)
+                fig_bac.update_layout(yaxis={'categoryorder':'total ascending'})
+                st.plotly_chart(fig_bac, use_container_width=True, theme="streamlit")
 
             st.markdown("#### 📋 Detalhamento dos Pacientes (Positivos)")
             st.dataframe(df_pos[['Data', 'Unidade', 'Material_Exame', 'Bactéria', 'Indicados (S)', 'Resistentes (R)']], use_container_width=True, hide_index=True)
@@ -443,21 +453,17 @@ elif menu == "📈 Relatório Comparativo Avançado":
     if df_historico.empty:
         st.info("⚠️ Não há dados salvos no sistema.")
     else:
-        st.markdown('<div style="background-color: #FFFFFF; padding: 20px; border-radius: 10px; border: 1px solid #E6E9EF; margin-bottom: 20px;">', unsafe_allow_html=True)
-        col_filtro1, col_filtro2, col_filtro3 = st.columns(3)
-        
-        with col_filtro1:
-            opcoes_mes = ["Todos os Meses"] + sorted(list(df_historico[df_historico['Mês/Ano'] != 'Desconhecido']['Mês/Ano'].unique()))
-            mes_comparativo = st.selectbox("📅 Filtrar Mês:", opcoes_mes)
-            
-        with col_filtro2:
-            opcoes_unidade = ["Todas as Unidades"] + sorted(list(df_historico['Unidade'].unique()))
-            unidade_comparativo = st.selectbox("🏢 Filtrar Unidade:", opcoes_unidade)
-            
-        with col_filtro3:
-            opcoes_exame = ["Todos os Exames"] + sorted(list(df_historico['Material_Exame'].unique()))
-            exame_comparativo = st.selectbox("🧪 Filtrar Material:", opcoes_exame)
-        st.markdown('</div>', unsafe_allow_html=True)
+        with st.container(border=True):
+            col_filtro1, col_filtro2, col_filtro3 = st.columns(3)
+            with col_filtro1:
+                opcoes_mes = ["Todos os Meses"] + sorted(list(df_historico[df_historico['Mês/Ano'] != 'Desconhecido']['Mês/Ano'].unique()))
+                mes_comparativo = st.selectbox("📅 Filtrar Mês:", opcoes_mes)
+            with col_filtro2:
+                opcoes_unidade = ["Todas as Unidades"] + sorted(list(df_historico['Unidade'].unique()))
+                unidade_comparativo = st.selectbox("🏢 Filtrar Unidade:", opcoes_unidade)
+            with col_filtro3:
+                opcoes_exame = ["Todos os Exames"] + sorted(list(df_historico['Material_Exame'].unique()))
+                exame_comparativo = st.selectbox("🧪 Filtrar Material:", opcoes_exame)
 
         df_comp = df_historico.copy()
         if mes_comparativo != "Todos os Meses": df_comp = df_comp[df_comp['Mês/Ano'] == mes_comparativo]
@@ -475,28 +481,28 @@ elif menu == "📈 Relatório Comparativo Avançado":
             else:
                 texto_mes_pico = f"Mês Analisado: {mes_comparativo}"
                 
+            st.markdown("<br>", unsafe_allow_html=True)
             c_m1, c_m2, c_m3 = st.columns(3)
             c_m1.metric("Total de Positivos Filtrados", len(df_pos_comp))
             c_m2.metric("Bactéria Mais Detectada 🦠", bacteria_top)
             c_m3.metric("Indicador de Volume 📈", texto_mes_pico)
 
-            st.markdown("<br>", unsafe_allow_html=True)
+            st.markdown("---")
             col_g1, col_g2 = st.columns(2)
             
             with col_g1:
-                st.markdown("#### 📊 Crescimento de Positivos ao Longo do Tempo")
+                st.markdown("#### 📊 Crescimento de Positivos")
                 agrupado_tempo = df_pos_comp.groupby('Mês/Ano').size().reset_index(name='Casos')
                 fig_linha = px.area(agrupado_tempo, x='Mês/Ano', y='Casos', markers=True, color_discrete_sequence=[COR_AZUL_BIC])
-                fig_linha.update_layout(template='plotly_white', margin=dict(t=20, b=20, l=20, r=20))
-                st.plotly_chart(fig_linha, use_container_width=True, theme=None)
+                st.plotly_chart(fig_linha, use_container_width=True, theme="streamlit")
                 
             with col_g2:
-                st.markdown("#### 🎯 Top 5 Incidências Bacterianas")
+                st.markdown("#### 🎯 Top 5 Incidências")
                 agrupado_bac = df_pos_comp['Bactéria'].value_counts(normalize=True).mul(100).round(2).reset_index()
                 agrupado_bac.columns = ['Bactéria', '%']
                 fig_bar_bac = px.bar(agrupado_bac.head(5), x='%', y='Bactéria', orientation='h', text_auto=True, color='Bactéria', color_discrete_sequence=PALETA_CORES)
-                fig_bar_bac.update_layout(template='plotly_white', yaxis={'categoryorder':'total ascending'}, margin=dict(t=20, b=20, l=20, r=20), showlegend=False)
-                st.plotly_chart(fig_bar_bac, use_container_width=True, theme=None)
+                fig_bar_bac.update_layout(yaxis={'categoryorder':'total ascending'})
+                st.plotly_chart(fig_bar_bac, use_container_width=True, theme="streamlit")
 
             st.markdown("#### 📌 Detalhamento Estratégico (% Do Total Filtrado)")
             df_percent_final = df_pos_comp.groupby(['Unidade', 'Material_Exame', 'Bactéria']).size().reset_index(name='Casos')
