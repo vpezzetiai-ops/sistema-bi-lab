@@ -78,6 +78,7 @@ def carregar_usuarios():
         df_users = conn.read(worksheet="Usuarios", ttl=0).dropna(how="all")
         if df_users.empty: return pd.DataFrame(columns=["Usuario", "Senha", "Nivel_Acesso", "Unidades_Permitidas"])
         
+        # Garante as colunas novas
         if "Nivel_Acesso" not in df_users.columns: df_users["Nivel_Acesso"] = "Administrador"
         if "Unidades_Permitidas" not in df_users.columns: df_users["Unidades_Permitidas"] = "Todas"
             
@@ -91,7 +92,7 @@ def salvar_novo_usuario(df_users):
     conn.update(worksheet="Usuarios", data=df_users)
 
 # ==========================================
-# 4. TELA DE LOGIN COM VÍDEO DE FUNDO
+# 4. TELA DE LOGIN (EFEITO VÍDEO CINEMATOGRÁFICO)
 # ==========================================
 if 'logado' not in st.session_state: st.session_state['logado'] = False
 if 'usuario' not in st.session_state: st.session_state['usuario'] = ""
@@ -99,27 +100,31 @@ if 'nivel_acesso' not in st.session_state: st.session_state['nivel_acesso'] = "V
 if 'unidades_permitidas' not in st.session_state: st.session_state['unidades_permitidas'] = "Todas"
 
 if not st.session_state['logado']:
-    # Injeção de CSS e HTML5 para o Vídeo de Fundo
     st.markdown("""
     <style>
-    /* Oculta os elementos padrão do topo para limpar a tela */
+    /* Oculta menu superior */
     [data-testid="stHeader"] { background-color: transparent !important; }
     
-    /* Configuração do Vídeo em Tela Cheia */
-    #background-video {
+    /* Efeito de Vídeo Cinematográfico (Substitui o MP4 bloqueado) */
+    [data-testid="stAppViewContainer"]::before {
+        content: "";
         position: fixed;
-        right: 0;
-        bottom: 0;
-        min-width: 100%;
-        min-height: 100%;
-        width: auto;
-        height: auto;
-        z-index: 0;
-        object-fit: cover;
-        filter: brightness(0.35) sepia(0.2) hue-rotate(180deg); /* Escurece e dá um tom azulado de laboratório */
+        top: -10%; left: -10%; width: 120%; height: 120%;
+        background-image: url("https://images.unsplash.com/photo-1532187863486-abf9dbad1b69?q=80&w=2000&auto=format&fit=crop");
+        background-size: cover;
+        background-position: center;
+        filter: brightness(0.35) sepia(0.2) hue-rotate(190deg); /* Tom azul de laboratório */
+        z-index: -1;
+        animation: panVideo 25s infinite alternate ease-in-out;
     }
     
-    /* Card de Login Branco Flutuante */
+    /* O movimento suave que imita câmera de vídeo */
+    @keyframes panVideo {
+        0% { transform: scale(1) translate(0, 0); }
+        100% { transform: scale(1.1) translate(-2%, -2%); }
+    }
+    
+    /* Card de Login Branco Flutuante (Protegido contra Dark Mode) */
     [data-testid="stForm"] {
         background-color: rgba(255, 255, 255, 0.95) !important;
         border-radius: 12px !important;
@@ -128,15 +133,11 @@ if not st.session_state['logado']:
         padding: 40px !important;
         margin-top: 5vh;
         position: relative;
-        z-index: 1; /* Garante que o form fique por cima do vídeo */
+        z-index: 1;
     }
     
-    /* Força os textos do login a serem escuros */
-    [data-testid="stForm"] p, [data-testid="stForm"] label, [data-testid="stForm"] div {
-        color: #333333 !important;
-    }
-    
-    /* Caixas de input no login */
+    /* Força textos escuros e inputs limpos */
+    [data-testid="stForm"] p, [data-testid="stForm"] label, [data-testid="stForm"] div { color: #333333 !important; }
     [data-testid="stForm"] input {
         background-color: #F8F9FA !important;
         color: #333333 !important;
@@ -147,20 +148,10 @@ if not st.session_state['logado']:
     div.stButton > button[kind="primary"] {
         background-color: #002395 !important;
         color: #FFFFFF !important;
-        border-radius: 8px !important;
-        border: none !important;
-        font-weight: bold !important;
-        transition: all 0.3s ease !important;
+        border-radius: 8px !important; border: none !important; font-weight: bold !important;
     }
-    div.stButton > button[kind="primary"]:hover {
-        background-color: #4A69BD !important;
-    }
+    div.stButton > button[kind="primary"]:hover { background-color: #4A69BD !important; transform: scale(1.02); }
     </style>
-    
-    <!-- Código HTML do Vídeo -->
-    <video autoplay loop muted playsinline id="background-video">
-        <source src="https://videos.pexels.com/video-files/8538741/8538741-uhd_2560_1440_25fps.mp4" type="video/mp4">
-    </video>
     """, unsafe_allow_html=True)
 
     col_vazia_esq, col_login, col_vazia_dir = st.columns([1, 1.2, 1])
@@ -194,11 +185,12 @@ if not st.session_state['logado']:
     st.stop()
 
 # ==========================================
-# CSS DO SISTEMA INTERNO (LIMPO E ADAPTÁVEL)
+# CSS DO SISTEMA INTERNO (LIMPO)
 # ==========================================
 st.markdown("""
     <style>
-    /* Remove a imagem de fundo quando entra no sistema */
+    /* Desliga o fundo animado depois do login */
+    [data-testid="stAppViewContainer"]::before { display: none !important; }
     .stApp { background-color: var(--background-color) !important;}
     
     div[data-testid="metric-container"] {
@@ -282,7 +274,7 @@ def extrair_dados_pdf(texto_bruto):
     return pd.DataFrame(dados)
 
 # ==========================================
-# 6. MENU LATERAL E DADOS
+# 6. MENU LATERAL
 # ==========================================
 try: st.sidebar.image("logo.png", use_container_width=True)
 except: st.sidebar.empty() 
@@ -312,7 +304,7 @@ if not df_historico.empty:
     df_historico['Data_Obj'] = pd.to_datetime(df_historico['Data'], format="%d/%m/%Y", errors='coerce')
     df_historico['Mês/Ano'] = df_historico['Data_Obj'].dt.strftime('%m/%Y').fillna('Desconhecido')
     
-    # APLICAÇÃO DO FILTRO DE PERMISSÃO DE UNIDADES (Apenas visualizadores sofrem restrição)
+    # Aplica o filtro de Unidades que o funcionário pode ver
     if unid_perm != "Todas" and st.session_state['usuario'] != "vhpezzeti":
         unidades_liberadas = [u.strip() for u in unid_perm.split(",")]
         df_historico = df_historico[df_historico['Unidade'].isin(unidades_liberadas)]
