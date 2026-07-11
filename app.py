@@ -11,7 +11,7 @@ from streamlit_gsheets import GSheetsConnection
 st.set_page_config(page_title="Sistema BI - São Francisco", layout="wide", initial_sidebar_state="expanded")
 
 COR_AZUL_BIC = '#002395'
-COR_CINZA = '#808080' # CORREÇÃO: Variável definida globalmente
+COR_CINZA = '#808080'
 PALETA_CORES = ['#002395', '#4A69BD', '#708ad4', '#808080', '#A6A6A6', '#C0C0C0', '#d9d9d9']
 
 UNIDADES_OFICIAIS = [
@@ -78,7 +78,6 @@ def carregar_usuarios():
         df_users = conn.read(worksheet="Usuarios", ttl=0).dropna(how="all")
         if df_users.empty: return pd.DataFrame(columns=["Usuario", "Senha", "Nivel_Acesso", "Unidades_Permitidas"])
         
-        # Garante que as colunas existam mesmo em planilhas antigas
         if "Nivel_Acesso" not in df_users.columns: df_users["Nivel_Acesso"] = "Administrador"
         if "Unidades_Permitidas" not in df_users.columns: df_users["Unidades_Permitidas"] = "Todas"
             
@@ -92,7 +91,7 @@ def salvar_novo_usuario(df_users):
     conn.update(worksheet="Usuarios", data=df_users)
 
 # ==========================================
-# 4. TELA DE LOGIN COM IMAGEM MICROBIOLÓGICA REAL
+# 4. TELA DE LOGIN COM VÍDEO DE FUNDO
 # ==========================================
 if 'logado' not in st.session_state: st.session_state['logado'] = False
 if 'usuario' not in st.session_state: st.session_state['usuario'] = ""
@@ -100,40 +99,39 @@ if 'nivel_acesso' not in st.session_state: st.session_state['nivel_acesso'] = "V
 if 'unidades_permitidas' not in st.session_state: st.session_state['unidades_permitidas'] = "Todas"
 
 if not st.session_state['logado']:
+    # Injeção de CSS e HTML5 para o Vídeo de Fundo
     st.markdown("""
     <style>
-    /* Imagem Profissional de Fundo (Células/Microbiologia) */
-    .stApp {
-        background-image: url("https://images.unsplash.com/photo-1532187863486-abf9dbad1b69?q=80&w=2000&auto=format&fit=crop");
-        background-size: cover;
-        background-position: center;
-        background-attachment: fixed;
-    }
-    
-    /* Overlay para escurecer a imagem e dar contraste */
-    .stApp::before {
-        content: "";
-        position: absolute;
-        top: 0; left: 0; right: 0; bottom: 0;
-        background-color: rgba(0, 35, 149, 0.4); /* Azul escuro semi-transparente */
-        z-index: 0;
-    }
-    
+    /* Oculta os elementos padrão do topo para limpar a tela */
     [data-testid="stHeader"] { background-color: transparent !important; }
     
-    /* Card de Login Branco Flutuante (Independente do Tema) */
+    /* Configuração do Vídeo em Tela Cheia */
+    #background-video {
+        position: fixed;
+        right: 0;
+        bottom: 0;
+        min-width: 100%;
+        min-height: 100%;
+        width: auto;
+        height: auto;
+        z-index: 0;
+        object-fit: cover;
+        filter: brightness(0.35) sepia(0.2) hue-rotate(180deg); /* Escurece e dá um tom azulado de laboratório */
+    }
+    
+    /* Card de Login Branco Flutuante */
     [data-testid="stForm"] {
-        background-color: #FFFFFF !important;
+        background-color: rgba(255, 255, 255, 0.95) !important;
         border-radius: 12px !important;
         border: none !important;
-        box-shadow: 0 20px 40px rgba(0,0,0,0.5) !important;
+        box-shadow: 0 20px 40px rgba(0,0,0,0.6) !important;
         padding: 40px !important;
         margin-top: 5vh;
         position: relative;
-        z-index: 1;
+        z-index: 1; /* Garante que o form fique por cima do vídeo */
     }
     
-    /* Força os textos do login a serem escuros, ignorando o dark mode do celular */
+    /* Força os textos do login a serem escuros */
     [data-testid="stForm"] p, [data-testid="stForm"] label, [data-testid="stForm"] div {
         color: #333333 !important;
     }
@@ -158,6 +156,11 @@ if not st.session_state['logado']:
         background-color: #4A69BD !important;
     }
     </style>
+    
+    <!-- Código HTML do Vídeo -->
+    <video autoplay loop muted playsinline id="background-video">
+        <source src="https://videos.pexels.com/video-files/8538741/8538741-uhd_2560_1440_25fps.mp4" type="video/mp4">
+    </video>
     """, unsafe_allow_html=True)
 
     col_vazia_esq, col_login, col_vazia_dir = st.columns([1, 1.2, 1])
@@ -195,9 +198,8 @@ if not st.session_state['logado']:
 # ==========================================
 st.markdown("""
     <style>
-    /* Remove a imagem de fundo pesada quando entra no sistema */
-    .stApp { background-image: none !important; background-color: var(--background-color) !important;}
-    .stApp::before { display: none !important; }
+    /* Remove a imagem de fundo quando entra no sistema */
+    .stApp { background-color: var(--background-color) !important;}
     
     div[data-testid="metric-container"] {
         background-color: var(--secondary-background-color) !important;
