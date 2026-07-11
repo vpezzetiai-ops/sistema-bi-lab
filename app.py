@@ -6,60 +6,49 @@ import PyPDF2
 from streamlit_gsheets import GSheetsConnection
 
 # ==========================================
-# 1. CONFIGURAÇÕES INICIAIS E TEMA PREMIUM
+# 1. CONFIGURAÇÕES INICIAIS
 # ==========================================
 st.set_page_config(page_title="Sistema BI - Laboratório", layout="wide", initial_sidebar_state="expanded")
 
-# A "Armadura CSS" - Força o tema Light e previne bugs de texto invisível no Dark Mode
+# ==========================================
+# 2. CSS AVANÇADO (TEMA, FUNDO E PROTEÇÃO DARK MODE)
+# ==========================================
+# Esse CSS é aplicado em TODAS as páginas para corrigir os inputs pretos
 st.markdown("""
     <style>
-    /* Força o fundo da página inteiro para um cinza super claro e limpo */
-    .stApp, .stApp > header {
-        background-color: #F8F9FA !important;
+    /* Força botões, inputs, selects e uploaders a terem fundo claro e texto escuro sempre */
+    [data-baseweb="input"], [data-baseweb="input"] input {
+        background-color: #FFFFFF !important;
+        color: #333333 !important;
+        -webkit-text-fill-color: #333333 !important;
     }
-    
-    /* Força todas as fontes principais para escuro (Evita texto branco em fundo branco) */
-    .stApp, .stApp p, .stApp span, .stApp label, .stApp li {
+    [data-baseweb="select"] > div {
+        background-color: #FFFFFF !important;
+        color: #333333 !important;
+    }
+    [data-testid="stFileUploaderDropzone"] {
+        background-color: #F8F9FA !important;
+        border: 2px dashed #002395 !important;
+    }
+    [data-testid="stFileUploaderDropzone"] * {
         color: #333333 !important;
     }
     
-    /* Títulos em Azul São Francisco */
-    h1, h2, h3, h4, h5, h6 {
-        color: #002395 !important;
-        font-weight: 700 !important;
-    }
-    
-    /* Menu Lateral */
-    [data-testid="stSidebar"] {
-        background-color: #FFFFFF !important;
-        border-right: 1px solid #E5E7EB !important;
-    }
-    
-    /* Botões Padrão e Primários - Forçando o Azul São Francisco */
-    div.stButton > button {
+    /* Botões Primários Estilizados */
+    div.stButton > button[kind="primary"] {
         background-color: #002395 !important;
         color: #FFFFFF !important;
         border-radius: 8px !important;
         border: none !important;
-        box-shadow: 0 4px 6px rgba(0, 35, 149, 0.2) !important;
         font-weight: 600 !important;
-        padding: 0.5rem 1rem !important;
         transition: all 0.3s ease !important;
     }
-    div.stButton > button:hover {
+    div.stButton > button[kind="primary"]:hover {
         background-color: #00155f !important;
         transform: translateY(-2px);
     }
-    
-    /* Caixas de Texto (Inputs e Selects) */
-    .stTextInput input, .stSelectbox div[data-baseweb="select"] {
-        background-color: #FFFFFF !important;
-        color: #333333 !important;
-        border-radius: 6px !important;
-        border: 1px solid #D1D5DB !important;
-    }
-    
-    /* Cards Flutuantes (Métricas) */
+
+    /* Cards de Métricas */
     div[data-testid="metric-container"] {
         background-color: #FFFFFF !important;
         border: 1px solid #E5E7EB !important;
@@ -68,25 +57,13 @@ st.markdown("""
         box-shadow: 0 4px 10px rgba(0,0,0,0.05) !important;
         border-left: 6px solid #002395 !important;
     }
-    div[data-testid="metric-container"] label {
-        color: #6B7280 !important; /* Cinza para o título da métrica */
-        font-weight: 600 !important;
-    }
-    div[data-testid="metric-container"] div[data-testid="stMetricValue"] {
-        color: #002395 !important; /* Azul para o número */
-        font-weight: 900 !important;
-    }
+    div[data-testid="metric-container"] label { color: #6B7280 !important; font-weight: 600 !important; }
+    div[data-testid="metric-container"] div[data-testid="stMetricValue"] { color: #002395 !important; }
     
-    /* Abas (Tabs) do Painel Admin */
-    .stTabs [data-baseweb="tab"] {
-        background-color: transparent !important;
-        color: #6B7280 !important;
-    }
+    /* Abas do Painel */
     .stTabs [aria-selected="true"] {
-        background-color: #F8F9FA !important;
         color: #002395 !important;
         border-bottom: 3px solid #002395 !important;
-        font-weight: bold !important;
     }
     </style>
 """, unsafe_allow_html=True)
@@ -96,15 +73,13 @@ COR_CINZA = '#808080'
 PALETA_CORES = ['#002395', '#4A69BD', '#708ad4', '#808080', '#A6A6A6', '#C0C0C0', '#d9d9d9']
 
 # ==========================================
-# 2. FUNÇÕES DE LIMPEZA E PADRONIZAÇÃO
+# 3. FUNÇÕES DE LIMPEZA E PADRONIZAÇÃO
 # ==========================================
 def padronizar_unidade(unidade):
     if pd.isna(unidade) or str(unidade).strip() == "" or "Não Informada" in str(unidade): 
         return "Sede / Sem Unidade"
-    
     numeros = re.findall(r'\d+', str(unidade))
     if not numeros: return "Sede / Sem Unidade"
-    
     u_str = str(int(numeros[0]))
     mapa = {
         "1": "1 - Serra Negra", "3": "3 - AME", "4": "4 - Amparo Unidade 4",
@@ -116,7 +91,6 @@ def padronizar_unidade(unidade):
 def padronizar_bacteria(nome):
     if pd.isna(nome) or nome == "N/A": return "N/A"
     n = str(nome).strip().lower()
-    
     if "coli" in n or "escherichia" in n: return "Escherichia coli"
     if "proteus" in n: return "Proteus sp."
     if "enterobact" in n: return "Enterobacter sp."
@@ -125,7 +99,6 @@ def padronizar_bacteria(nome):
     if "staphylococc" in n: return "Staphylococcus sp."
     if "streptococc" in n: return "Streptococcus sp."
     if "enterococc" in n: return "Enterococcus sp."
-    
     return str(nome).strip().title()
 
 def padronizar_material(material):
@@ -133,7 +106,7 @@ def padronizar_material(material):
     return str(material).strip().rstrip('.').strip()
 
 # ==========================================
-# 3. CONEXÃO COM GOOGLE SHEETS
+# 4. CONEXÃO COM GOOGLE SHEETS
 # ==========================================
 conn = st.connection("gsheets", type=GSheetsConnection)
 COLUNAS_DB = ["Data", "Código_Paciente", "Material_Exame", "Resultado", "Bactéria", "Indicados (S)", "Resistentes (R)", "Unidade", "Período_Arquivo"]
@@ -142,11 +115,9 @@ def carregar_dados_salvos():
     try:
         df = conn.read(worksheet="Página1", ttl=0).dropna(how="all")
         if df.empty: return pd.DataFrame(columns=COLUNAS_DB)
-        
         df['Bactéria'] = df['Bactéria'].apply(padronizar_bacteria)
         df['Unidade'] = df['Unidade'].apply(padronizar_unidade)
         df['Material_Exame'] = df['Material_Exame'].apply(padronizar_material)
-        
         df = df[df['Unidade'] != 'Excluir'] 
         return df
     except:
@@ -158,55 +129,98 @@ def salvar_dados(df_final):
 def carregar_usuarios():
     try:
         df_users = conn.read(worksheet="Usuarios", ttl=0).dropna(how="all")
-        if df_users.empty: return pd.DataFrame(columns=["Usuario", "Senha"])
+        # Se for uma planilha nova ou vazia
+        if df_users.empty: return pd.DataFrame(columns=["Usuario", "Senha", "Nivel_Acesso"])
         
+        # Inteligência: Se a planilha for antiga e não tiver a coluna Nivel_Acesso, cria ela dando acesso total a todos
+        if "Nivel_Acesso" not in df_users.columns:
+            df_users["Nivel_Acesso"] = "Administrador"
+            
         df_users['Usuario'] = df_users['Usuario'].astype(str).str.strip()
         df_users['Senha'] = df_users['Senha'].astype(str).str.replace(r'\.0$', '', regex=True).str.lstrip("'").str.strip()
         return df_users
     except:
-        return pd.DataFrame(columns=["Usuario", "Senha"])
+        return pd.DataFrame(columns=["Usuario", "Senha", "Nivel_Acesso"])
 
 def salvar_novo_usuario(df_users):
     conn.update(worksheet="Usuarios", data=df_users)
 
 # ==========================================
-# 4. TELA DE LOGIN 
+# 5. TELA DE LOGIN (COM BACKGROUND CRIATIVO)
 # ==========================================
 if 'logado' not in st.session_state: st.session_state['logado'] = False
 if 'usuario' not in st.session_state: st.session_state['usuario'] = ""
+if 'nivel_acesso' not in st.session_state: st.session_state['nivel_acesso'] = "Visualizador"
 
 if not st.session_state['logado']:
+    # Injeta a imagem de fundo apenas na tela de login
+    st.markdown("""
+    <style>
+    [data-testid="stAppViewContainer"] {
+        background-image: url("https://images.unsplash.com/photo-1576086213369-97a306d36557?q=80&w=2000&auto=format&fit=crop");
+        background-size: cover;
+        background-position: center;
+        background-repeat: no-repeat;
+    }
+    [data-testid="stHeader"] {
+        background-color: transparent !important;
+    }
+    /* Efeito de vidro (Glassmorphism) no card de login */
+    .login-card {
+        background: rgba(255, 255, 255, 0.95);
+        padding: 40px;
+        border-radius: 15px;
+        box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.3);
+        backdrop-filter: blur(10px);
+        -webkit-backdrop-filter: blur(10px);
+        border: 1px solid rgba(255, 255, 255, 0.18);
+        margin-top: 10vh;
+    }
+    </style>
+    """, unsafe_allow_html=True)
+
     col_vazia_esq, col_login, col_vazia_dir = st.columns([1, 1.2, 1])
     with col_login:
-        st.markdown("<br><br>", unsafe_allow_html=True)
-        with st.container(border=True):
-            col_logo1, col_logo2, col_logo3 = st.columns([1, 2, 1])
-            with col_logo2:
-                try: st.image("logo.png", use_container_width=True)
-                except: st.markdown("<h2 style='text-align: center;'>SÃO FRANCISCO</h2>", unsafe_allow_html=True)
+        st.markdown('<div class="login-card">', unsafe_allow_html=True)
+        col_logo1, col_logo2, col_logo3 = st.columns([1, 2, 1])
+        with col_logo2:
+            try: st.image("logo.png", use_container_width=True)
+            except: st.markdown("<h2 style='text-align: center; color:#002395;'>SÃO FRANCISCO</h2>", unsafe_allow_html=True)
+        
+        st.markdown("<h4 style='text-align: center; color: #555; margin-bottom:20px;'>Acesso ao Painel Analítico</h4>", unsafe_allow_html=True)
+        
+        with st.form(key="login_form"):
+            usuario_input = st.text_input("👤 Nome de Usuário:")
+            senha_input = st.text_input("🔑 Senha de Acesso:", type="password")
+            st.markdown("<br>", unsafe_allow_html=True)
+            submit_button = st.form_submit_button("Fazer Login 🚀", type="primary", use_container_width=True)
             
-            st.markdown("<h4 style='text-align: center; color: #808080; margin-bottom:20px;'>Acesso ao Painel Analítico</h4>", unsafe_allow_html=True)
-            
-            with st.form(key="login_form"):
-                usuario_input = st.text_input("👤 Nome de Usuário:")
-                senha_input = st.text_input("🔑 Senha de Acesso:", type="password")
-                st.markdown("<br>", unsafe_allow_html=True)
-                submit_button = st.form_submit_button("Fazer Login 🚀", use_container_width=True)
+            if submit_button:
+                df_usuarios = carregar_usuarios()
+                usuario_encontrado = df_usuarios[df_usuarios['Usuario'] == usuario_input]
                 
-                if submit_button:
-                    df_usuarios = carregar_usuarios()
-                    usuario_encontrado = df_usuarios[df_usuarios['Usuario'] == usuario_input]
-                    
-                    if not usuario_encontrado.empty and str(usuario_encontrado.iloc[0]['Senha']) == senha_input:
-                        st.session_state['logado'] = True
-                        st.session_state['usuario'] = usuario_input
-                        st.rerun()
-                    else:
-                        st.error("❌ Usuário ou senha incorretos. Acesso negado.")
+                if not usuario_encontrado.empty and str(usuario_encontrado.iloc[0]['Senha']) == senha_input:
+                    st.session_state['logado'] = True
+                    st.session_state['usuario'] = usuario_input
+                    st.session_state['nivel_acesso'] = str(usuario_encontrado.iloc[0]['Nivel_Acesso'])
+                    st.rerun()
+                else:
+                    st.error("❌ Usuário ou senha incorretos. Acesso negado.")
+        st.markdown('</div>', unsafe_allow_html=True)
     st.stop()
 
+# Ao logar, garantimos que o fundo volte a ser limpo (cinza clarinho executivo)
+st.markdown("""
+    <style>
+    [data-testid="stAppViewContainer"] {
+        background-image: none !important;
+        background-color: #FAFAFA !important;
+    }
+    </style>
+""", unsafe_allow_html=True)
+
 # ==========================================
-# 5. EXTRAÇÃO DO PDF 
+# 6. EXTRAÇÃO DO PDF 
 # ==========================================
 def extrair_dados_pdf(texto_bruto):
     dados = []
@@ -275,16 +289,25 @@ def extrair_dados_pdf(texto_bruto):
     return pd.DataFrame(dados)
 
 # ==========================================
-# 6. MENU LATERAL E DADOS
+# 7. MENU LATERAL INTELIGENTE BASEADO EM PERMISSÃO
 # ==========================================
 try: st.sidebar.image("logo.png", use_container_width=True)
 except: st.sidebar.empty() 
 
+nivel_atual = st.session_state.get('nivel_acesso', 'Visualizador')
 st.sidebar.markdown(f"### 👋 Olá, **{st.session_state['usuario'].capitalize()}**")
+st.sidebar.markdown(f"*{nivel_atual}*")
 st.sidebar.markdown("---")
 
-opcoes_menu = ["🏢 Análise por Unidade", "📈 Relatório Comparativo Avançado", "📂 Upload de Dados"]
-if st.session_state['usuario'] == "vhpezzeti":  
+# Monta o menu dinamicamente
+opcoes_menu = ["🏢 Análise por Unidade", "📈 Relatório Comparativo Avançado"]
+
+# Se for Operador ou Administrador (Ou se for você, o criador master)
+if nivel_atual in ["Operador", "Administrador"] or st.session_state['usuario'] == "vhpezzeti":
+    opcoes_menu.append("📂 Upload de Dados")
+
+# Se for Administrador
+if nivel_atual == "Administrador" or st.session_state['usuario'] == "vhpezzeti":
     opcoes_menu.append("⚙️ Painel do Administrador")
 
 menu = st.sidebar.radio("Navegação", opcoes_menu)
@@ -300,12 +323,13 @@ if not df_historico.empty:
     df_historico['Mês/Ano'] = df_historico['Data_Obj'].dt.strftime('%m/%Y').fillna('Desconhecido')
 
 # ==========================================
-# TELAS DO SISTEMA
+# 8. TELAS DO SISTEMA
 # ==========================================
 
+# ----- TELA ADMIN -----
 if menu == "⚙️ Painel do Administrador":
     st.title("⚙️ Painel de Controle Administrativo")
-    st.markdown("Gerencie os acessos da sua equipe e monitore quem pode utilizar a plataforma.")
+    st.markdown("Gerencie os acessos da sua equipe e os níveis de permissão no sistema.")
     st.markdown("<br>", unsafe_allow_html=True)
     
     tab1, tab2 = st.tabs(["➕ Cadastrar Novo Funcionário", "📋 Usuários Cadastrados no Sistema"])
@@ -313,22 +337,34 @@ if menu == "⚙️ Painel do Administrador":
     with tab1:
         st.markdown("#### Criar Nova Credencial")
         with st.container(border=True):
-            col1, col2 = st.columns(2)
-            with col1: novo_usuario = st.text_input("Login do Funcionário (Ex: maria.silva):")
-            with col2: nova_senha = st.text_input("Senha de Acesso:", type="password")
+            col1, col2, col3 = st.columns(3)
+            with col1: 
+                novo_usuario = st.text_input("Login do Funcionário (Ex: maria.silva):")
+            with col2: 
+                nova_senha = st.text_input("Senha de Acesso:", type="password")
+            with col3:
+                # O SELETOR MÁGICO DE PERMISSÕES
+                novo_nivel = st.selectbox("Nível de Permissão:", [
+                    "Visualizador (Apenas Gráficos)", 
+                    "Operador (Gráficos + Upload)", 
+                    "Administrador (Acesso Total)"
+                ])
+                
             st.markdown("<br>", unsafe_allow_html=True)
             
-            if st.button("Salvar Cadastro ✔️", use_container_width=True):
+            if st.button("Salvar Cadastro ✔️", type="primary", use_container_width=True):
                 if novo_usuario and nova_senha:
                     df_users = carregar_usuarios()
                     if novo_usuario in df_users['Usuario'].values:
                         st.error("❌ Este login já existe no sistema.")
                     else:
                         senha_salva = f"'{nova_senha}" if nova_senha.isdigit() else nova_senha
-                        novo_registro = pd.DataFrame([{"Usuario": novo_usuario, "Senha": senha_salva}])
+                        nivel_salvo = novo_nivel.split(" ")[0] # Pega só a primeira palavra (Visualizador, Operador, Administrador)
+                        
+                        novo_registro = pd.DataFrame([{"Usuario": novo_usuario, "Senha": senha_salva, "Nivel_Acesso": nivel_salvo}])
                         df_users_atualizado = pd.concat([df_users, novo_registro], ignore_index=True)
                         salvar_novo_usuario(df_users_atualizado)
-                        st.success("✅ Funcionário cadastrado com sucesso!")
+                        st.success(f"✅ Funcionário cadastrado como {nivel_salvo}!")
                 else:
                     st.warning("Preencha todos os campos antes de salvar.")
                     
@@ -337,15 +373,16 @@ if menu == "⚙️ Painel do Administrador":
         df_mostra = carregar_usuarios()
         st.dataframe(df_mostra, use_container_width=True, hide_index=True)
 
+# ----- TELA DE UPLOAD -----
 elif menu == "📂 Upload de Dados":
     st.title("📂 Importação de Resultados PDF")
-    st.markdown("Faça o upload dos arquivos gerados pelo sistema do laboratório. O robô irá higienizar e organizar os dados na Nuvem automaticamente.")
+    st.markdown("Faça o upload dos arquivos gerados pelo sistema do laboratório. O robô irá higienizar e organizar os dados na Nuvem.")
     
     with st.container(border=True):
         arquivo_upload = st.file_uploader("Arraste seu arquivo PDF aqui 👇", type=['pdf', 'txt'])
         
         if arquivo_upload is not None:
-            if st.button("Processar e Salvar no Banco de Dados ☁️", use_container_width=True):
+            if st.button("Processar e Salvar no Banco de Dados ☁️", type="primary", use_container_width=True):
                 with st.spinner('Lendo arquivo, aplicando filtros de inteligência e salvando...'):
                     texto_dados = ""
                     if arquivo_upload.name.endswith('.pdf'):
@@ -366,6 +403,7 @@ elif menu == "📂 Upload de Dados":
                     else:
                         st.error("Não foi possível encontrar dados válidos neste PDF.")
 
+# ----- TELA DASHBOARD BÁSICO -----
 elif menu == "🏢 Análise por Unidade":
     st.title("🏢 Análise Geral de Culturas")
     
@@ -416,6 +454,7 @@ elif menu == "🏢 Análise por Unidade":
             st.markdown("#### 📋 Detalhamento dos Pacientes (Positivos)")
             st.dataframe(df_pos[['Data', 'Unidade', 'Material_Exame', 'Bactéria', 'Indicados (S)', 'Resistentes (R)']], use_container_width=True, hide_index=True)
 
+# ----- TELA COMPARATIVO AVANÇADO -----
 elif menu == "📈 Relatório Comparativo Avançado":
     st.title("📈 Inteligência Analítica e Tendências")
     
