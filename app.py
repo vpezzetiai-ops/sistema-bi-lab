@@ -8,12 +8,11 @@ from streamlit_gsheets import GSheetsConnection
 # ==========================================
 # 1. CONFIGURAÇÕES INICIAIS
 # ==========================================
-st.set_page_config(page_title="Sistema BI - Laboratório", layout="wide", initial_sidebar_state="expanded")
+st.set_page_config(page_title="Sistema BI - São Francisco", layout="wide", initial_sidebar_state="expanded")
 
 # ==========================================
-# 2. CSS AVANÇADO (TEMA, FUNDO E PROTEÇÃO DARK MODE)
+# 2. CSS AVANÇADO (ANIMAÇÕES E PROTEÇÃO DARK MODE)
 # ==========================================
-# Esse CSS é aplicado em TODAS as páginas para corrigir os inputs pretos
 st.markdown("""
     <style>
     /* Força botões, inputs, selects e uploaders a terem fundo claro e texto escuro sempre */
@@ -22,49 +21,37 @@ st.markdown("""
         color: #333333 !important;
         -webkit-text-fill-color: #333333 !important;
     }
-    [data-baseweb="select"] > div {
-        background-color: #FFFFFF !important;
-        color: #333333 !important;
-    }
-    [data-testid="stFileUploaderDropzone"] {
-        background-color: #F8F9FA !important;
-        border: 2px dashed #002395 !important;
-    }
-    [data-testid="stFileUploaderDropzone"] * {
-        color: #333333 !important;
-    }
+    [data-baseweb="select"] > div { background-color: #FFFFFF !important; color: #333333 !important; }
+    [data-testid="stFileUploaderDropzone"] { background-color: #F8F9FA !important; border: 2px dashed #002395 !important; }
+    [data-testid="stFileUploaderDropzone"] * { color: #333333 !important; }
     
     /* Botões Primários Estilizados */
     div.stButton > button[kind="primary"] {
-        background-color: #002395 !important;
-        color: #FFFFFF !important;
-        border-radius: 8px !important;
-        border: none !important;
-        font-weight: 600 !important;
-        transition: all 0.3s ease !important;
+        background-color: #002395 !important; color: #FFFFFF !important;
+        border-radius: 8px !important; border: none !important;
+        font-weight: 600 !important; transition: all 0.3s ease !important;
     }
     div.stButton > button[kind="primary"]:hover {
-        background-color: #00155f !important;
-        transform: translateY(-2px);
+        background-color: #00155f !important; transform: translateY(-2px);
+        box-shadow: 0 8px 15px rgba(0,35,149,0.3) !important;
     }
 
     /* Cards de Métricas */
     div[data-testid="metric-container"] {
-        background-color: #FFFFFF !important;
-        border: 1px solid #E5E7EB !important;
-        padding: 20px !important;
-        border-radius: 12px !important;
-        box-shadow: 0 4px 10px rgba(0,0,0,0.05) !important;
-        border-left: 6px solid #002395 !important;
+        background-color: #FFFFFF !important; border: 1px solid #E5E7EB !important;
+        padding: 20px !important; border-radius: 12px !important;
+        box-shadow: 0 4px 10px rgba(0,0,0,0.05) !important; border-left: 6px solid #002395 !important;
     }
     div[data-testid="metric-container"] label { color: #6B7280 !important; font-weight: 600 !important; }
-    div[data-testid="metric-container"] div[data-testid="stMetricValue"] { color: #002395 !important; }
+    div[data-testid="metric-container"] div[data-testid="stMetricValue"] { color: #002395 !important; font-weight: 800 !important;}
+    
+    /* Títulos em Azul São Francisco */
+    h1, h2, h3, h4, h5, h6 { color: #002395 !important; font-weight: 700 !important; }
+    p, span, label { color: #333333 !important; }
     
     /* Abas do Painel */
-    .stTabs [aria-selected="true"] {
-        color: #002395 !important;
-        border-bottom: 3px solid #002395 !important;
-    }
+    .stTabs [aria-selected="true"] { color: #002395 !important; border-bottom: 3px solid #002395 !important; }
+    .stTabs [aria-selected="false"] { color: #808080 !important; }
     </style>
 """, unsafe_allow_html=True)
 
@@ -76,16 +63,11 @@ PALETA_CORES = ['#002395', '#4A69BD', '#708ad4', '#808080', '#A6A6A6', '#C0C0C0'
 # 3. FUNÇÕES DE LIMPEZA E PADRONIZAÇÃO
 # ==========================================
 def padronizar_unidade(unidade):
-    if pd.isna(unidade) or str(unidade).strip() == "" or "Não Informada" in str(unidade): 
-        return "Sede / Sem Unidade"
+    if pd.isna(unidade) or str(unidade).strip() == "" or "Não Informada" in str(unidade): return "Sede / Sem Unidade"
     numeros = re.findall(r'\d+', str(unidade))
     if not numeros: return "Sede / Sem Unidade"
     u_str = str(int(numeros[0]))
-    mapa = {
-        "1": "1 - Serra Negra", "3": "3 - AME", "4": "4 - Amparo Unidade 4",
-        "5": "5 - Monte Alegre", "6": "6 - Lindóia", "9": "9 - Cenam",
-        "10": "10 - Amparo Unidade BPA", "12": "12 - Águas de Lindóia"
-    }
+    mapa = {"1": "1 - Serra Negra", "3": "3 - AME", "4": "4 - Amparo Unidade 4", "5": "5 - Monte Alegre", "6": "6 - Lindóia", "9": "9 - Cenam", "10": "10 - Amparo Unidade BPA", "12": "12 - Águas de Lindóia"}
     return mapa.get(u_str, "Excluir")
 
 def padronizar_bacteria(nome):
@@ -129,13 +111,8 @@ def salvar_dados(df_final):
 def carregar_usuarios():
     try:
         df_users = conn.read(worksheet="Usuarios", ttl=0).dropna(how="all")
-        # Se for uma planilha nova ou vazia
         if df_users.empty: return pd.DataFrame(columns=["Usuario", "Senha", "Nivel_Acesso"])
-        
-        # Inteligência: Se a planilha for antiga e não tiver a coluna Nivel_Acesso, cria ela dando acesso total a todos
-        if "Nivel_Acesso" not in df_users.columns:
-            df_users["Nivel_Acesso"] = "Administrador"
-            
+        if "Nivel_Acesso" not in df_users.columns: df_users["Nivel_Acesso"] = "Administrador"
         df_users['Usuario'] = df_users['Usuario'].astype(str).str.strip()
         df_users['Senha'] = df_users['Senha'].astype(str).str.replace(r'\.0$', '', regex=True).str.lstrip("'").str.strip()
         return df_users
@@ -146,50 +123,60 @@ def salvar_novo_usuario(df_users):
     conn.update(worksheet="Usuarios", data=df_users)
 
 # ==========================================
-# 5. TELA DE LOGIN (COM BACKGROUND CRIATIVO)
+# 5. TELA DE LOGIN (COM BACKGROUND ANIMADO E FADE-UP)
 # ==========================================
 if 'logado' not in st.session_state: st.session_state['logado'] = False
 if 'usuario' not in st.session_state: st.session_state['usuario'] = ""
 if 'nivel_acesso' not in st.session_state: st.session_state['nivel_acesso'] = "Visualizador"
 
 if not st.session_state['logado']:
-    # Injeta a imagem de fundo apenas na tela de login
     st.markdown("""
     <style>
+    /* Animação Fundo Degradê Movendo (Super Leve) */
     [data-testid="stAppViewContainer"] {
-        background-image: url("https://images.unsplash.com/photo-1576086213369-97a306d36557?q=80&w=2000&auto=format&fit=crop");
-        background-size: cover;
-        background-position: center;
-        background-repeat: no-repeat;
+        background: linear-gradient(-45deg, #e0e7ff, #ffffff, #f0f4ff, #dbeafe);
+        background-size: 400% 400%;
+        animation: gradientBG 15s ease infinite;
     }
-    [data-testid="stHeader"] {
-        background-color: transparent !important;
+    @keyframes gradientBG {
+        0% { background-position: 0% 50%; }
+        50% { background-position: 100% 50%; }
+        100% { background-position: 0% 50%; }
     }
-    /* Efeito de vidro (Glassmorphism) no card de login */
-    .login-card {
-        background: rgba(255, 255, 255, 0.95);
-        padding: 40px;
-        border-radius: 15px;
-        box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.3);
-        backdrop-filter: blur(10px);
-        -webkit-backdrop-filter: blur(10px);
-        border: 1px solid rgba(255, 255, 255, 0.18);
-        margin-top: 10vh;
+    [data-testid="stHeader"] { background-color: transparent !important; }
+    
+    /* Animação de Surgimento (Fade-Up) */
+    @keyframes fadeUp {
+        0% { opacity: 0; transform: translateY(40px); }
+        100% { opacity: 1; transform: translateY(0); }
+    }
+    
+    /* Estilização do Form de Login (Efeito Vidro) */
+    [data-testid="stForm"] {
+        background: rgba(255, 255, 255, 0.85) !important;
+        backdrop-filter: blur(12px) !important;
+        -webkit-backdrop-filter: blur(12px) !important;
+        border-radius: 20px !important;
+        border: 1px solid rgba(255,255,255,0.8) !important;
+        box-shadow: 0 20px 40px rgba(0, 35, 149, 0.1) !important;
+        padding: 40px 30px !important;
+        animation: fadeUp 1s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+        opacity: 0; /* Começa invisível para a animação rodar */
     }
     </style>
     """, unsafe_allow_html=True)
 
     col_vazia_esq, col_login, col_vazia_dir = st.columns([1, 1.2, 1])
     with col_login:
-        st.markdown('<div class="login-card">', unsafe_allow_html=True)
-        col_logo1, col_logo2, col_logo3 = st.columns([1, 2, 1])
-        with col_logo2:
-            try: st.image("logo.png", use_container_width=True)
-            except: st.markdown("<h2 style='text-align: center; color:#002395;'>SÃO FRANCISCO</h2>", unsafe_allow_html=True)
-        
-        st.markdown("<h4 style='text-align: center; color: #555; margin-bottom:20px;'>Acesso ao Painel Analítico</h4>", unsafe_allow_html=True)
-        
+        st.markdown("<br><br><br>", unsafe_allow_html=True)
         with st.form(key="login_form"):
+            col_logo1, col_logo2, col_logo3 = st.columns([1, 2, 1])
+            with col_logo2:
+                try: st.image("logo.png", use_container_width=True)
+                except: st.markdown("<h2 style='text-align: center; color:#002395;'>SÃO FRANCISCO</h2>", unsafe_allow_html=True)
+            
+            st.markdown("<h4 style='text-align: center; color: #555; margin-bottom:30px;'>Acesso ao Painel Analítico</h4>", unsafe_allow_html=True)
+            
             usuario_input = st.text_input("👤 Nome de Usuário:")
             senha_input = st.text_input("🔑 Senha de Acesso:", type="password")
             st.markdown("<br>", unsafe_allow_html=True)
@@ -206,15 +193,14 @@ if not st.session_state['logado']:
                     st.rerun()
                 else:
                     st.error("❌ Usuário ou senha incorretos. Acesso negado.")
-        st.markdown('</div>', unsafe_allow_html=True)
     st.stop()
 
-# Ao logar, garantimos que o fundo volte a ser limpo (cinza clarinho executivo)
+# Remove a animação do fundo depois de logado para não distrair na leitura dos gráficos
 st.markdown("""
     <style>
     [data-testid="stAppViewContainer"] {
-        background-image: none !important;
-        background-color: #FAFAFA !important;
+        background: #FAFAFA !important;
+        animation: none !important;
     }
     </style>
 """, unsafe_allow_html=True)
@@ -289,24 +275,19 @@ def extrair_dados_pdf(texto_bruto):
     return pd.DataFrame(dados)
 
 # ==========================================
-# 7. MENU LATERAL INTELIGENTE BASEADO EM PERMISSÃO
+# 7. MENU LATERAL
 # ==========================================
 try: st.sidebar.image("logo.png", use_container_width=True)
 except: st.sidebar.empty() 
 
 nivel_atual = st.session_state.get('nivel_acesso', 'Visualizador')
 st.sidebar.markdown(f"### 👋 Olá, **{st.session_state['usuario'].capitalize()}**")
-st.sidebar.markdown(f"*{nivel_atual}*")
+st.sidebar.markdown(f"<span style='color:#002395; font-weight:bold;'>• {nivel_atual}</span>", unsafe_allow_html=True)
 st.sidebar.markdown("---")
 
-# Monta o menu dinamicamente
 opcoes_menu = ["🏢 Análise por Unidade", "📈 Relatório Comparativo Avançado"]
-
-# Se for Operador ou Administrador (Ou se for você, o criador master)
 if nivel_atual in ["Operador", "Administrador"] or st.session_state['usuario'] == "vhpezzeti":
     opcoes_menu.append("📂 Upload de Dados")
-
-# Se for Administrador
 if nivel_atual == "Administrador" or st.session_state['usuario'] == "vhpezzeti":
     opcoes_menu.append("⚙️ Painel do Administrador")
 
@@ -343,13 +324,11 @@ if menu == "⚙️ Painel do Administrador":
             with col2: 
                 nova_senha = st.text_input("Senha de Acesso:", type="password")
             with col3:
-                # O SELETOR MÁGICO DE PERMISSÕES
                 novo_nivel = st.selectbox("Nível de Permissão:", [
                     "Visualizador (Apenas Gráficos)", 
                     "Operador (Gráficos + Upload)", 
                     "Administrador (Acesso Total)"
                 ])
-                
             st.markdown("<br>", unsafe_allow_html=True)
             
             if st.button("Salvar Cadastro ✔️", type="primary", use_container_width=True):
@@ -359,8 +338,7 @@ if menu == "⚙️ Painel do Administrador":
                         st.error("❌ Este login já existe no sistema.")
                     else:
                         senha_salva = f"'{nova_senha}" if nova_senha.isdigit() else nova_senha
-                        nivel_salvo = novo_nivel.split(" ")[0] # Pega só a primeira palavra (Visualizador, Operador, Administrador)
-                        
+                        nivel_salvo = novo_nivel.split(" ")[0]
                         novo_registro = pd.DataFrame([{"Usuario": novo_usuario, "Senha": senha_salva, "Nivel_Acesso": nivel_salvo}])
                         df_users_atualizado = pd.concat([df_users, novo_registro], ignore_index=True)
                         salvar_novo_usuario(df_users_atualizado)
@@ -440,8 +418,9 @@ elif menu == "🏢 Análise por Unidade":
             with c_graf1:
                 st.markdown("#### 📊 Distribuição Positivos x Negativos")
                 fig_pizza = px.pie(df_f, names='Resultado', hole=0.5, color='Resultado', color_discrete_map={'Positivo': COR_AZUL_BIC, 'Negativo': COR_CINZA})
+                # O comando theme=None mata o bug do fundo preto no Dark Mode!
                 fig_pizza.update_layout(template='plotly_white', margin=dict(t=20, b=20, l=20, r=20))
-                st.plotly_chart(fig_pizza, use_container_width=True)
+                st.plotly_chart(fig_pizza, use_container_width=True, theme=None)
                 
             with c_graf2:
                 st.markdown("#### 🧫 Frequência Bacteriana")
@@ -449,7 +428,7 @@ elif menu == "🏢 Análise por Unidade":
                 df_percent.columns = ['Bactéria', '%']
                 fig_bac = px.bar(df_percent, x='%', y='Bactéria', orientation='h', text_auto=True, color='Bactéria', color_discrete_sequence=PALETA_CORES)
                 fig_bac.update_layout(template='plotly_white', yaxis={'categoryorder':'total ascending'}, margin=dict(t=20, b=20, l=20, r=20), showlegend=False)
-                st.plotly_chart(fig_bac, use_container_width=True)
+                st.plotly_chart(fig_bac, use_container_width=True, theme=None)
 
             st.markdown("#### 📋 Detalhamento dos Pacientes (Positivos)")
             st.dataframe(df_pos[['Data', 'Unidade', 'Material_Exame', 'Bactéria', 'Indicados (S)', 'Resistentes (R)']], use_container_width=True, hide_index=True)
@@ -506,7 +485,7 @@ elif menu == "📈 Relatório Comparativo Avançado":
                 agrupado_tempo = df_pos_comp.groupby('Mês/Ano').size().reset_index(name='Casos')
                 fig_linha = px.area(agrupado_tempo, x='Mês/Ano', y='Casos', markers=True, color_discrete_sequence=[COR_AZUL_BIC])
                 fig_linha.update_layout(template='plotly_white', margin=dict(t=20, b=20, l=20, r=20))
-                st.plotly_chart(fig_linha, use_container_width=True)
+                st.plotly_chart(fig_linha, use_container_width=True, theme=None)
                 
             with col_g2:
                 st.markdown("#### 🎯 Top 5 Incidências Bacterianas")
@@ -514,7 +493,7 @@ elif menu == "📈 Relatório Comparativo Avançado":
                 agrupado_bac.columns = ['Bactéria', '%']
                 fig_bar_bac = px.bar(agrupado_bac.head(5), x='%', y='Bactéria', orientation='h', text_auto=True, color='Bactéria', color_discrete_sequence=PALETA_CORES)
                 fig_bar_bac.update_layout(template='plotly_white', yaxis={'categoryorder':'total ascending'}, margin=dict(t=20, b=20, l=20, r=20), showlegend=False)
-                st.plotly_chart(fig_bar_bac, use_container_width=True)
+                st.plotly_chart(fig_bar_bac, use_container_width=True, theme=None)
 
             st.markdown("#### 📌 Detalhamento Estratégico (% Do Total Filtrado)")
             df_percent_final = df_pos_comp.groupby(['Unidade', 'Material_Exame', 'Bactéria']).size().reset_index(name='Casos')
