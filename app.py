@@ -77,10 +77,10 @@ def carregar_usuarios():
 
 def salvar_novo_usuario(df_users): conn.update(worksheet="Usuarios", data=df_users)
 
-def get_base64_image(image_path):
-    if os.path.exists(image_path):
-        with open(image_path, "rb") as img_file:
-            return base64.b64encode(img_file.read()).decode()
+def get_base64_file(file_path):
+    if os.path.exists(file_path):
+        with open(file_path, "rb") as f:
+            return base64.b64encode(f.read()).decode()
     return None
 
 # ==========================================
@@ -92,36 +92,43 @@ if 'nivel_acesso' not in st.session_state: st.session_state['nivel_acesso'] = "V
 if 'unidades_permitidas' not in st.session_state: st.session_state['unidades_permitidas'] = "Todas"
 
 # ==========================================
-# 5. TELA DE LOGIN (BLINDADA COM URL DIRETA)
+# 5. TELA DE LOGIN (VÍDEO CINEMATOGRÁFICO DE FUNDO)
 # ==========================================
 if not st.session_state['logado']:
+    
+    # 1. Tenta carregar o vídeo
+    video_b64 = get_base64_file("video.mp4")
+    
+    if video_b64:
+        # Injeta o VÍDEO MUTADO em loop como plano de fundo
+        st.markdown(f'''
+        <video autoplay loop muted playsinline style="position: fixed; right: 0; bottom: 0; min-width: 100vw; min-height: 100vh; z-index: -999; object-fit: cover; filter: brightness(0.45) sepia(0.2) hue-rotate(180deg);">
+            <source src="data:video/mp4;base64,{video_b64}" type="video/mp4">
+        </video>
+        ''', unsafe_allow_html=True)
+    else:
+        # Plano B caso o vídeo não seja encontrado
+        st.markdown('''
+        <style>
+        .stApp { background: linear-gradient(135deg, #000c24 0%, #002395 100%) !important; }
+        </style>
+        ''', unsafe_allow_html=True)
 
+    # 2. CSS para deixar o Streamlit transparente para o vídeo aparecer
     st.markdown("""
     <style>
-    /* O Fundo de Microscopia Direto da Nuvem - Não falha nunca mais */
-    .stApp {
-        background-image: linear-gradient(rgba(0, 15, 60, 0.4), rgba(0, 15, 60, 0.7)), url("https://images.unsplash.com/photo-1581093458791-9f3c3900df4b?q=80&w=2000&auto=format&fit=crop") !important;
-        background-size: cover !important;
-        background-position: center !important;
-        background-attachment: fixed !important;
-        animation: panBg 25s infinite alternate ease-in-out !important;
-    }
+    /* Torna o app transparente para ver o vídeo */
+    .stApp, [data-testid="stAppViewContainer"] { background: transparent !important; }
+    [data-testid="stHeader"] { background: transparent !important; display: none !important; }
     
-    @keyframes panBg {
-        0% { background-size: 100% auto; }
-        100% { background-size: 105% auto; }
-    }
-    
-    [data-testid="stHeader"] { background: transparent !important; }
-    
-    /* Card de Login Vidro Fosco e Estreito */
+    /* Card de Login (Vidro Fosco) */
     [data-testid="stForm"] {
         background: rgba(255, 255, 255, 0.25) !important;
         backdrop-filter: blur(16px) !important;
         -webkit-backdrop-filter: blur(16px) !important;
         border-radius: 20px !important;
         border: 1px solid rgba(255, 255, 255, 0.4) !important;
-        box-shadow: 0px 30px 60px rgba(0,0,0,0.6) !important;
+        box-shadow: 0px 30px 60px rgba(0,0,0,0.8) !important;
         padding: 40px 30px 20px 30px !important;
         margin-top: 3vh;
         z-index: 10;
@@ -181,7 +188,6 @@ if not st.session_state['logado']:
     </style>
     """, unsafe_allow_html=True)
 
-    # Mantém a caixa estreita (1.5 nas bordas, 1.1 no meio)
     col_vazia_esq, col_login, col_vazia_dir = st.columns([1.5, 1.1, 1.5]) 
     
     with col_login:
@@ -189,9 +195,9 @@ if not st.session_state['logado']:
         with st.form(key="login_form"):
             
             # ==========================================
-            # LOGO LIVRE COM BRILHO/GLOW 
+            # LOGO MAIOR E COM BRILHO 
             # ==========================================
-            logo_b64 = get_base64_image("logo.png")
+            logo_b64 = get_base64_file("logo.png")
             if logo_b64:
                 st.markdown(f'''
                     <div style="display: flex; justify-content: center; margin-bottom: 25px;">
@@ -215,7 +221,7 @@ if not st.session_state['logado']:
             # ==========================================
             st.markdown("<hr class='custom-divider'>", unsafe_allow_html=True)
             
-            assinatura_b64 = get_base64_image("Gemini_Generated_Image_s8ldfcs8ldfcs8ld-removebg-preview.png")
+            assinatura_b64 = get_base64_file("Gemini_Generated_Image_s8ldfcs8ldfcs8ld-removebg-preview.png")
             if assinatura_b64:
                 st.markdown(f'''
                     <div style="text-align: center; padding-bottom: 5px;">
@@ -252,9 +258,10 @@ if not st.session_state['logado']:
 else:
     st.markdown("""
         <style>
+        /* Destrói o vídeo e volta para o fundo cinza claro no sistema */
+        video { display: none !important; }
         .stApp { background-image: none !important; background-color: #F4F6F9 !important; animation: none !important;}
-        .stApp::before { display: none !important; } 
-        header[data-testid="stHeader"] { background: #F4F6F9 !important; }
+        header[data-testid="stHeader"] { background: #F4F6F9 !important; display: flex !important;}
         
         div[data-testid="metric-container"] {
             background-color: #FFFFFF !important; border: 1px solid #E5E7EB !important;
