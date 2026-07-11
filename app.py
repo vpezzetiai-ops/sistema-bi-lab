@@ -92,7 +92,7 @@ def salvar_novo_usuario(df_users):
     conn.update(worksheet="Usuarios", data=df_users)
 
 # ==========================================
-# 4. TELA DE LOGIN (O "QUEBRADOR DE ESCUDOS")
+# 4. TELA DE LOGIN BLINDADA
 # ==========================================
 if 'logado' not in st.session_state: st.session_state['logado'] = False
 if 'usuario' not in st.session_state: st.session_state['usuario'] = ""
@@ -102,64 +102,70 @@ if 'unidades_permitidas' not in st.session_state: st.session_state['unidades_per
 if not st.session_state['logado']:
     st.markdown("""
     <style>
-    /* Força a cor raiz do sistema para Azul (Mata o tema vermelho nativo) */
-    :root {
-        --primary-color: #002395 !important;
-    }
+    /* ZERA QUALQUER TEMA NATIVO */
+    .stApp > header { background-color: transparent !important; }
     
-    /* Injeta a imagem de laboratório na parede absoluta do Streamlit */
+    /* IMAGEM DE FUNDO - QUEBRADA EM LINHAS PARA NÃO SER BLOQUEADA */
     .stApp {
-        background: linear-gradient(rgba(0, 15, 60, 0.6), rgba(0, 15, 60, 0.6)), url("https://images.unsplash.com/photo-1614935151651-0bea6508abb0?q=80&w=2000&auto=format&fit=crop") no-repeat center center fixed !important;
+        background-image: url("https://images.unsplash.com/photo-1576086213369-97a306d36557?ixlib=rb-4.0.3&auto=format&fit=crop&w=2000&q=80") !important;
         background-size: cover !important;
+        background-position: center !important;
+        background-repeat: no-repeat !important;
+        background-attachment: fixed !important;
     }
     
-    /* Esconde a barra superior que fica feia na tela de login */
-    header[data-testid="stHeader"] {
-        background: transparent !important;
-        display: none !important;
+    /* CAMADA DE ESCURECIMENTO (Para o card branco saltar aos olhos) */
+    .stApp::before {
+        content: "";
+        position: fixed;
+        top: 0; left: 0; right: 0; bottom: 0;
+        background-color: rgba(0, 20, 60, 0.6) !important;
+        z-index: 0;
     }
     
-    /* O Card Branco de Login */
+    .main { z-index: 1 !important; position: relative !important; }
+    
+    /* CARD BRANCO E ELEGANTE */
     [data-testid="stForm"] {
         background-color: #FFFFFF !important;
-        border-radius: 12px !important;
+        border-radius: 15px !important;
         border: none !important;
-        box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.8) !important;
+        box-shadow: 0px 25px 50px rgba(0,0,0,0.8) !important;
         padding: 40px !important;
-        margin-top: 5vh;
+        margin-top: 2vh;
     }
     
-    /* Força os textos para cinza escuro */
-    [data-testid="stForm"] p, [data-testid="stForm"] label {
+    /* FORÇA TEXTOS PARA ESCURO */
+    [data-testid="stForm"] p, [data-testid="stForm"] label, [data-testid="stForm"] div {
         color: #333333 !important;
-        font-weight: 600 !important;
     }
     
-    /* Caixa de texto clara e legível */
+    /* CAIXA DE TEXTO */
     input[type="text"], input[type="password"] {
         background-color: #F8F9FA !important;
         color: #333333 !important;
         -webkit-text-fill-color: #333333 !important;
         border: 1px solid #D1D5DB !important;
-        border-radius: 6px !important;
     }
     
-    /* Botão de Login (Blindado para ser Azul e texto Branco) */
-    button[kind="primary"] {
+    /* O ASSASSINO DE BOTÕES VERMELHOS */
+    button[kind="primaryFormSubmit"], 
+    button[kind="primary"], 
+    div[data-testid="stForm"] button {
         background-color: #002395 !important;
-        border-color: #002395 !important;
+        background: #002395 !important;
+        border: 2px solid #002395 !important;
         color: #FFFFFF !important;
+        font-weight: 900 !important;
         border-radius: 8px !important;
-        padding: 10px !important;
-        transition: transform 0.2s ease !important;
+        transition: all 0.3s !important;
     }
-    button[kind="primary"] p {
-        color: #FFFFFF !important;
-        font-weight: bold !important;
-        font-size: 16px !important;
-    }
-    button[kind="primary"]:hover {
+    
+    button[kind="primaryFormSubmit"]:hover, 
+    button[kind="primary"]:hover, 
+    div[data-testid="stForm"] button:hover {
         background-color: #4A69BD !important;
+        background: #4A69BD !important;
         border-color: #4A69BD !important;
         transform: scale(1.02);
     }
@@ -180,11 +186,10 @@ if not st.session_state['logado']:
             usuario_input = st.text_input("👤 Nome de Usuário:")
             senha_input = st.text_input("🔑 Senha de Acesso:", type="password")
             
-            # Checkbox consertado com o root color
             lembrar_senha = st.checkbox("Lembrar senha neste computador")
             
             st.markdown("<br>", unsafe_allow_html=True)
-            submit_button = st.form_submit_button("Fazer Login 🚀", type="primary", use_container_width=True)
+            submit_button = st.form_submit_button("Fazer Login 🚀", use_container_width=True)
             
             if submit_button:
                 df_usuarios = carregar_usuarios()
@@ -201,13 +206,14 @@ if not st.session_state['logado']:
     st.stop()
 
 # ==========================================
-# CSS DO SISTEMA INTERNO (LIMPO E EXECUTIVO)
+# CSS DO SISTEMA INTERNO (LIMPO)
 # ==========================================
 st.markdown("""
     <style>
     /* Limpa a imagem de laboratório e volta pro fundo do Dashboard */
-    .stApp { background: #F4F6F9 !important; background-color: #F4F6F9 !important; }
-    header[data-testid="stHeader"] { display: flex !important; background: #F4F6F9 !important; }
+    .stApp { background-image: none !important; background-color: #F4F6F9 !important; }
+    .stApp::before { display: none !important; }
+    header[data-testid="stHeader"] { background: #F4F6F9 !important; }
     
     div[data-testid="metric-container"] {
         background-color: #FFFFFF !important;
@@ -217,8 +223,82 @@ st.markdown("""
         border-left: 5px solid #002395 !important;
     }
     .stTabs [aria-selected="true"] { border-bottom-color: #002395 !important; color: #002395 !important; }
+    
+    /* Garante botões azuis dentro do sistema */
+    div.stButton > button { background-color: #002395 !important; background: #002395 !important; border: none !important; color: #FFFFFF !important;}
+    div.stButton > button p { color: #FFFFFF !important; font-weight: bold !important; }
+    div.stButton > button:hover { background-color: #4A69BD !important; background: #4A69BD !important;}
     </style>
 """, unsafe_allow_html=True)
+
+# ==========================================
+# 5. EXTRAÇÃO DO PDF 
+# ==========================================
+def extrair_dados_pdf(texto_bruto):
+    dados = []
+    periodo_doc = "Período Indefinido"
+    match_per = re.search(r'Per[íi]odo de (\d{2}/\d{2}/\d{4}) [àa] (\d{2}/\d{2}/\d{4})', texto_bruto, re.IGNORECASE)
+    if match_per: periodo_doc = f"{match_per.group(1)} a {match_per.group(2)}"
+
+    blocos = re.split(r'(?=\b\d{2}/\d{2}/\d{4}\s+\d{4,}\b)', texto_bruto)
+    for bloco in blocos:
+        if not bloco.strip(): continue
+        
+        match_header = re.search(r'(\d{2}/\d{2}/\d{4})\s+(\d{4,})', bloco)
+        if not match_header: continue
+        data_pac, cod_pac = match_header.group(1), match_header.group(2)
+        
+        unidade_pac = "Sede / Sem Unidade"
+        match_unidade = re.search(r'Unidade Sigla:\s*(\d+)', bloco)
+        if match_unidade: unidade_pac = padronizar_unidade(match_unidade.group(1))
+        if unidade_pac == "Excluir": continue 
+            
+        sub_blocos = re.split(r'(?=\[\s*[A-Z]+\s*\])', bloco)
+        for sub in sub_blocos:
+            match_tag = re.search(r'\[\s*([A-Z]+)\s*\]', sub)
+            if not match_tag: continue
+            
+            tag = match_tag.group(1)
+            linha = {
+                "Data": data_pac, "Código_Paciente": cod_pac, "Material_Exame": f"[{tag}]", 
+                "Resultado": "Negativo", "Bactéria": "N/A", "Indicados (S)": "", 
+                "Resistentes (R)": "", "Unidade": unidade_pac, "Período_Arquivo": periodo_doc
+            }
+            
+            match_mat = re.search(r'(?:MAT(?:ERIAL)?):\s*(.*?)(?=RES|1:|\.1:|[A-Z]{3}2?:|\n|$)', sub)
+            if match_mat:
+                mat_text = re.sub(r'[\.\d]+$', '', match_mat.group(1)).strip()
+                linha["Material_Exame"] = padronizar_material(f"[{tag}] {mat_text}")
+            else:
+                linha["Material_Exame"] = padronizar_material(linha["Material_Exame"])
+            
+            if "Não houve desenvolvimento" in sub or "Não houve crescimento" in sub:
+                linha["Resultado"] = "Negativo"
+            else:
+                linha["Resultado"] = "Positivo"
+                regex_bac = r'(?i:identificado|MIC|\b1|\.1|aer[oó]bia[^:]*|anaer[oó]bia[^:]*)\s*:\s*([A-Z][a-z]{2,}(?:\s+[a-z]{2,})?(?:\s+sp\.?)?)'
+                match_bac = re.search(regex_bac, sub)
+                
+                if match_bac:
+                    bac_str = match_bac.group(1).replace(":", "").strip()
+                    if "Não houve" not in bac_str and "Aplic" not in bac_str:
+                        linha["Bactéria"] = padronizar_bacteria(bac_str)
+                else:
+                    for bac_name in ["Escherichia", "Proteus", "Enterobacter", "Pseudomonas", "Klebsiella", "Staphylococcus", "Streptococcus", "Enterococcus"]:
+                        if bac_name.lower() in sub.lower():
+                            linha["Bactéria"] = padronizar_bacteria(bac_name)
+                            break
+                            
+                sensiveis, resistentes = [], []
+                matches_atb = re.findall(r'([A-Z]{2,5})\d*[\s:=]+([SR])\b', sub)
+                for atb, status in matches_atb:
+                    if status == 'S': sensiveis.append(atb)
+                    elif status == 'R': resistentes.append(atb)
+                    
+                linha["Indicados (S)"] = ", ".join(sorted(list(set(sensiveis))))
+                linha["Resistentes (R)"] = ", ".join(sorted(list(set(resistentes))))
+            dados.append(linha)
+    return pd.DataFrame(dados)
 
 # ==========================================
 # 6. MENU LATERAL E DADOS
@@ -259,7 +339,7 @@ if not df_historico.empty:
 # 7. TELAS DO SISTEMA
 # ==========================================
 
-# ----- TELA ADMIN (Com botões blindados) -----
+# ----- TELA ADMIN -----
 if menu == "⚙️ Painel do Administrador":
     st.title("⚙️ Painel de Controle Administrativo")
     st.markdown("Gerencie acessos e defina **quais unidades** cada funcionário pode visualizar.")
@@ -272,7 +352,6 @@ if menu == "⚙️ Painel do Administrador":
 
     with tab1:
         st.markdown("#### Criar Nova Credencial")
-        # Cofre do Formulário para não perder os dados ao clicar
         with st.form("form_cadastro"):
             col1, col2 = st.columns(2)
             with col1: novo_usuario = st.text_input("Login do Funcionário:")
@@ -286,7 +365,7 @@ if menu == "⚙️ Painel do Administrador":
                 nova_unid_perm = st.multiselect("Unidades Permitidas (Deixe vazio para dar acesso a TODAS):", UNIDADES_OFICIAIS)
             
             st.markdown("<br>", unsafe_allow_html=True)
-            submit_cadastro = st.form_submit_button("Salvar Cadastro ✔️", type="primary", use_container_width=True)
+            submit_cadastro = st.form_submit_button("Salvar Cadastro ✔️", use_container_width=True)
             
             if submit_cadastro:
                 if novo_usuario and nova_senha:
@@ -301,7 +380,7 @@ if menu == "⚙️ Painel do Administrador":
                         df_users_atualizado = pd.concat([df_users_adm, novo_registro], ignore_index=True)
                         salvar_novo_usuario(df_users_atualizado)
                         st.success(f"✅ Funcionário cadastrado com sucesso!")
-                        time.sleep(1) # Dá tempo de ler a mensagem de sucesso
+                        time.sleep(1)
                         st.rerun()
                 else:
                     st.warning("Preencha Login e Senha antes de salvar.")
@@ -323,7 +402,6 @@ if menu == "⚙️ Painel do Administrador":
                     idx_nivel = opcoes_niveis.index(nivel_atual_ed) if nivel_atual_ed in opcoes_niveis else 0
                     vetor_unid_atual = [] if unid_atual_ed == "Todas" else [u.strip() for u in str(unid_atual_ed).split(",")]
                     
-                    # Cofre de Atualização
                     with st.form("form_edicao"):
                         col_e1, col_e2 = st.columns(2)
                         with col_e1: nova_senha_ed = st.text_input("Nova Senha (deixe em branco para manter a atual):", type="password")
@@ -333,7 +411,7 @@ if menu == "⚙️ Painel do Administrador":
                         
                         st.markdown("<br>", unsafe_allow_html=True)
                         col_btn1, col_btn2 = st.columns(2)
-                        with col_btn1: submit_editar = st.form_submit_button("Atualizar Usuário 🔄", type="primary", use_container_width=True)
+                        with col_btn1: submit_editar = st.form_submit_button("Atualizar Usuário 🔄", use_container_width=True)
                         with col_btn2: submit_excluir = st.form_submit_button("🗑️ Excluir Usuário", use_container_width=True)
                         
                         if submit_editar:
@@ -370,7 +448,7 @@ elif menu == "📂 Upload de Dados":
         arquivo_upload = st.file_uploader("Arraste seu arquivo PDF aqui 👇", type=['pdf', 'txt'])
         
         if arquivo_upload is not None:
-            if st.button("Processar e Salvar no Banco de Dados ☁️", type="primary", use_container_width=True):
+            if st.button("Processar e Salvar no Banco de Dados ☁️", use_container_width=True):
                 with st.spinner('Lendo arquivo, aplicando filtros de inteligência e salvando...'):
                     texto_dados = ""
                     if arquivo_upload.name.endswith('.pdf'):
