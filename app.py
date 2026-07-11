@@ -101,64 +101,81 @@ if 'unidades_permitidas' not in st.session_state: st.session_state['unidades_per
 if not st.session_state['logado']:
     st.markdown("""
     <style>
-    /* Destrói o fundo branco nativo do Streamlit */
-    .stApp, [data-testid="stAppViewContainer"], [data-testid="stHeader"] {
+    /* Injeção forçada do fundo via HTML (Placa de Petri em Microbiologia) */
+    .fundo-animado {
+        position: fixed;
+        top: 0; left: 0; width: 100vw; height: 100vh;
+        background-image: url("https://images.unsplash.com/photo-1576086213369-97a306d36557?q=80&w=2000&auto=format&fit=crop");
+        background-size: cover;
+        background-position: center;
+        filter: brightness(0.4) sepia(0.1) hue-rotate(190deg); /* Azul profundo de laboratório */
+        z-index: -9999;
+        animation: panCamera 20s infinite alternate ease-in-out;
+    }
+    
+    @keyframes panCamera {
+        0% { transform: scale(1); }
+        100% { transform: scale(1.08); }
+    }
+    
+    /* Deixa o fundo padrão transparente */
+    [data-testid="stAppViewContainer"], [data-testid="stHeader"] {
         background-color: transparent !important;
-        background: transparent !important;
     }
     
-    /* Aplica a imagem real de microbiologia na raiz absoluta do app com Filtro e Animação */
-    .stApp {
-        background-image: linear-gradient(rgba(0, 15, 60, 0.7), rgba(0, 15, 60, 0.7)), url("https://images.unsplash.com/photo-1532187863486-abf9dbad1b69?q=80&w=2000&auto=format&fit=crop") !important;
-        background-size: 130% 130% !important;
-        background-position: center !important;
-        background-attachment: fixed !important;
-        animation: pan 25s infinite alternate linear !important;
-    }
-    
-    @keyframes pan {
-        0% { background-position: 0% 0%; }
-        100% { background-position: 100% 100%; }
-    }
-    
-    /* Card de Login Branco e Fixo */
+    /* Card de Login Branco Flutuante */
     [data-testid="stForm"] {
         background-color: #FFFFFF !important;
         border-radius: 12px !important;
         border: none !important;
-        box-shadow: 0 20px 50px rgba(0,0,0,0.8) !important;
+        box-shadow: 0 20px 40px rgba(0,0,0,0.6) !important;
         padding: 40px !important;
         margin-top: 5vh;
     }
     
-    /* Força textos do formulário para escuro */
-    [data-testid="stForm"] p, [data-testid="stForm"] label, [data-testid="stForm"] span, [data-testid="stForm"] div { 
-        color: #333333 !important; 
-    }
+    /* Títulos e Labels para Escuro */
+    [data-testid="stForm"] p { color: #333333 !important; }
+    [data-testid="stForm"] label p { color: #333333 !important; font-weight: 600 !important; }
     
-    /* Input com contraste */
-    [data-testid="stForm"] input {
-        background-color: #F3F4F6 !important;
+    /* Apenas as Caixas de Texto (Sem afetar checkboxes ou botões secundários) */
+    input[type="text"], input[type="password"] {
+        background-color: #F8F9FA !important;
         color: #333333 !important;
         -webkit-text-fill-color: #333333 !important;
         border: 1px solid #D1D5DB !important;
+        border-radius: 6px !important;
     }
     
-    /* Mata a cor vermelha nativa do botão do Streamlit e força Azul */
-    [data-testid="stForm"] button {
+    /* Correção do Olho de Senha (Discreto e Fundo Transparente) */
+    [data-testid="stForm"] button[kind="secondary"] {
+        background-color: transparent !important;
+        border: none !important;
+        color: #A0AEC0 !important;
+    }
+    [data-testid="stForm"] button[kind="secondary"]:hover {
+        background-color: #E2E8F0 !important;
+    }
+    
+    /* Botão de Login Principal (Azul com Texto Branco) */
+    div.stButton > button[kind="primary"] {
         background-color: #002395 !important;
-        color: #FFFFFF !important;
         border-radius: 8px !important; 
         border: none !important; 
-        font-weight: bold !important;
         transition: transform 0.2s ease !important;
         padding: 10px !important;
     }
-    [data-testid="stForm"] button:hover { 
+    div.stButton > button[kind="primary"] p {
+        color: #FFFFFF !important;
+        font-weight: bold !important;
+        font-size: 16px !important;
+    }
+    div.stButton > button[kind="primary"]:hover { 
         background-color: #4A69BD !important; 
         transform: scale(1.02);
     }
     </style>
+    
+    <div class="fundo-animado"></div>
     """, unsafe_allow_html=True)
 
     col_vazia_esq, col_login, col_vazia_dir = st.columns([1, 1.2, 1])
@@ -175,11 +192,11 @@ if not st.session_state['logado']:
             usuario_input = st.text_input("👤 Nome de Usuário:")
             senha_input = st.text_input("🔑 Senha de Acesso:", type="password")
             
-            # Opção de Lembrar Senha
+            # Checkbox funcionando visualmente perfeito
             lembrar_senha = st.checkbox("Lembrar senha neste computador")
             
             st.markdown("<br>", unsafe_allow_html=True)
-            submit_button = st.form_submit_button("Fazer Login 🚀", use_container_width=True)
+            submit_button = st.form_submit_button("Fazer Login 🚀", type="primary", use_container_width=True)
             
             if submit_button:
                 df_usuarios = carregar_usuarios()
@@ -200,8 +217,9 @@ if not st.session_state['logado']:
 # ==========================================
 st.markdown("""
     <style>
-    /* Remove a imagem de fundo quando entra no sistema */
-    .stApp { background-image: none !important; background: var(--background-color) !important; animation: none !important; }
+    /* Esconde o fundo da placa de petri depois do login */
+    .fundo-animado { display: none !important; }
+    .stApp { background-color: var(--background-color) !important;}
     
     div[data-testid="metric-container"] {
         background-color: var(--secondary-background-color) !important;
@@ -293,7 +311,7 @@ nivel_atual = st.session_state.get('nivel_acesso', 'Visualizador')
 unid_perm = st.session_state.get('unidades_permitidas', 'Todas')
 
 st.sidebar.markdown(f"### 👋 Olá, **{st.session_state['usuario'].capitalize()}**")
-st.sidebar.markdown(f"<span style='color:#002395; font-weight:bold;'>• Nível: {nivel_atual}</span>", unsafe_allow_html=True)
+st.sidebar.markdown(f"<span style='color:#002395; font-weight:bold;'>• {nivel_atual}</span>", unsafe_allow_html=True)
 st.sidebar.markdown("---")
 
 opcoes_menu = ["🏢 Análise por Unidade", "📈 Relatório Comparativo Avançado"]
@@ -427,7 +445,7 @@ elif menu == "📂 Upload de Dados":
         arquivo_upload = st.file_uploader("Arraste seu arquivo PDF aqui 👇", type=['pdf', 'txt'])
         
         if arquivo_upload is not None:
-            if st.button("Processar e Salvar no Banco de Dados ☁️", use_container_width=True):
+            if st.button("Processar e Salvar no Banco de Dados ☁️", type="primary", use_container_width=True):
                 with st.spinner('Lendo arquivo, aplicando filtros de inteligência e salvando...'):
                     texto_dados = ""
                     if arquivo_upload.name.endswith('.pdf'):
