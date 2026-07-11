@@ -84,23 +84,24 @@ if 'nivel_acesso' not in st.session_state: st.session_state['nivel_acesso'] = "V
 if 'unidades_permitidas' not in st.session_state: st.session_state['unidades_permitidas'] = "Todas"
 
 # ==========================================
-# 5. TELA DE LOGIN (SÓ APARECE SE NÃO LOGADO)
+# 5. TELA DE LOGIN (SEM AMENDOIM, COM ASSINATURA)
 # ==========================================
 if not st.session_state['logado']:
     st.markdown("""
     <style>
-    /* CSS EXCLUSIVO DO LOGIN */
+    /* O Fundo de Laboratório de Verdade! */
     .stApp {
-        background-image: linear-gradient(rgba(0, 15, 60, 0.7), rgba(0, 15, 60, 0.7)), url("https://images.unsplash.com/photo-1574323347407-f5e1ad6d020b?q=80&w=2000&auto=format&fit=crop") !important;
+        background-image: linear-gradient(rgba(0, 15, 60, 0.75), rgba(0, 15, 60, 0.75)), url("https://images.unsplash.com/photo-1532187863486-abf9dbad1b69?q=80&w=2000&auto=format&fit=crop") !important;
         background-size: cover !important;
         background-position: center !important;
         background-attachment: fixed !important;
         animation: zoom 20s infinite alternate linear !important;
     }
-    @keyframes zoom { from { transform: scale(1); } to { transform: scale(1.1); } }
+    @keyframes zoom { from { transform: scale(1); } to { transform: scale(1.05); } }
     
     [data-testid="stHeader"] { background: transparent !important; }
     
+    /* Card Branco do Login */
     [data-testid="stForm"] {
         background-color: #FFFFFF !important;
         border-radius: 12px !important;
@@ -108,14 +109,15 @@ if not st.session_state['logado']:
         box-shadow: 0px 25px 50px rgba(0,0,0,0.8) !important;
         padding: 40px !important;
         margin-top: 5vh;
+        z-index: 10;
     }
     
     /* Textos Escuros */
     [data-testid="stForm"] p, [data-testid="stForm"] label, [data-testid="stForm"] div { color: #333333 !important; }
     
-    /* INPUTS DESTACADOS (Azul Gelo) */
+    /* Inputs Destacados (Azul Gelo) */
     input[type="text"], input[type="password"] {
-        background-color: #E8F0FE !important; /* Cor de destaque pedida */
+        background-color: #E8F0FE !important;
         color: #333333 !important;
         -webkit-text-fill-color: #333333 !important;
         border: 1px solid #B0C4DE !important;
@@ -126,18 +128,38 @@ if not st.session_state['logado']:
     button[kind="secondary"] { background-color: transparent !important; border: none !important; }
     button[kind="secondary"] * { color: #808080 !important; }
     
-    /* Botão de Login Azul */
-    button[kind="primaryFormSubmit"] {
-        background-color: #002395 !important; border: none !important; border-radius: 8px !important; padding: 10px !important;
+    /* Botão Azul Absoluto */
+    div.stButton > button, button[kind="primaryFormSubmit"] {
+        background-color: #002395 !important; 
+        background: #002395 !important;
+        color: #FFFFFF !important;
+        border: none !important; 
+        border-radius: 8px !important; 
+        padding: 10px !important;
     }
-    button[kind="primaryFormSubmit"] * { color: #FFFFFF !important; font-weight: 900 !important; font-size: 16px !important; }
-    button[kind="primaryFormSubmit"]:hover { background-color: #4A69BD !important; transform: scale(1.02); }
+    div.stButton > button *, button[kind="primaryFormSubmit"] * { 
+        color: #FFFFFF !important; 
+        font-weight: 900 !important; 
+        font-size: 16px !important; 
+    }
+    div.stButton > button:hover, button[kind="primaryFormSubmit"]:hover { 
+        background-color: #4A69BD !important; 
+        transform: scale(1.02); 
+    }
+    
+    /* Ajuste para a assinatura brilhar abaixo do form */
+    .assinatura-footer {
+        display: flex;
+        justify-content: center;
+        margin-top: 20px;
+        opacity: 0.9;
+    }
     </style>
     """, unsafe_allow_html=True)
 
     col_vazia_esq, col_login, col_vazia_dir = st.columns([1, 1.2, 1])
     with col_login:
-        st.markdown("<br><br>", unsafe_allow_html=True)
+        st.markdown("<br>", unsafe_allow_html=True)
         with st.form(key="login_form"):
             col_logo1, col_logo2, col_logo3 = st.columns([1, 2, 1])
             with col_logo2:
@@ -152,14 +174,7 @@ if not st.session_state['logado']:
             lembrar_senha = st.checkbox("Lembrar senha neste computador")
             
             st.markdown("<br>", unsafe_allow_html=True)
-            submit_button = st.form_submit_button("Fazer Login 🚀", use_container_width=True)
-            
-            # Assinatura V PEZZETI WarMachine
-            st.markdown("<br>", unsafe_allow_html=True)
-            col_sig1, col_sig2, col_sig3 = st.columns([1, 2, 1])
-            with col_sig2:
-                try: st.image("Gemini_Generated_Image_s8ldfcs8ldfcs8ld-removebg-preview.png", use_container_width=True)
-                except: pass
+            submit_button = st.form_submit_button("Fazer Login 🚀", type="primary", use_container_width=True)
             
             if submit_button:
                 df_usuarios = carregar_usuarios()
@@ -173,13 +188,23 @@ if not st.session_state['logado']:
                     st.rerun()
                 else:
                     st.error("❌ Usuário ou senha incorretos. Acesso negado.")
+        
+        # A Assinatura WarMachine agora fica DE FORA da caixa branca
+        st.markdown('<div class="assinatura-footer">', unsafe_allow_html=True)
+        col_sig1, col_sig2, col_sig3 = st.columns([1, 2, 1])
+        with col_sig2:
+            try:
+                st.image("Gemini_Generated_Image_s8ldfcs8ldfcs8ld-removebg-preview.png", use_container_width=True)
+            except:
+                st.markdown("<p style='text-align: center; color: #FFFFFF; font-weight: bold;'>BORN FROM STEEL. DRIVEN BY CODE.</p>", unsafe_allow_html=True)
+        st.markdown('</div>', unsafe_allow_html=True)
+
     st.stop()
 
 # ==========================================
-# 6. TELA DO SISTEMA (SÓ APARECE SE LOGADO)
+# 6. TELA DO SISTEMA (DASHBOARD)
 # ==========================================
 else:
-    # CSS EXCLUSIVO DO DASHBOARD (Limpa o fundo animado)
     st.markdown("""
         <style>
         .stApp { background-image: none !important; background-color: #F4F6F9 !important; animation: none !important;}
@@ -198,7 +223,6 @@ else:
         </style>
     """, unsafe_allow_html=True)
 
-    # FUNÇÃO DE EXTRAÇÃO DO PDF
     def extrair_dados_pdf(texto_bruto):
         dados = []
         periodo_doc = "Período Indefinido"
@@ -265,7 +289,6 @@ else:
                 dados.append(linha)
         return pd.DataFrame(dados)
 
-    # MENU LATERAL
     try: st.sidebar.image("logo.png", use_container_width=True)
     except: st.sidebar.empty() 
 
@@ -298,7 +321,6 @@ else:
             unidades_liberadas = [u.strip() for u in unid_perm.split(",")]
             df_historico = df_historico[df_historico['Unidade'].isin(unidades_liberadas)]
 
-    # TELAS
     if menu == "⚙️ Painel do Administrador":
         st.title("⚙️ Painel de Controle Administrativo")
         st.markdown("Gerencie acessos e defina **quais unidades** cada funcionário pode visualizar.")
@@ -470,7 +492,6 @@ else:
                     st.plotly_chart(fig_bac, use_container_width=True, theme="streamlit")
 
                 st.markdown("#### 📋 Detalhamento dos Pacientes (Positivos)")
-                # Atualização: Adicionado a coluna Código_Paciente na exibição do DataFrame
                 st.dataframe(df_pos[['Data', 'Código_Paciente', 'Unidade', 'Material_Exame', 'Bactéria', 'Indicados (S)', 'Resistentes (R)']], use_container_width=True, hide_index=True)
 
     elif menu == "📈 Relatório Comparativo Avançado":
@@ -535,7 +556,6 @@ else:
                 st.dataframe(df_percent_final, use_container_width=True, hide_index=True)
                 
                 st.markdown("#### 📋 Histórico Individual")
-                # Atualização: Adicionado a coluna Código_Paciente na exibição do DataFrame
                 st.dataframe(df_pos_comp[['Data', 'Código_Paciente', 'Unidade', 'Material_Exame', 'Bactéria', 'Indicados (S)', 'Resistentes (R)']], use_container_width=True, hide_index=True)
 
             else:
