@@ -92,7 +92,7 @@ def salvar_novo_usuario(df_users):
     conn.update(worksheet="Usuarios", data=df_users)
 
 # ==========================================
-# 4. TELA DE LOGIN BLINDADA
+# 4. TELA DE LOGIN CIRÚRGICA (O FIM DO BUG)
 # ==========================================
 if 'logado' not in st.session_state: st.session_state['logado'] = False
 if 'usuario' not in st.session_state: st.session_state['usuario'] = ""
@@ -102,45 +102,40 @@ if 'unidades_permitidas' not in st.session_state: st.session_state['unidades_per
 if not st.session_state['logado']:
     st.markdown("""
     <style>
-    /* ZERA QUALQUER TEMA NATIVO */
-    .stApp > header { background-color: transparent !important; }
+    /* 1. Destrói o fundo branco */
+    .stApp, [data-testid="stAppViewContainer"], [data-testid="stHeader"] {
+        background: transparent !important;
+    }
     
-    /* IMAGEM DE FUNDO - QUEBRADA EM LINHAS PARA NÃO SER BLOQUEADA */
+    /* 2. A Imagem da Placa de Petri Certa! */
     .stApp {
-        background-image: url("https://images.unsplash.com/photo-1576086213369-97a306d36557?ixlib=rb-4.0.3&auto=format&fit=crop&w=2000&q=80") !important;
+        background-image: linear-gradient(rgba(0, 15, 60, 0.7), rgba(0, 15, 60, 0.7)), url("https://images.unsplash.com/photo-1574323347407-f5e1ad6d020b?q=80&w=2000&auto=format&fit=crop") !important;
         background-size: cover !important;
         background-position: center !important;
-        background-repeat: no-repeat !important;
         background-attachment: fixed !important;
+        animation: zoom 20s infinite alternate linear !important;
+    }
+    @keyframes zoom {
+        from { transform: scale(1); }
+        to { transform: scale(1.1); }
     }
     
-    /* CAMADA DE ESCURECIMENTO (Para o card branco saltar aos olhos) */
-    .stApp::before {
-        content: "";
-        position: fixed;
-        top: 0; left: 0; right: 0; bottom: 0;
-        background-color: rgba(0, 20, 60, 0.6) !important;
-        z-index: 0;
-    }
-    
-    .main { z-index: 1 !important; position: relative !important; }
-    
-    /* CARD BRANCO E ELEGANTE */
+    /* 3. O Card Branco do Login */
     [data-testid="stForm"] {
         background-color: #FFFFFF !important;
-        border-radius: 15px !important;
+        border-radius: 12px !important;
         border: none !important;
         box-shadow: 0px 25px 50px rgba(0,0,0,0.8) !important;
         padding: 40px !important;
-        margin-top: 2vh;
+        margin-top: 5vh;
     }
     
-    /* FORÇA TEXTOS PARA ESCURO */
+    /* 4. Textos escuros no form */
     [data-testid="stForm"] p, [data-testid="stForm"] label, [data-testid="stForm"] div {
         color: #333333 !important;
     }
     
-    /* CAIXA DE TEXTO */
+    /* 5. Inputs Claros */
     input[type="text"], input[type="password"] {
         background-color: #F8F9FA !important;
         color: #333333 !important;
@@ -148,25 +143,29 @@ if not st.session_state['logado']:
         border: 1px solid #D1D5DB !important;
     }
     
-    /* O ASSASSINO DE BOTÕES VERMELHOS */
-    button[kind="primaryFormSubmit"], 
-    button[kind="primary"], 
-    div[data-testid="stForm"] button {
-        background-color: #002395 !important;
-        background: #002395 !important;
-        border: 2px solid #002395 !important;
-        color: #FFFFFF !important;
-        font-weight: 900 !important;
-        border-radius: 8px !important;
-        transition: all 0.3s !important;
+    /* 6. CORRIGE O OLHINHO DA SENHA (Pára de pintar ele de azul!) */
+    button[kind="secondary"] {
+        background-color: transparent !important;
+        border: none !important;
+    }
+    button[kind="secondary"] * {
+        color: #808080 !important;
     }
     
-    button[kind="primaryFormSubmit"]:hover, 
-    button[kind="primary"]:hover, 
-    div[data-testid="stForm"] button:hover {
+    /* 7. O BOTÃO DE LOGIN CIRÚRGICO (Azul de verdade e letra Branca de verdade) */
+    button[kind="primaryFormSubmit"] {
+        background-color: #002395 !important;
+        border: none !important;
+        border-radius: 8px !important;
+        padding: 10px !important;
+    }
+    button[kind="primaryFormSubmit"] * {
+        color: #FFFFFF !important;
+        font-weight: 900 !important;
+        font-size: 16px !important;
+    }
+    button[kind="primaryFormSubmit"]:hover {
         background-color: #4A69BD !important;
-        background: #4A69BD !important;
-        border-color: #4A69BD !important;
         transform: scale(1.02);
     }
     </style>
@@ -225,9 +224,9 @@ st.markdown("""
     .stTabs [aria-selected="true"] { border-bottom-color: #002395 !important; color: #002395 !important; }
     
     /* Garante botões azuis dentro do sistema */
-    div.stButton > button { background-color: #002395 !important; background: #002395 !important; border: none !important; color: #FFFFFF !important;}
-    div.stButton > button p { color: #FFFFFF !important; font-weight: bold !important; }
-    div.stButton > button:hover { background-color: #4A69BD !important; background: #4A69BD !important;}
+    div.stButton > button { background-color: #002395 !important; border: none !important; }
+    div.stButton > button * { color: #FFFFFF !important; font-weight: bold !important; }
+    div.stButton > button:hover { background-color: #4A69BD !important; transform: scale(1.02); }
     </style>
 """, unsafe_allow_html=True)
 
