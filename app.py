@@ -5,6 +5,8 @@ import re
 import PyPDF2
 from streamlit_gsheets import GSheetsConnection
 import time
+import base64
+import os
 
 # ==========================================
 # 1. CONFIGURAÇÕES INICIAIS
@@ -84,14 +86,14 @@ if 'nivel_acesso' not in st.session_state: st.session_state['nivel_acesso'] = "V
 if 'unidades_permitidas' not in st.session_state: st.session_state['unidades_permitidas'] = "Todas"
 
 # ==========================================
-# 5. TELA DE LOGIN (SEM AMENDOIM, COM ASSINATURA)
+# 5. TELA DE LOGIN (A IMAGEM CORRETA E ASSINATURA BLINDADA)
 # ==========================================
 if not st.session_state['logado']:
     st.markdown("""
     <style>
-    /* O Fundo de Laboratório de Verdade! */
+    /* A imagem EXATA da Placa de Petri sendo analisada */
     .stApp {
-        background-image: linear-gradient(rgba(0, 15, 60, 0.75), rgba(0, 15, 60, 0.75)), url("https://images.unsplash.com/photo-1532187863486-abf9dbad1b69?q=80&w=2000&auto=format&fit=crop") !important;
+        background-image: linear-gradient(rgba(0, 15, 60, 0.65), rgba(0, 15, 60, 0.65)), url("https://images.unsplash.com/photo-1579154204601-01588f351e67?q=80&w=2000&auto=format&fit=crop") !important;
         background-size: cover !important;
         background-position: center !important;
         background-attachment: fixed !important;
@@ -108,14 +110,13 @@ if not st.session_state['logado']:
         border: none !important;
         box-shadow: 0px 25px 50px rgba(0,0,0,0.8) !important;
         padding: 40px !important;
-        margin-top: 5vh;
+        margin-top: 2vh;
         z-index: 10;
     }
     
-    /* Textos Escuros */
     [data-testid="stForm"] p, [data-testid="stForm"] label, [data-testid="stForm"] div { color: #333333 !important; }
     
-    /* Inputs Destacados (Azul Gelo) */
+    /* Inputs Azul Gelo */
     input[type="text"], input[type="password"] {
         background-color: #E8F0FE !important;
         color: #333333 !important;
@@ -124,7 +125,7 @@ if not st.session_state['logado']:
         border-radius: 6px !important;
     }
     
-    /* Olho da Senha transparente */
+    /* Olho da Senha Transparente */
     button[kind="secondary"] { background-color: transparent !important; border: none !important; }
     button[kind="secondary"] * { color: #808080 !important; }
     
@@ -138,21 +139,10 @@ if not st.session_state['logado']:
         padding: 10px !important;
     }
     div.stButton > button *, button[kind="primaryFormSubmit"] * { 
-        color: #FFFFFF !important; 
-        font-weight: 900 !important; 
-        font-size: 16px !important; 
+        color: #FFFFFF !important; font-weight: 900 !important; font-size: 16px !important; 
     }
     div.stButton > button:hover, button[kind="primaryFormSubmit"]:hover { 
-        background-color: #4A69BD !important; 
-        transform: scale(1.02); 
-    }
-    
-    /* Ajuste para a assinatura brilhar abaixo do form */
-    .assinatura-footer {
-        display: flex;
-        justify-content: center;
-        margin-top: 20px;
-        opacity: 0.9;
+        background-color: #4A69BD !important; transform: scale(1.02); 
     }
     </style>
     """, unsafe_allow_html=True)
@@ -170,7 +160,6 @@ if not st.session_state['logado']:
             
             usuario_input = st.text_input("👤 Nome de Usuário:")
             senha_input = st.text_input("🔑 Senha de Acesso:", type="password")
-            
             lembrar_senha = st.checkbox("Lembrar senha neste computador")
             
             st.markdown("<br>", unsafe_allow_html=True)
@@ -189,15 +178,30 @@ if not st.session_state['logado']:
                 else:
                     st.error("❌ Usuário ou senha incorretos. Acesso negado.")
         
-        # A Assinatura WarMachine agora fica DE FORA da caixa branca
-        st.markdown('<div class="assinatura-footer">', unsafe_allow_html=True)
-        col_sig1, col_sig2, col_sig3 = st.columns([1, 2, 1])
-        with col_sig2:
-            try:
-                st.image("Gemini_Generated_Image_s8ldfcs8ldfcs8ld-removebg-preview.png", use_container_width=True)
-            except:
-                st.markdown("<p style='text-align: center; color: #FFFFFF; font-weight: bold;'>BORN FROM STEEL. DRIVEN BY CODE.</p>", unsafe_allow_html=True)
-        st.markdown('</div>', unsafe_allow_html=True)
+        # ==========================================
+        # A ASSINATURA NA CÁPSULA DE VIDRO BRANCA
+        # ==========================================
+        caminho_imagem = "Gemini_Generated_Image_s8ldfcs8ldfcs8ld-removebg-preview.png"
+        
+        if os.path.exists(caminho_imagem):
+            with open(caminho_imagem, "rb") as image_file:
+                img_base64 = base64.b64encode(image_file.read()).decode()
+            
+            st.markdown(f'''
+                <div style="display: flex; justify-content: center; margin-top: 25px;">
+                    <div style="background-color: rgba(255, 255, 255, 0.95); padding: 15px 30px; border-radius: 12px; box-shadow: 0px 10px 30px rgba(0,0,0,0.6); max-width: 320px; transition: transform 0.3s ease;">
+                        <img src="data:image/png;base64,{img_base64}" style="width: 100%; display: block;">
+                    </div>
+                </div>
+            ''', unsafe_allow_html=True)
+        else:
+            st.markdown('''
+                <div style="display: flex; justify-content: center; margin-top: 25px;">
+                    <div style="background-color: rgba(255, 255, 255, 0.95); padding: 10px 25px; border-radius: 12px; box-shadow: 0px 10px 30px rgba(0,0,0,0.6);">
+                        <p style="text-align: center; color: #002395; font-weight: 900; margin: 0; font-size: 18px;">V PEZZETI WarMachine</p>
+                    </div>
+                </div>
+            ''', unsafe_allow_html=True)
 
     st.stop()
 
