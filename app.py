@@ -274,6 +274,11 @@ if st.sidebar.button("Sair da Conta"):
     st.rerun()
 st.sidebar.markdown("---")
 
+try:
+    st.sidebar.image("assinatura.png", use_container_width=True)
+except:
+    st.sidebar.caption("Desenvolvido por: Seu Nome")
+
 df_historico = carregar_dados_salvos()
 if not df_historico.empty:
     df_historico['Data_Obj'] = pd.to_datetime(df_historico['Data'], format="%d/%m/%Y", errors='coerce')
