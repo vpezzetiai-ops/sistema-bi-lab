@@ -86,14 +86,14 @@ if 'nivel_acesso' not in st.session_state: st.session_state['nivel_acesso'] = "V
 if 'unidades_permitidas' not in st.session_state: st.session_state['unidades_permitidas'] = "Todas"
 
 # ==========================================
-# 5. TELA DE LOGIN (O VERDADEIRO VIDRO FOSCO)
+# 5. TELA DE LOGIN (MICROSCOPIA + CÁPSULA BRANCA NO LOGO)
 # ==========================================
 if not st.session_state['logado']:
     st.markdown("""
     <style>
-    /* Imagem Inconfundível de Laboratório (Tubos e Pipeta azuis) */
+    /* Imagem Inconfundível: Microscópio Real do National Cancer Institute */
     .stApp {
-        background-image: linear-gradient(rgba(0, 15, 60, 0.3), rgba(0, 15, 60, 0.6)), url("https://images.unsplash.com/photo-1532187863486-abf9dbad1b69?q=80&w=2000&auto=format&fit=crop") !important;
+        background-image: linear-gradient(rgba(0, 15, 60, 0.4), rgba(0, 15, 60, 0.7)), url("https://images.unsplash.com/photo-1581093458791-9f3c3900df4b?q=80&w=2000&auto=format&fit=crop") !important;
         background-size: cover !important;
         background-position: center !important;
         background-attachment: fixed !important;
@@ -103,29 +103,29 @@ if not st.session_state['logado']:
     
     [data-testid="stHeader"] { background: transparent !important; }
     
-    /* EFEITO GLASSMORPHISM (Vidro Fosco Real) */
+    /* O SEU VIDRO FOSCO AMADO */
     [data-testid="stForm"] {
-        background: rgba(255, 255, 255, 0.35) !important; /* Fundo transparente */
-        backdrop-filter: blur(16px) !important; /* Desfoque do vidro */
+        background: rgba(255, 255, 255, 0.25) !important;
+        backdrop-filter: blur(16px) !important;
         -webkit-backdrop-filter: blur(16px) !important;
         border-radius: 20px !important;
-        border: 1px solid rgba(255, 255, 255, 0.6) !important; /* Borda de vidro */
-        box-shadow: 0px 30px 60px rgba(0,0,0,0.5) !important;
+        border: 1px solid rgba(255, 255, 255, 0.4) !important;
+        box-shadow: 0px 30px 60px rgba(0,0,0,0.6) !important;
         padding: 50px 40px 30px 40px !important;
-        margin-top: 3vh;
+        margin-top: 2vh;
         z-index: 10;
     }
     
-    /* Textos Escuros com Sombra Leve para destacar no Vidro */
+    /* Textos Escuros no Vidro */
     [data-testid="stForm"] p, [data-testid="stForm"] label, [data-testid="stForm"] div { 
         color: #111827 !important; 
         font-weight: 600;
         text-shadow: 0px 1px 2px rgba(255,255,255,0.8) !important;
     }
     
-    /* Inputs Brancos Sólidos com Borda Discreta */
+    /* Inputs Brancos/Claros */
     input[type="text"], input[type="password"] {
-        background-color: rgba(255, 255, 255, 0.9) !important;
+        background-color: rgba(255, 255, 255, 0.95) !important;
         color: #111827 !important;
         -webkit-text-fill-color: #111827 !important;
         border: 1px solid rgba(255, 255, 255, 0.8) !important;
@@ -138,7 +138,7 @@ if not st.session_state['logado']:
         box-shadow: 0 0 0 2px rgba(0, 35, 149, 0.3) !important;
     }
     
-    /* Olho da Senha Transparente */
+    /* Olho da Senha transparente */
     button[kind="secondary"] { background-color: transparent !important; border: none !important; }
     button[kind="secondary"] * { color: #4B5563 !important; text-shadow: none !important;}
     
@@ -160,7 +160,7 @@ if not st.session_state['logado']:
         background-color: #4A69BD !important; transform: scale(1.02); 
     }
     
-    /* Linha divisória de vidro */
+    /* Linha divisória da assinatura */
     hr.custom-divider {
         border: 0;
         height: 1px;
@@ -174,10 +174,29 @@ if not st.session_state['logado']:
     with col_login:
         st.markdown("<br>", unsafe_allow_html=True)
         with st.form(key="login_form"):
-            col_logo1, col_logo2, col_logo3 = st.columns([1, 2, 1])
-            with col_logo2:
-                try: st.image("logo.png", use_container_width=True)
-                except: st.markdown("<h2 style='text-align: center; color:#002395 !important; text-shadow: 0px 1px 3px rgba(255,255,255,0.9) !important;'>SÃO FRANCISCO</h2>", unsafe_allow_html=True)
+            
+            # ==========================================
+            # A CÁPSULA BRANCA DO LOGO
+            # ==========================================
+            caminho_logo = "logo.png"
+            if os.path.exists(caminho_logo):
+                with open(caminho_logo, "rb") as image_file:
+                    logo_b64 = base64.b64encode(image_file.read()).decode()
+                st.markdown(f'''
+                    <div style="display: flex; justify-content: center; margin-bottom: 25px;">
+                        <div style="background-color: rgba(255, 255, 255, 0.95); padding: 15px 35px; border-radius: 16px; box-shadow: 0px 8px 20px rgba(0,0,0,0.2); text-align: center;">
+                            <img src="data:image/png;base64,{logo_b64}" style="max-height: 85px; object-fit: contain;">
+                        </div>
+                    </div>
+                ''', unsafe_allow_html=True)
+            else:
+                st.markdown('''
+                    <div style="display: flex; justify-content: center; margin-bottom: 25px;">
+                        <div style="background-color: rgba(255, 255, 255, 0.95); padding: 15px 35px; border-radius: 16px; box-shadow: 0px 8px 20px rgba(0,0,0,0.2); text-align: center;">
+                            <h2 style='margin: 0; color:#002395 !important; font-weight: 900; text-shadow: none;'>SÃO FRANCISCO</h2>
+                        </div>
+                    </div>
+                ''', unsafe_allow_html=True)
             
             st.markdown("<h4 style='text-align: center; color:#111827 !important; margin-bottom:30px; font-weight: 800; text-shadow: 0px 1px 2px rgba(255,255,255,0.8);'>Acesso ao Sistema Analítico</h4>", unsafe_allow_html=True)
             
