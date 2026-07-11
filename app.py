@@ -78,7 +78,6 @@ def carregar_usuarios():
         df_users = conn.read(worksheet="Usuarios", ttl=0).dropna(how="all")
         if df_users.empty: return pd.DataFrame(columns=["Usuario", "Senha", "Nivel_Acesso", "Unidades_Permitidas"])
         
-        # Garante as colunas novas
         if "Nivel_Acesso" not in df_users.columns: df_users["Nivel_Acesso"] = "Administrador"
         if "Unidades_Permitidas" not in df_users.columns: df_users["Unidades_Permitidas"] = "Todas"
             
@@ -92,7 +91,7 @@ def salvar_novo_usuario(df_users):
     conn.update(worksheet="Usuarios", data=df_users)
 
 # ==========================================
-# 4. TELA DE LOGIN (EFEITO VÍDEO CINEMATOGRÁFICO)
+# 4. TELA DE LOGIN BLINDADA COM IMAGEM HTML E CHECKBOX
 # ==========================================
 if 'logado' not in st.session_state: st.session_state['logado'] = False
 if 'usuario' not in st.session_state: st.session_state['usuario'] = ""
@@ -102,29 +101,29 @@ if 'unidades_permitidas' not in st.session_state: st.session_state['unidades_per
 if not st.session_state['logado']:
     st.markdown("""
     <style>
-    /* Oculta menu superior */
-    [data-testid="stHeader"] { background-color: transparent !important; }
-    
-    /* Efeito de Vídeo Cinematográfico (Substitui o MP4 bloqueado) */
-    [data-testid="stAppViewContainer"]::before {
-        content: "";
+    /* Injeção forçada do fundo via HTML para burlar o bloqueio do Streamlit */
+    .fundo-animado {
         position: fixed;
-        top: -10%; left: -10%; width: 120%; height: 120%;
+        top: 0; left: 0; width: 100vw; height: 100vh;
         background-image: url("https://images.unsplash.com/photo-1532187863486-abf9dbad1b69?q=80&w=2000&auto=format&fit=crop");
         background-size: cover;
         background-position: center;
-        filter: brightness(0.35) sepia(0.2) hue-rotate(190deg); /* Tom azul de laboratório */
-        z-index: -1;
-        animation: panVideo 25s infinite alternate ease-in-out;
+        filter: brightness(0.3) sepia(0.3) hue-rotate(190deg); /* Escurece a imagem e dá tom azulado */
+        z-index: -9999;
+        animation: panCamera 20s infinite alternate ease-in-out;
     }
     
-    /* O movimento suave que imita câmera de vídeo */
-    @keyframes panVideo {
-        0% { transform: scale(1) translate(0, 0); }
-        100% { transform: scale(1.1) translate(-2%, -2%); }
+    @keyframes panCamera {
+        0% { transform: scale(1); }
+        100% { transform: scale(1.1); }
     }
     
-    /* Card de Login Branco Flutuante (Protegido contra Dark Mode) */
+    /* Deixa o fundo padrão do app transparente para a imagem aparecer */
+    [data-testid="stAppViewContainer"], [data-testid="stHeader"] {
+        background-color: transparent !important;
+    }
+    
+    /* Card de Login Branco Flutuante */
     [data-testid="stForm"] {
         background-color: rgba(255, 255, 255, 0.95) !important;
         border-radius: 12px !important;
@@ -132,11 +131,8 @@ if not st.session_state['logado']:
         box-shadow: 0 20px 40px rgba(0,0,0,0.6) !important;
         padding: 40px !important;
         margin-top: 5vh;
-        position: relative;
-        z-index: 1;
     }
     
-    /* Força textos escuros e inputs limpos */
     [data-testid="stForm"] p, [data-testid="stForm"] label, [data-testid="stForm"] div { color: #333333 !important; }
     [data-testid="stForm"] input {
         background-color: #F8F9FA !important;
@@ -152,6 +148,8 @@ if not st.session_state['logado']:
     }
     div.stButton > button[kind="primary"]:hover { background-color: #4A69BD !important; transform: scale(1.02); }
     </style>
+    
+    <div class="fundo-animado"></div>
     """, unsafe_allow_html=True)
 
     col_vazia_esq, col_login, col_vazia_dir = st.columns([1, 1.2, 1])
@@ -163,10 +161,14 @@ if not st.session_state['logado']:
                 try: st.image("logo.png", use_container_width=True)
                 except: st.markdown("<h2 style='text-align: center; color:#002395 !important;'>SÃO FRANCISCO</h2>", unsafe_allow_html=True)
             
-            st.markdown("<h4 style='text-align: center; color:#333333 !important; margin-bottom:30px;'>Acesso ao Sistema Analítico</h4>", unsafe_allow_html=True)
+            st.markdown("<h4 style='text-align: center; color:#333333 !important; margin-bottom:20px;'>Acesso ao Sistema Analítico</h4>", unsafe_allow_html=True)
             
             usuario_input = st.text_input("👤 Nome de Usuário:")
             senha_input = st.text_input("🔑 Senha de Acesso:", type="password")
+            
+            # Novo recurso: Lembrar Senha
+            lembrar_senha = st.checkbox("Lembrar senha neste computador")
+            
             st.markdown("<br>", unsafe_allow_html=True)
             submit_button = st.form_submit_button("Fazer Login 🚀", type="primary", use_container_width=True)
             
@@ -189,9 +191,9 @@ if not st.session_state['logado']:
 # ==========================================
 st.markdown("""
     <style>
-    /* Desliga o fundo animado depois do login */
-    [data-testid="stAppViewContainer"]::before { display: none !important; }
+    /* Remove a imagem de fundo quando entra no sistema */
     .stApp { background-color: var(--background-color) !important;}
+    .fundo-animado { display: none !important; }
     
     div[data-testid="metric-container"] {
         background-color: var(--secondary-background-color) !important;
@@ -274,7 +276,7 @@ def extrair_dados_pdf(texto_bruto):
     return pd.DataFrame(dados)
 
 # ==========================================
-# 6. MENU LATERAL
+# 6. MENU LATERAL E DADOS
 # ==========================================
 try: st.sidebar.image("logo.png", use_container_width=True)
 except: st.sidebar.empty() 
