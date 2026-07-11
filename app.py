@@ -98,16 +98,20 @@ if not st.session_state['logado']:
     
     # Busca a imagem de fundo no GitHub (fundo.jpg ou fundo.png)
     bg_b64 = get_base64_image("fundo.jpg")
-    if not bg_b64: bg_b64 = get_base64_image("fundo.png") # Tenta PNG caso você suba em PNG
+    if not bg_b64: bg_b64 = get_base64_image("fundo.png")
     
-    # Se achou a imagem no Git, usa ela. Se não, usa um degradê azul escuro elegante.
+    # Injeta o pseudo-elemento antes do app para animar SÓ a imagem (e não a caixa de login)
     if bg_b64:
         bg_css = f"""
-        .stApp {{
-            background-image: linear-gradient(rgba(0, 15, 60, 0.4), rgba(0, 15, 60, 0.7)), url("data:image/jpeg;base64,{bg_b64}") !important;
-            background-size: cover !important;
-            background-position: center !important;
-            background-attachment: fixed !important;
+        .stApp::before {{
+            content: "";
+            position: fixed;
+            top: -5%; left: -5%; width: 110%; height: 110%; /* Sobra borda para poder dar o zoom sem mostrar branco */
+            background-image: linear-gradient(rgba(0, 15, 60, 0.4), rgba(0, 15, 60, 0.75)), url("data:image/jpeg;base64,{bg_b64}");
+            background-size: cover;
+            background-position: center;
+            z-index: -1;
+            animation: panBg 30s infinite alternate ease-in-out;
         }}
         """
     else:
@@ -121,9 +125,15 @@ if not st.session_state['logado']:
     <style>
     {bg_css}
     
+    /* Keyframes para o zoom cinematográfico lento do fundo */
+    @keyframes panBg {{
+        0% {{ transform: scale(1) translate(0, 0); }}
+        100% {{ transform: scale(1.05) translate(-1%, -1%); }}
+    }}
+    
     [data-testid="stHeader"] {{ background: transparent !important; }}
     
-    /* Card de Login mais estreito e elegante */
+    /* Card de Login (Vidro Fosco) */
     [data-testid="stForm"] {{
         background: rgba(255, 255, 255, 0.25) !important;
         backdrop-filter: blur(16px) !important;
@@ -131,7 +141,7 @@ if not st.session_state['logado']:
         border-radius: 20px !important;
         border: 1px solid rgba(255, 255, 255, 0.4) !important;
         box-shadow: 0px 30px 60px rgba(0,0,0,0.6) !important;
-        padding: 40px 30px 20px 30px !important; /* Reduzi o padding para não ficar gigante */
+        padding: 40px 30px 20px 30px !important;
         margin-top: 3vh;
         z-index: 10;
     }}
@@ -190,7 +200,7 @@ if not st.session_state['logado']:
     </style>
     """, unsafe_allow_html=True)
 
-    # Mudança aqui: [1.5, 1.1, 1.5] empurra a coluna do meio (login) para ficar mais fina
+    # Mantendo o formato estreito
     col_vazia_esq, col_login, col_vazia_dir = st.columns([1.5, 1.1, 1.5]) 
     
     with col_login:
@@ -198,17 +208,18 @@ if not st.session_state['logado']:
         with st.form(key="login_form"):
             
             # ==========================================
-            # LOGO LIMPO (Sem caixa branca esquisita)
+            # LOGO MAIOR E COM BRILHO (SEM CAIXA BRANCA)
             # ==========================================
             logo_b64 = get_base64_image("logo.png")
             if logo_b64:
+                # max-height foi de 90px para 135px. O filter: drop-shadow cria a aura branca de destaque.
                 st.markdown(f'''
-                    <div style="display: flex; justify-content: center; margin-bottom: 20px;">
-                        <img src="data:image/png;base64,{logo_b64}" style="max-height: 90px; object-fit: contain;">
+                    <div style="display: flex; justify-content: center; margin-bottom: 25px;">
+                        <img src="data:image/png;base64,{logo_b64}" style="max-height: 135px; object-fit: contain; filter: drop-shadow(0px 0px 18px rgba(255, 255, 255, 0.8));">
                     </div>
                 ''', unsafe_allow_html=True)
             else:
-                st.markdown("<h2 style='text-align: center; color:#002395 !important; font-weight: 900; margin-bottom: 20px;'>SÃO FRANCISCO</h2>", unsafe_allow_html=True)
+                st.markdown("<h2 style='text-align: center; color:#002395 !important; font-weight: 900; margin-bottom: 20px; text-shadow: 0px 0px 15px rgba(255,255,255,0.8);'>SÃO FRANCISCO</h2>", unsafe_allow_html=True)
             
             st.markdown("<h5 style='text-align: center; color:#111827 !important; margin-bottom:25px; font-weight: 800; text-shadow: 0px 1px 2px rgba(255,255,255,0.8);'>Acesso ao Sistema Analítico</h5>", unsafe_allow_html=True)
             
@@ -262,6 +273,7 @@ else:
     st.markdown("""
         <style>
         .stApp { background-image: none !important; background-color: #F4F6F9 !important; animation: none !important;}
+        .stApp::before { display: none !important; } /* Desliga o fundo animado no sistema */
         header[data-testid="stHeader"] { background: #F4F6F9 !important; }
         
         div[data-testid="metric-container"] {
