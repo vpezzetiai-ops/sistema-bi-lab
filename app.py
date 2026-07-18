@@ -16,7 +16,7 @@ from datetime import datetime, timedelta
 ARQUIVO_VIDEO_FUNDO = "video.mp4"
 ARQUIVO_VIDEO_ASSINATURA = "Gemini_Generated_Image_s8ldfcs8ldfcs8ld-removebg-preview.png"
 ARQUIVO_LOGO_LOGIN = "logo.png"
-ARQUIVO_MARCA_DAGUA_MENU = "marca_dagua.jpg" # Alterado para .jpg
+ARQUIVO_MARCA_DAGUA_MENU = "marca_dagua.jpg" # O ficheiro TEM de ter exatamente este nome, tudo em minúsculas.
 
 # ==========================================
 # CONFIGURAÇÕES INICIAIS DE TEMA
@@ -232,10 +232,11 @@ else:
     marca_b64 = get_base64_file(ARQUIVO_MARCA_DAGUA_MENU)
     css_marca_dagua = ""
     if marca_b64:
+        # AQUI REDUZI A OPACIDADE DO GRADIENTE DE 0.93 PARA 0.75 PARA A TUA MARCA D'ÁGUA BRILHAR MAIS
         css_marca_dagua = f"""
         section[data-testid="stSidebar"] {{
-            background: linear-gradient(rgba(15, 23, 42, 0.93), rgba(15, 23, 42, 0.98)), url("data:image/jpeg;base64,{marca_b64}") !important;
-            background-size: 90% !important;
+            background: linear-gradient(rgba(11, 17, 32, 0.75), rgba(11, 17, 32, 0.95)), url("data:image/jpeg;base64,{marca_b64}") !important;
+            background-size: 85% !important;
             background-position: center center !important;
             background-repeat: no-repeat !important;
             border-right: 1px solid #1e293b !important;
@@ -382,6 +383,12 @@ else:
 
         df_reais = df_todos_dados[df_todos_dados['Período_Arquivo'] != 'Gerado Demo']
         df_mock = df_todos_dados[df_todos_dados['Período_Arquivo'] == 'Gerado Demo']
+
+    # ==========================
+    # AVISO DE DEBUG DA MARCA D'ÁGUA (SE O ARQUIVO NÃO FOR ENCONTRADO)
+    # ==========================
+    if not marca_b64:
+        st.sidebar.error(f"⚠️ Imagem '{ARQUIVO_MARCA_DAGUA_MENU}' não encontrada.")
 
     st.sidebar.markdown("""
         <div style="text-align: center; margin-top: 10px; margin-bottom: 30px;">
