@@ -15,8 +15,8 @@ from datetime import datetime, timedelta
 # ==========================================
 ARQUIVO_VIDEO_FUNDO = "video.mp4"
 ARQUIVO_LOGO_LOGIN = "logo.png"
-ARQUIVO_ASSINATURA = "21880.png" # Arquivo de assinatura corrigido
-ARQUIVO_LOGO_ANIMADO_MENU = "gemini_generated_video_95e8509b.mp4" # Vídeo 3D
+ARQUIVO_ASSINATURA = "Gemini_Generated_Image_s8ldfcs8ldfcs8ld-removebg-preview.png" 
+ARQUIVO_LOGO_ANIMADO_MENU = "video_animado.mp4"
 
 # ==========================================
 # CONFIGURAÇÕES INICIAIS DE TEMA
@@ -119,7 +119,7 @@ if 'nivel_acesso' not in st.session_state: st.session_state['nivel_acesso'] = "V
 if 'unidades_permitidas' not in st.session_state: st.session_state['unidades_permitidas'] = "Todas"
 
 # ==========================================
-# 5. TELA DE LOGIN PREMIUM
+# 5. TELA DE LOGIN PREMIUM (PLACA DE PETRI)
 # ==========================================
 if not st.session_state['logado']:
     
@@ -127,57 +127,71 @@ if not st.session_state['logado']:
     
     if video_b64:
         st.markdown(f'''
-        <video autoplay loop muted playsinline style="position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; z-index: -999; object-fit: cover; filter: brightness(0.7) contrast(1.2);">
+        <video autoplay loop muted playsinline style="position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; z-index: -999; object-fit: cover; filter: brightness(0.6) contrast(1.2);">
             <source src="data:video/mp4;base64,{video_b64}" type="video/mp4">
         </video>
         ''', unsafe_allow_html=True)
     else:
         st.error(f"🚨 Vídeo '{ARQUIVO_VIDEO_FUNDO}' não encontrado.")
-        st.markdown('<style>.stApp { background-color: #0b132b !important; }</style>', unsafe_allow_html=True)
+        st.markdown('<style>.stApp { background-color: #040d21 !important; }</style>', unsafe_allow_html=True)
 
+    # CSS PARA TRANSFORMAR O FORMULÁRIO EM UMA PLACA DE PETRI DE VIDRO
     st.markdown("""
     <style>
-    @keyframes zoomIn { 0% { opacity: 0; transform: scale(0.9); } 100% { opacity: 1; transform: scale(1); } }
+    @keyframes floating { 0% { transform: translateY(0px); } 50% { transform: translateY(-10px); } 100% { transform: translateY(0px); } }
+    @keyframes zoomIn { 0% { opacity: 0; transform: scale(0.8); } 100% { opacity: 1; transform: scale(1); } }
 
     html, body, [data-testid="stAppViewContainer"], .block-container { overflow: hidden !important; padding: 0 !important; margin: 0 !important; }
     .stApp { background: transparent !important; }
     [data-testid="stHeader"] { display: none !important; }
     
+    /* EFEITO PLACA DE PETRI 3D */
     [data-testid="stForm"] {
-        background: linear-gradient(145deg, rgba(15, 23, 42, 0.8), rgba(15, 23, 42, 0.4)) !important;
-        backdrop-filter: blur(20px) !important;
-        -webkit-backdrop-filter: blur(20px) !important;
-        border-radius: 20px !important;
-        border: 1px solid rgba(0, 238, 255, 0.2) !important; 
-        box-shadow: 0px 20px 50px rgba(0,0,0,0.9), 0px 0px 20px rgba(0, 238, 255, 0.1) !important;
-        padding: 35px 25px 25px 25px !important;
-        margin-top: 10vh !important; 
-        z-index: 10; max-width: 380px; margin-left: auto; margin-right: auto;
-        animation: zoomIn 0.8s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+        background: radial-gradient(circle at 30% 30%, rgba(255, 255, 255, 0.08), rgba(0, 238, 255, 0.02)) !important;
+        backdrop-filter: blur(12px) saturate(150%) !important;
+        -webkit-backdrop-filter: blur(12px) saturate(150%) !important;
+        border-radius: 50px !important; /* Arredondamento extremo simulando o formato redondo da placa */
+        border: 2px solid rgba(255, 255, 255, 0.15) !important; 
+        box-shadow: 
+            inset 0px 0px 30px rgba(0, 238, 255, 0.15), /* Agar/Líquido reagente interno */
+            inset 0px 0px 10px rgba(255, 255, 255, 0.5), /* Borda de vidro interno */
+            inset 20px 20px 40px rgba(255, 255, 255, 0.05), /* Curvatura do vidro */
+            0px 25px 50px rgba(0,0,0,0.8), /* Sombra da placa na bancada */
+            0px 0px 20px rgba(0, 238, 255, 0.2) !important; /* Brilho de bioluminescência */
+        padding: 45px 35px 30px 35px !important;
+        margin-top: 8vh !important; 
+        z-index: 10; max-width: 400px; margin-left: auto; margin-right: auto;
+        animation: zoomIn 0.8s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards, floating 6s ease-in-out infinite;
     }
     
-    [data-testid="stForm"] p, [data-testid="stForm"] label { color: #e2e8f0 !important; font-weight: 700; text-shadow: 0px 2px 4px rgba(0,0,0,0.9) !important; letter-spacing: 0.5px;}
+    [data-testid="stForm"] p, [data-testid="stForm"] label { 
+        color: #e2e8f0 !important; font-weight: 700; text-shadow: 0px 2px 4px rgba(0,0,0,0.9) !important; letter-spacing: 0.5px;
+    }
     
+    /* INPUTS ESTILO LÂMINAS DE MICROSCÓPIO / ETIQUETAS */
     input[type="text"], input[type="password"] {
-        background-color: rgba(0, 0, 0, 0.4) !important; color: #00eeff !important; -webkit-text-fill-color: #00eeff !important;
-        border: 1px solid rgba(255, 255, 255, 0.1) !important; border-radius: 8px !important; padding: 12px !important;
+        background-color: rgba(0, 15, 30, 0.5) !important; color: #00eeff !important; -webkit-text-fill-color: #00eeff !important;
+        border: 1px solid rgba(0, 238, 255, 0.2) !important; 
+        border-left: 4px solid #00eeff !important; /* Marcação lateral da lâmina */
+        border-radius: 4px !important; padding: 12px !important;
         transition: all 0.3s ease;
+        font-family: monospace !important; letter-spacing: 1px;
     }
     input[type="text"]:focus, input[type="password"]:focus { 
-        border-color: #00eeff !important; box-shadow: 0 0 10px rgba(0, 238, 255, 0.3) !important; background-color: rgba(0, 0, 0, 0.6) !important;
+        border-color: #00eeff !important; box-shadow: 0 0 15px rgba(0, 238, 255, 0.4) !important; background-color: rgba(0, 0, 0, 0.7) !important;
     }
     
     [data-testid="stFormSubmitButton"] button {
-        background: linear-gradient(90deg, #002395, #3b82f6) !important; color: #FFFFFF !important; border: none !important; border-radius: 8px !important; 
+        background: linear-gradient(90deg, #002395, #3b82f6) !important; color: #FFFFFF !important; border: none !important; border-radius: 25px !important; 
         padding: 12px !important; margin-top: 15px !important; box-shadow: 0px 4px 15px rgba(0, 35, 149, 0.6) !important; width: 100%;
         transition: all 0.3s ease; text-transform: uppercase; letter-spacing: 1px;
     }
     [data-testid="stFormSubmitButton"] button * { color: #FFFFFF !important; font-weight: 900 !important; font-size: 15px !important; text-shadow: none !important;}
     [data-testid="stFormSubmitButton"] button:hover { 
-        background: linear-gradient(90deg, #3b82f6, #00eeff) !important; transform: translateY(-2px); box-shadow: 0px 8px 20px rgba(0, 238, 255, 0.4) !important;
+        background: linear-gradient(90deg, #3b82f6, #00eeff) !important; transform: translateY(-2px); box-shadow: 0px 8px 20px rgba(0, 238, 255, 0.5) !important;
     }
     
-    hr.custom-divider { border: 0; height: 1px; background: linear-gradient(to right, rgba(0,238,255,0), rgba(0,238,255,0.5), rgba(0,238,255,0)); margin: 25px 0 20px 0; }
+    hr.custom-divider { border: 0; height: 1px; background: linear-gradient(to right, rgba(0,238,255,0), rgba(0,238,255,0.6), rgba(0,238,255,0)); margin: 25px 0 20px 0; }
     </style>
     """, unsafe_allow_html=True)
 
@@ -188,22 +202,21 @@ if not st.session_state['logado']:
             
             logo_b64 = get_base64_file(ARQUIVO_LOGO_LOGIN)
             if logo_b64:
-                st.markdown(f'''<div style="display: flex; justify-content: center; margin-bottom: 15px;"><img src="data:image/png;base64,{logo_b64}" style="max-height: 80px; filter: drop-shadow(0px 0px 15px rgba(255,255,255,0.4));"></div>''', unsafe_allow_html=True)
+                st.markdown(f'''<div style="display: flex; justify-content: center; margin-bottom: 10px;"><img src="data:image/png;base64,{logo_b64}" style="max-height: 70px; filter: drop-shadow(0px 0px 15px rgba(255,255,255,0.4));"></div>''', unsafe_allow_html=True)
             
-            st.markdown("<h3 style='text-align: center; color:#ffffff !important; font-weight: 900; margin-bottom: 25px; text-shadow: 0px 4px 20px rgba(0,0,0,0.9);'>Sistema Analítico BI</h3>", unsafe_allow_html=True)
+            st.markdown("<h3 style='text-align: center; color:#00eeff !important; font-family: monospace; font-weight: 900; margin-bottom: 20px; text-shadow: 0px 0px 10px rgba(0,238,255,0.4);'>🧫 CULTURA DE DADOS BI</h3>", unsafe_allow_html=True)
             
-            usuario_input = st.text_input("👤 Usuário:")
-            senha_input = st.text_input("🔑 Senha:", type="password")
+            usuario_input = st.text_input("🔬 Identificação (Usuário):")
+            senha_input = st.text_input("🧬 Sequência (Senha):", type="password")
             
-            submit_button = st.form_submit_button("Acessar Plataforma 🚀", use_container_width=True)
+            submit_button = st.form_submit_button("Iniciar Análise 🚀", use_container_width=True)
             st.markdown("<hr class='custom-divider'>", unsafe_allow_html=True)
             
             assinatura_b64 = get_base64_file(ARQUIVO_ASSINATURA)
             if assinatura_b64:
-                # Assinatura corrigida (Usa apenas a imagem 21880.png)
                 st.markdown(f'''
                     <div style="text-align: center; padding-top: 5px;">
-                        <img src="data:image/png;base64,{assinatura_b64}" style="max-height: 55px; max-width: 100%; object-fit: contain; margin: 0 auto; display: block; filter: drop-shadow(0px 0px 8px rgba(0,238,255,0.3));">
+                        <img src="data:image/png;base64,{assinatura_b64}" style="max-height: 55px; max-width: 100%; object-fit: contain; margin: 0 auto; display: block; filter: drop-shadow(0px 0px 8px rgba(0,238,255,0.3)); opacity: 0.8;">
                     </div>
                 ''', unsafe_allow_html=True)
             else:
@@ -220,7 +233,7 @@ if not st.session_state['logado']:
                     st.session_state['unidades_permitidas'] = str(usuario_encontrado.iloc[0]['Unidades_Permitidas'])
                     st.rerun()
                 else:
-                    st.error("❌ Usuário ou senha incorretos. Acesso negado.")
+                    st.error("❌ Identificação rejeitada pela matriz. Tente novamente.")
 
     st.stop()
 
@@ -368,25 +381,22 @@ else:
         df_mock = df_todos_dados[df_todos_dados['Período_Arquivo'] == 'Gerado Demo']
 
     # ==========================
-    # LOGOTIPO ANIMADO 3D (COM TRUQUE DE TRANSPARÊNCIA)
+    # LOGOTIPO ANIMADO 3D
     # ==========================
     video_logo_b64 = get_base64_file(ARQUIVO_LOGO_ANIMADO_MENU)
     html_animacao = ""
     
     if video_logo_b64:
-        # A propriedade "mix-blend-mode: screen;" é o que faz o fundo preto do MP4 sumir e se misturar perfeitamente ao azul do menu.
         html_animacao = f'<video autoplay loop muted playsinline style="width: 140px; margin-bottom: 5px; filter: drop-shadow(0px 0px 20px rgba(0, 238, 255, 0.4)); mix-blend-mode: screen;"><source src="data:video/mp4;base64,{video_logo_b64}" type="video/mp4"></video>'
     else:
         st.sidebar.error(f"⚠️ Vídeo '{ARQUIVO_LOGO_ANIMADO_MENU}' não encontrado.")
 
-    # HTML reescrito em bloco contínuo para evitar que o Streamlit mostre as tags de texto
-    html_menu = f"""
-        <div style="text-align: center; margin-top: 0px; margin-bottom: 30px;">
-            {html_animacao}
-            <h1 style="font-family: 'Orbitron', sans-serif; color: #00eeff; font-size: 22px; font-weight: 700; text-transform: uppercase; letter-spacing: 2px; text-shadow: 0px 0px 15px rgba(0, 238, 255, 0.6); margin: 0; padding-top: 5px;">SÃO FRANCISCO</h1>
-            <h2 style="font-family: 'Montserrat', sans-serif; color: #f8fafc; font-size: 11px; font-weight: 800; letter-spacing: 5px; text-transform: uppercase; margin: 5px 0 0 0; opacity: 0.8;">Laboratório</h2>
-        </div>
-    """
+    # HTML REESCRITO SEM RECUOS (ESPAÇOS ANTES DAS LINHAS) PARA CORRIGIR O ERRO DE TEXTO NO MENU
+    html_menu = f"""<div style="text-align: center; margin-top: 0px; margin-bottom: 30px;">
+{html_animacao}
+<h1 style="font-family: 'Orbitron', sans-serif; color: #00eeff; font-size: 22px; font-weight: 700; text-transform: uppercase; letter-spacing: 2px; text-shadow: 0px 0px 15px rgba(0, 238, 255, 0.6); margin: 0; padding-top: 5px;">SÃO FRANCISCO</h1>
+<h2 style="font-family: 'Montserrat', sans-serif; color: #f8fafc; font-size: 11px; font-weight: 800; letter-spacing: 5px; text-transform: uppercase; margin: 5px 0 0 0; opacity: 0.8;">Laboratório</h2>
+</div>"""
     st.sidebar.markdown(html_menu, unsafe_allow_html=True)
 
     nivel_atual = st.session_state.get('nivel_acesso', 'Visualizador')
