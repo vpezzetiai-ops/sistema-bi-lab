@@ -14,7 +14,7 @@ from datetime import datetime, timedelta
 # ==========================================
 # 1. PAINEL DE CONTROLE DE ARQUIVOS (NOMES EXATOS)
 # ==========================================
-ARQUIVO_VIDEO_FUNDO = "vídeo.mp4" # <-- CORRIGIDO COM ACENTO
+ARQUIVO_VIDEO_FUNDO = "video.mp4" # <-- CORRIGIDO COM ACENTO
 ARQUIVO_LOGO_LOGIN = "logoprograma.png" 
 ARQUIVO_ASSINATURA = "Gemini_Generated_Image_s8ldfcs8ldfcs8ld-removebg-preview.png" 
 ARQUIVO_GIF_CARREGAMENTO = "logocarregador.gif"
