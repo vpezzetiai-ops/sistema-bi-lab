@@ -18,7 +18,7 @@ ARQUIVO_VIDEO_FUNDO = "video.mp4"
 ARQUIVO_LOGO_LOGIN = "logo.png"
 ARQUIVO_ASSINATURA = "Gemini_Generated_Image_s8ldfcs8ldfcs8ld-removebg-preview.png" 
 ARQUIVO_GIF_CARREGAMENTO = "logocarregador.gif"
-ARQUIVO_LOGO_PROGRAMA = "logoprograma.png" # CORRIGIDO PARA PNG
+ARQUIVO_LOGO_PROGRAMA = "logoprograma.png" 
 
 # ==========================================
 # CONFIGURAÇÕES INICIAIS DE TEMA
@@ -31,9 +31,6 @@ COR_NEGATIVO = '#3b82f6'
 PALETA_CORES = ['#00eeff', '#3b82f6', '#002395', '#8b5cf6', '#6366f1', '#a855f7']
 UNIDADES_OFICIAIS = ["1 - Serra Negra", "3 - AME", "4 - Amparo Unidade 4", "5 - Monte Alegre", "6 - Lindóia", "9 - Cenam", "10 - Amparo Unidade BPA", "12 - Águas de Lindóia", "Sede / Sem Unidade"]
 
-# ==========================================
-# FUNÇÃO AUXILIAR DE BASE64
-# ==========================================
 def get_base64_file(file_path):
     if os.path.exists(file_path):
         with open(file_path, "rb") as f: return base64.b64encode(f.read()).decode()
@@ -56,7 +53,7 @@ if gif_b64:
     """, unsafe_allow_html=True)
 
 # ==========================================
-# 2. MOTOR DE BANCO DE DADOS E REGEX
+# 2. MOTOR DE BANCO DE DADOS
 # ==========================================
 def padronizar_unidade(unidade):
     if pd.isna(unidade) or str(unidade).strip() == "" or "Não Informada" in str(unidade): return "Sede / Sem Unidade"
@@ -188,87 +185,87 @@ def gerar_dados_teste_premium():
         })
     return pd.DataFrame(novos_dados)
 
-# ==========================================
-# CONTROLE DE SESSÃO
-# ==========================================
 if 'logado' not in st.session_state: st.session_state['logado'] = False
 if 'usuario' not in st.session_state: st.session_state['usuario'] = ""
 if 'nivel_acesso' not in st.session_state: st.session_state['nivel_acesso'] = "Visualizador"
 if 'unidades_permitidas' not in st.session_state: st.session_state['unidades_permitidas'] = "Todas"
 
 # ==========================================
-# 5. TELA DE LOGIN (PLACA DE PETRI CLÁSSICA E CENTRALIZADA)
+# 5. TELA DE LOGIN (ESPAÇAMENTO PERFEITO)
 # ==========================================
 if not st.session_state['logado']:
     
     video_fundo_b64 = get_base64_file(ARQUIVO_VIDEO_FUNDO)
     if video_fundo_b64:
-        st.markdown(f'''<video autoplay loop muted playsinline style="position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; z-index: -999; object-fit: cover; filter: brightness(0.4) contrast(1.1);"><source src="data:video/mp4;base64,{video_fundo_b64}" type="video/mp4"></video>''', unsafe_allow_html=True)
+        st.markdown(f'''<video autoplay loop muted playsinline style="position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; z-index: -999; object-fit: cover; filter: brightness(0.35) contrast(1.1);"><source src="data:video/mp4;base64,{video_fundo_b64}" type="video/mp4"></video>''', unsafe_allow_html=True)
     else:
         st.markdown('<style>.stApp { background-color: #040d21 !important; }</style>', unsafe_allow_html=True)
 
-    # CSS DA PLACA DE PETRI ORIGINAL MELHORADA E CENTRALIZADA
+    # O CSS MAIS LIMPO E ESPAÇADO
     st.markdown("""
     <style>
-    @keyframes floating { 0% { transform: translateY(0px); } 50% { transform: translateY(-12px); } 100% { transform: translateY(0px); } }
+    @keyframes floating { 0% { transform: translateY(0px); } 50% { transform: translateY(-10px); } 100% { transform: translateY(0px); } }
     .stApp { background: transparent !important; }
     header[data-testid="stHeader"] { display: none !important; } 
     
+    /* Layout Flex para a tela inteira respirar */
+    .login-container {
+        display: flex; flex-direction: column; justify-content: space-between; align-items: center;
+        min-height: 95vh; padding: 40px 0;
+    }
+    
+    /* A PLACA DE PETRI APENAS PARA O FORMULÁRIO */
     [data-testid="stForm"] {
-        width: 480px !important; height: 480px !important; border-radius: 50% !important; 
+        width: 420px !important; height: 420px !important; border-radius: 50% !important; 
         background: radial-gradient(circle at 40% 40%, rgba(200, 180, 50, 0.15) 0%, rgba(0, 30, 40, 0.4) 60%, rgba(0, 0, 0, 0.8) 100%) !important;
-        backdrop-filter: blur(12px) !important; -webkit-backdrop-filter: blur(12px) !important;
-        border: 8px solid rgba(255, 255, 255, 0.1) !important;
-        border-top: 8px solid rgba(255, 255, 255, 0.3) !important;
-        border-bottom: 8px solid rgba(0, 0, 0, 0.8) !important;
-        box-shadow: inset 0px 0px 40px rgba(0, 238, 255, 0.1), 0px 30px 50px rgba(0,0,0,0.9), 0px 0px 30px rgba(0, 238, 255, 0.2) !important;
+        backdrop-filter: blur(15px) !important; -webkit-backdrop-filter: blur(15px) !important;
+        border: 6px solid rgba(255, 255, 255, 0.1) !important;
+        border-top: 6px solid rgba(255, 255, 255, 0.3) !important;
+        border-bottom: 6px solid rgba(0, 0, 0, 0.8) !important;
+        box-shadow: inset 0px 0px 40px rgba(0, 238, 255, 0.1), 0px 30px 50px rgba(0,0,0,0.8), 0px 0px 30px rgba(0, 238, 255, 0.15) !important;
         display: flex !important; flex-direction: column !important; justify-content: center !important; align-items: center !important;
-        margin: 5vh auto !important; padding: 0px !important; z-index: 10;
+        margin: auto !important; z-index: 10;
         animation: floating 6s ease-in-out infinite;
     }
     
-    [data-testid="stForm"] > div { width: 100% !important; max-width: 320px !important; margin: 0 auto !important; }
-    [data-testid="stForm"] label, [data-testid="stForm"] p { color: #f8fafc !important; font-weight: 800; text-shadow: 0px 2px 4px rgba(0,0,0,1) !important; font-size: 14px;}
+    [data-testid="stForm"] > div { width: 100% !important; max-width: 280px !important; margin: 0 auto !important; }
+    [data-testid="stForm"] label, [data-testid="stForm"] p { color: #f8fafc !important; font-weight: 700; text-shadow: 0px 2px 4px rgba(0,0,0,1) !important; font-size: 13px; text-align: center; width:100%;}
     
+    /* Inputs mais finos e limpos */
     input[type="text"], input[type="password"] {
-        background-color: rgba(0, 10, 20, 0.7) !important; color: #00eeff !important; -webkit-text-fill-color: #00eeff !important;
-        border: 1px solid rgba(0, 238, 255, 0.3) !important; border-radius: 8px !important; padding: 12px !important;
-        font-family: monospace !important; text-align: center; letter-spacing: 1px; width: 100% !important;
+        background-color: rgba(0, 10, 20, 0.5) !important; color: #00eeff !important; -webkit-text-fill-color: #00eeff !important;
+        border: 1px solid rgba(255, 255, 255, 0.2) !important; border-bottom: 2px solid #00eeff !important; border-radius: 5px !important; padding: 12px !important;
+        font-family: monospace !important; text-align: center; letter-spacing: 1px; width: 100% !important; transition: 0.3s;
     }
-    input[type="text"]:focus, input[type="password"]:focus { border-color: #00eeff !important; box-shadow: 0 0 15px rgba(0, 238, 255, 0.5) !important; background-color: rgba(0, 0, 0, 0.9) !important;}
+    input[type="text"]:focus, input[type="password"]:focus { background-color: rgba(0, 0, 0, 0.8) !important; box-shadow: 0 5px 15px rgba(0, 238, 255, 0.3) !important;}
     
-    /* BOTÃO TOTALMENTE CENTRALIZADO */
-    [data-testid="stFormSubmitButton"] { 
-        display: flex !important; justify-content: center !important; align-items: center !important; 
-        width: 100% !important; margin-top: 15px !important; 
-    }
+    /* BOTÃO PROFISSIONAL - LARGO E ELEGANTE */
+    [data-testid="stFormSubmitButton"] { width: 100% !important; margin-top: 25px !important; }
     [data-testid="stFormSubmitButton"] button {
-        background: linear-gradient(90deg, #002395, #00eeff) !important; color: white !important;
-        border: none !important; border-radius: 25px !important; padding: 12px 30px !important;
-        font-weight: 800 !important; font-size: 14px !important; letter-spacing: 1.5px;
-        box-shadow: 0px 5px 15px rgba(0,0,0,0.6) !important; width: auto !important; transition: 0.3s;
+        background: #0f172a !important; color: #00eeff !important;
+        border: 1px solid rgba(0, 238, 255, 0.5) !important; border-radius: 5px !important; padding: 12px 0 !important;
+        font-weight: 800 !important; font-size: 14px !important; letter-spacing: 2px;
+        width: 100% !important; transition: 0.3s; box-shadow: 0px 5px 15px rgba(0,0,0,0.5) !important; text-transform: uppercase;
     }
-    [data-testid="stFormSubmitButton"] button:hover { transform: scale(1.05); box-shadow: 0px 5px 20px rgba(0, 238, 255, 0.6) !important; }
+    [data-testid="stFormSubmitButton"] button:hover { background: #00eeff !important; color: #0f172a !important; box-shadow: 0px 5px 20px rgba(0, 238, 255, 0.6) !important; }
     </style>
     """, unsafe_allow_html=True)
 
+    # CONTAINER PRINCIPAL PARA ESPAÇAMENTO VERTICAL
+    st.markdown('<div class="login-container">', unsafe_allow_html=True)
+
+    # 1. LOGO GIGANTE NO TOPO (FORA DA PLACA)
+    logo_b64 = get_base64_file(ARQUIVO_LOGO_LOGIN)
+    if logo_b64:
+        st.markdown(f'''<div style="text-align: center; margin-bottom: 20px;"><img src="data:image/png;base64,{logo_b64}" style="height: 120px; filter: drop-shadow(0px 5px 15px rgba(255,255,255,0.4));"></div>''', unsafe_allow_html=True)
+
+    # 2. A PLACA DE PETRI NO MEIO (SÓ O FORMULÁRIO)
     with st.form(key="login_form", clear_on_submit=False):
-        logo_b64 = get_base64_file(ARQUIVO_LOGO_LOGIN)
-        if logo_b64:
-            st.markdown(f'''<div style="text-align: center; margin-bottom: 5px; margin-top: -10px;"><img src="data:image/png;base64,{logo_b64}" style="height: 70px; filter: drop-shadow(0px 0px 10px rgba(255,255,255,0.7));"></div>''', unsafe_allow_html=True)
-        
-        # EMOTICONS DE VOLTA!
-        st.markdown("<h2 style='text-align: center; color:#00eeff !important; font-family: monospace; font-weight: 900; margin-bottom: 20px; font-size: 16px; text-shadow: 0px 0px 10px rgba(0,238,255,0.8);'>🧫 SISTEMA INTEGRADO DE BIOLOGIA COMPUTACIONAL 🦠</h2>", unsafe_allow_html=True)
-        
+        st.markdown("<h2 style='text-align: center; color:#00eeff !important; font-family: monospace; font-weight: 900; margin-bottom: 30px; font-size: 15px; text-shadow: 0px 0px 10px rgba(0,0,0,1);'>🧫 S.I.B.C. LOGIN 🦠</h2>", unsafe_allow_html=True)
         usuario_input = st.text_input("🔬 Identificação:")
         senha_input = st.text_input("🧬 Sequência Genética:", type="password")
-        
         submit_button = st.form_submit_button("INICIAR PROTOCOLO")
         
-        assinatura_b64 = get_base64_file(ARQUIVO_ASSINATURA)
-        if assinatura_b64:
-            st.markdown(f'''<div style="text-align: center; margin-top: 15px;"><img src="data:image/png;base64,{assinatura_b64}" style="height: 45px; filter: drop-shadow(0px 2px 5px rgba(0,0,0,1));"></div>''', unsafe_allow_html=True)
-
         if submit_button:
             df_usuarios = carregar_usuarios()
             usuario_encontrado = df_usuarios[df_usuarios['Usuario'] == usuario_input]
@@ -281,14 +278,20 @@ if not st.session_state['logado']:
             else:
                 st.error("❌ Acesso Negado.")
 
+    # 3. ASSINATURA NA BASE (FORA DA PLACA)
+    assinatura_b64 = get_base64_file(ARQUIVO_ASSINATURA)
+    if assinatura_b64:
+        st.markdown(f'''<div style="text-align: center; margin-top: 30px;"><img src="data:image/png;base64,{assinatura_b64}" style="height: 70px; filter: drop-shadow(0px 2px 5px rgba(0,0,0,0.8)); opacity: 0.9;"></div>''', unsafe_allow_html=True)
+
+    st.markdown('</div>', unsafe_allow_html=True)
     st.stop()
 
 # ==========================================
-# 6. DASHBOARD & CSS DE IMPRESSÃO (PDF FORÇA BRUTA)
+# 6. DASHBOARD & CSS DE IMPRESSÃO (PDF RESOLVIDO!)
 # ==========================================
 else:
 
-    # CSS REFINADO E PDF RESOLVIDO POR COMPLETO
+    # CSS REFINADO E PDF - DESBLOQUEIO DE ALTURA TOTAL
     st.markdown(f"""
         <style>
         @import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@800&family=Orbitron:wght@700&display=swap');
@@ -303,35 +306,33 @@ else:
         div[data-testid="metric-container"] label {{ color: #94a3b8 !important; font-size: 14px !important;}}
         div[data-testid="metric-container"] div {{ color: #00eeff !important; text-shadow: 0px 0px 10px rgba(0,238,255,0.3) !important;}}
         
-        /* 🔥 PDF - MODO FORÇA BRUTA 🔥 */
+        /* 🔥 PDF - DESBLOQUEIO TOTAL DE PÁGINA 🔥 */
         @media print {{
-            @page {{ size: A4 landscape !important; margin: 5mm !important; }}
+            @page {{ size: A4 landscape !important; margin: 10mm !important; }}
             
-            /* Remove fundos e força tudo para branco/preto */
-            html, body, .stApp, .block-container, [data-testid="stAppViewContainer"] {{ 
-                background: white !important; background-color: white !important; color: black !important; 
-                padding: 0 !important; margin: 0 !important; max-width: 100% !important; width: 100% !important; overflow: visible !important;
+            /* FORÇA O BODY E OS CONTAINERS DO STREAMLIT A CRESCEREM INFINITAMENTE (Remove cortes) */
+            html, body, .stApp, .block-container, div[data-testid="stAppViewContainer"], .main {{ 
+                height: auto !important; max-height: none !important; overflow: visible !important; position: static !important;
+                background: white !important; background-color: white !important; color: black !important; padding: 0 !important; margin: 0 !important; 
             }}
+            
             h1, h2, h3, h4, p, label, div, span {{ color: black !important; text-shadow: none !important; box-shadow: none !important; }}
             
-            /* Esconde itens de interface */
-            section[data-testid="stSidebar"], header, button, .stButton, input, select, .stMultiSelect, div[data-testid="stFileUploader"] {{ display: none !important; }}
+            /* Esconde as ferramentas de controle */
+            section[data-testid="stSidebar"], header, button, .stButton, input, select, .stMultiSelect, div[data-testid="stFileUploader"], [data-testid="stToolbar"] {{ display: none !important; }}
             
-            /* QUEBRA DE COLUNAS - ESSENCIAL PARA IMPRESSÃO DO STREAMLIT */
-            div[data-testid="column"] {{ width: 100% !important; max-width: 100% !important; flex: 0 0 100% !important; display: block !important; margin-bottom: 20px !important; }}
-            div[data-testid="stVerticalBlock"] {{ display: block !important; width: 100% !important; flex: none !important; }}
+            /* QUEBRA DE COLUNAS: Garante que os gráficos fiquem um abaixo do outro na impressão */
+            div[data-testid="column"] {{ width: 100% !important; max-width: 100% !important; flex: 0 0 100% !important; display: block !important; margin-bottom: 20px !important; page-break-inside: avoid !important; }}
+            div[data-testid="stVerticalBlock"] {{ display: block !important; width: 100% !important; flex: none !important; height: auto !important; overflow: visible !important; }}
             
-            /* EXPANSÃO DE TABELAS SEM BARRA DE ROLAGEM */
+            /* TABELAS EXPANDIDAS NO PAPEL */
             .stDataFrame, [data-testid="stDataFrameContainer"], [data-testid="stDataFrameContainer"] > div, .stDataFrame > div {{ 
-                height: auto !important; max-height: 9999px !important; overflow: visible !important; width: 100% !important; display: table !important; position: static !important;
+                height: auto !important; max-height: none !important; overflow: visible !important; width: 100% !important; display: table !important; position: static !important;
             }}
             table {{ width: 100% !important; border-collapse: collapse !important; table-layout: auto !important; }}
-            th, td {{ border: 1px solid #000 !important; padding: 8px !important; color: black !important; background: white !important; white-space: normal !important; word-wrap: break-word !important; }}
+            th, td {{ border: 1px solid #000 !important; padding: 6px !important; color: black !important; background: white !important; white-space: normal !important; word-wrap: break-word !important; }}
             
-            /* Gráficos Plotly */
             .js-plotly-plot, .plotly {{ width: 100% !important; max-width: 100% !important; page-break-inside: avoid !important; }}
-            
-            /* Ajuste de Métricas para impressão */
             div[data-testid="metric-container"] {{ background: white !important; border: 1px solid #000 !important; margin-bottom: 15px !important; border-left: 5px solid #000 !important; padding: 10px !important; page-break-inside: avoid !important;}}
             div[data-testid="metric-container"] div {{ color: black !important; }}
         }}
@@ -358,14 +359,14 @@ else:
         df_mock = df_todos_dados[df_todos_dados['Período_Arquivo'] == 'Gerado Demo']
 
     # ==========================================
-    # LOGO DO PROGRAMA NO MENU LATERAL COM EFEITO
+    # LOGO DO MENU LATERAL (MÁSCARA REDONDA PERFEITA)
     # ==========================================
     logo_prog_b64 = get_base64_file(ARQUIVO_LOGO_PROGRAMA)
     if logo_prog_b64:
         st.sidebar.markdown(f'''
-            <div style="display: flex; justify-content: center; margin-bottom: 20px;">
+            <div style="display: flex; justify-content: center; margin-bottom: 25px;">
                 <img src="data:image/png;base64,{logo_prog_b64}" 
-                     style="width: 150px; filter: drop-shadow(0px 0px 20px rgba(0, 238, 255, 0.5));">
+                     style="width: 130px; height: 130px; border-radius: 50%; object-fit: cover; border: 3px solid #1e293b; box-shadow: 0px 8px 20px rgba(0,0,0,0.8);">
             </div>
         ''', unsafe_allow_html=True)
     else:
@@ -375,7 +376,7 @@ else:
     st.sidebar.markdown(f"🛡️ **Nível:** <span style='color:#00eeff;'>{st.session_state.get('nivel_acesso', '')}</span>", unsafe_allow_html=True)
     st.sidebar.markdown("---")
 
-    opcoes_menu = ["🏢 Dashboard Principal", "📈 Analytics & Tendências"] # Analytics Restaurado
+    opcoes_menu = ["🏢 Dashboard Principal", "📈 Analytics & Tendências"]
     if st.session_state.get('nivel_acesso') in ["Operador", "Administrador"] or st.session_state['usuario'] == "vhpezzeti":
         opcoes_menu.append("📂 Upload de Laudos")
     if st.session_state.get('nivel_acesso') == "Administrador" or st.session_state['usuario'] == "vhpezzeti":
@@ -424,29 +425,27 @@ else:
                     with g1:
                         st.markdown("#### 📊 Relação Diagnóstica Global (Pos x Neg)")
                         fig1 = px.pie(df_f, names='Resultado', hole=0.5, color='Resultado', color_discrete_map={'Positivo': COR_POSITIVO, 'Negativo': COR_NEGATIVO}, template="plotly_dark")
-                        fig1.update_traces(textposition='inside', textinfo='percent+label')
+                        fig1.update_traces(textposition='inside', textinfo='percent+label', marker=dict(line=dict(color='#000000', width=2)))
                         fig1.update_layout(plot_bgcolor='rgba(0,0,0,0)', paper_bgcolor='rgba(0,0,0,0)')
                         st.plotly_chart(fig1, use_container_width=True)
                     with g2:
                         st.markdown("#### 🧫 Espectro Microbiológico Detalhado")
                         df_bact = df_pos['Bactéria'].value_counts().reset_index()
                         df_bact['Pct'] = (df_bact['count'] / df_bact['count'].sum() * 100).round(1).astype(str) + '%'
-                        fig2 = px.bar(df_bact, y='Bactéria', x='count', text='Pct', orientation='h', template="plotly_dark", color='Bactéria', color_discrete_sequence=PALETA_CORES)
-                        fig2.update_traces(textposition='auto')
-                        fig2.update_layout(yaxis={'categoryorder':'total ascending'}, plot_bgcolor='rgba(0,0,0,0)', paper_bgcolor='rgba(0,0,0,0)', showlegend=False)
+                        fig2 = px.bar(df_bact, y='Bactéria', x='count', text='Pct', orientation='h', template="plotly_dark", color='count', color_continuous_scale="Viridis")
+                        fig2.update_traces(textposition='outside')
+                        fig2.update_layout(yaxis={'categoryorder':'total ascending'}, coloraxis_showscale=False, plot_bgcolor='rgba(0,0,0,0)', paper_bgcolor='rgba(0,0,0,0)', xaxis_title="Volume")
                         st.plotly_chart(fig2, use_container_width=True)
 
                     st.markdown("#### 📋 Matriz Analítica e Perfil de Resistência (Pacientes Críticos)")
                     st.dataframe(df_pos[['Data', 'Código_Paciente', 'Unidade', 'Material_Exame', 'Bactéria', 'Indicados (S)', 'Resistentes (R)']], use_container_width=True, hide_index=True)
 
     # ========================================================
-    # TELA 2: ANALYTICS E TENDÊNCIAS (RESTAURADO E MELHORADO)
+    # TELA 2: ANALYTICS E TENDÊNCIAS (COMPLETO E BONITO)
     # ========================================================
     elif menu == "📈 Analytics & Tendências":
-        st.title("📈 Motor Analítico e Tendências Demográficas")
+        st.title("📈 Motor Analítico Avançado")
         
-        # Usa os dados reais para Analytics, se existirem e tiverem Idade/Sexo extraídos, senão mostra aviso.
-        # Caso o cliente queira demonstrar isso, ele usa os dados do Mock injetado no admin.
         df_base = df_reais if not df_reais.empty else df_mock
         
         if df_base.empty:
@@ -457,52 +456,81 @@ else:
                 b_top = df_pos_comp['Bactéria'].value_counts().idxmax()
                 exame_top = df_pos_comp['Material_Exame'].value_counts().idxmax()
                 
-                c1, c2, c3 = st.columns(3)
-                c1.metric("Patógeno Dominante", b_top)
-                c2.metric("Vetor Material Crítico", exame_top)
-                c3.metric("Volume Crítico Analisado", len(df_pos_comp))
+                # KPIs SUPERIORES
+                c1, c2, c3, c4 = st.columns(4)
+                c1.metric("Patógeno Principal", b_top)
+                c2.metric("Vetor Material", exame_top)
+                c3.metric("Casos Infecciosos", f"{len(df_pos_comp):,}".replace(",", "."))
+                pct_geral = (len(df_pos_comp) / len(df_base)) * 100
+                c4.metric("Taxa Média de Infecção", f"{pct_geral:.1f}%", delta="Base Geral", delta_color="off")
                 
                 st.markdown("---")
-                col_g1, col_g2 = st.columns(2)
+                
+                # GRÁFICOS LADO A LADO - BEM DISTRIBUÍDOS
+                st.markdown("### 📉 Epidemiologia e Vetores Locais")
+                col_g1, col_g2 = st.columns([1.5, 1])
+                
                 with col_g1:
-                    st.markdown("#### 📉 Traçado Epidemiológico Histórico")
-                    # Tenta converter data real ou mock
+                    st.markdown("**Curva Histórica de Contaminação (Positivos)**")
                     df_pos_comp['Data_Obj'] = pd.to_datetime(df_pos_comp['Data'], format="%d/%m/%Y", errors='coerce')
                     linha_tempo = df_pos_comp.dropna(subset=['Data_Obj']).groupby(df_pos_comp['Data_Obj'].dt.to_period("W")).size().reset_index(name='Casos Registrados')
                     linha_tempo['Data_Obj'] = linha_tempo['Data_Obj'].dt.to_timestamp()
                     if not linha_tempo.empty:
-                        fig_linha = px.area(linha_tempo, x='Data_Obj', y='Casos Registrados', markers=True, color_discrete_sequence=[COR_NEON], template="plotly_dark")
-                        fig_linha.update_layout(plot_bgcolor='rgba(0,0,0,0)', paper_bgcolor='rgba(0,0,0,0)', xaxis_title="Evolução Temporal")
+                        fig_linha = px.line(linha_tempo, x='Data_Obj', y='Casos Registrados', markers=True, template="plotly_dark")
+                        fig_linha.update_traces(line=dict(color=COR_NEON, width=3), marker=dict(size=8, color=COR_NEON))
+                        fig_linha.update_layout(plot_bgcolor='rgba(0,0,0,0)', paper_bgcolor='rgba(0,0,0,0)', xaxis_title="", yaxis_title="Casos Constatados")
                         st.plotly_chart(fig_linha, use_container_width=True)
-                    else:
-                        st.warning("Datas em formato inválido para linha do tempo.")
                         
                 with col_g2:
-                    st.markdown("#### 🏆 Top Patógenos por Unidade")
-                    top_b_unidade = df_pos_comp.groupby(['Unidade', 'Bactéria']).size().reset_index(name='Volume').sort_values(['Unidade', 'Volume'], ascending=[True, False])
-                    st.dataframe(top_b_unidade.groupby('Unidade').head(2), use_container_width=True, hide_index=True)
+                    st.markdown("**Concentração por Unidade (Heatmap)**")
+                    top_unid = df_pos_comp['Unidade'].value_counts().reset_index()
+                    fig_unid = px.bar(top_unid, x='count', y='Unidade', orientation='h', text='count', template="plotly_dark", color='count', color_continuous_scale="Reds")
+                    fig_unid.update_traces(textposition='inside')
+                    fig_unid.update_layout(yaxis={'categoryorder':'total ascending'}, coloraxis_showscale=False, plot_bgcolor='rgba(0,0,0,0)', paper_bgcolor='rgba(0,0,0,0)', xaxis_title="")
+                    st.plotly_chart(fig_unid, use_container_width=True)
 
                 st.markdown("---")
-                st.markdown("### 🧬 Vetor Demográfico (População Atingida)")
+                st.markdown("### 🧬 Vetor Demográfico (População Afetada)")
+                
                 df_demo = df_pos_comp[df_pos_comp['Idade'] != 'Não Informada'].copy()
                 
                 if df_demo.empty:
-                    st.info("⚠️ Extração biométrica (Idade/Sexo) não encontrada nos laudos reais. Use o Simulador no Console Admin para ver estes gráficos.")
+                    st.info("⚠️ Extração de Idade/Sexo não encontrada nos laudos. Inicie o Simulador no Console Admin para analisar estes indicadores.")
                 else:
                     df_demo['Idade'] = pd.to_numeric(df_demo['Idade'], errors='coerce')
                     
-                    d1, d2 = st.columns(2)
+                    d1, d2, d3 = st.columns([1, 1.5, 1])
+                    
                     with d1:
-                        st.markdown("#### 👥 Impacto Cruzado por Gênero")
-                        fig_sexo = px.pie(df_demo, names='Sexo', hole=0.5, color_discrete_sequence=['#f43f5e', '#38bdf8'], template="plotly_dark")
+                        st.markdown("**Impacto por Gênero**")
+                        fig_sexo = px.pie(df_demo, names='Sexo', hole=0.6, color_discrete_sequence=['#f43f5e', '#38bdf8'], template="plotly_dark")
                         fig_sexo.update_traces(textposition='inside', textinfo='percent+label')
-                        fig_sexo.update_layout(plot_bgcolor='rgba(0,0,0,0)', paper_bgcolor='rgba(0,0,0,0)')
+                        fig_sexo.update_layout(plot_bgcolor='rgba(0,0,0,0)', paper_bgcolor='rgba(0,0,0,0)', showlegend=False)
                         st.plotly_chart(fig_sexo, use_container_width=True)
+                        
                     with d2:
-                        st.markdown("#### 📊 Pirâmide Etária Infecciosa")
-                        fig_idade = px.histogram(df_demo, x='Idade', nbins=12, color_discrete_sequence=[COR_NEON], text_auto=True, template="plotly_dark")
-                        fig_idade.update_layout(plot_bgcolor='rgba(0,0,0,0)', paper_bgcolor='rgba(0,0,0,0)', xaxis_title="Idade do Paciente", yaxis_title="Quantidade")
+                        st.markdown("**Distribuição Etária (Risco)**")
+                        fig_idade = px.histogram(df_demo, x='Idade', nbins=15, color_discrete_sequence=['#8b5cf6'], text_auto=True, template="plotly_dark")
+                        fig_idade.update_layout(plot_bgcolor='rgba(0,0,0,0)', paper_bgcolor='rgba(0,0,0,0)', xaxis_title="Idade do Paciente", yaxis_title="Volume de Laudos")
                         st.plotly_chart(fig_idade, use_container_width=True)
+                        
+                    with d3:
+                        st.markdown("**Estatísticas Populacionais**")
+                        media_idade = df_demo['Idade'].mean()
+                        min_idade = df_demo['Idade'].min()
+                        max_idade = df_demo['Idade'].max()
+                        
+                        st.markdown(f"""
+                        <div style='background: #1e293b; padding: 20px; border-radius: 10px; border-left: 5px solid #8b5cf6;'>
+                            <p style='color:#cbd5e1; margin-bottom:5px;'>Idade Média</p>
+                            <h2 style='color:#00eeff; margin-top:0;'>{media_idade:.0f} anos</h2>
+                            <hr style='border-color: #334155;'>
+                            <p style='color:#cbd5e1; margin-bottom:5px;'>Paciente mais Jovem</p>
+                            <h4 style='color:white; margin-top:0;'>{min_idade:.0f} anos</h4>
+                            <p style='color:#cbd5e1; margin-bottom:5px;'>Paciente mais Velho</p>
+                            <h4 style='color:white; margin-top:0;'>{max_idade:.0f} anos</h4>
+                        </div>
+                        """, unsafe_allow_html=True)
             else:
                 st.warning("Variáveis insuficientes para construção de gráficos analíticos.")
 
