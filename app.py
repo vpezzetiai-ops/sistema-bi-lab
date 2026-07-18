@@ -16,7 +16,7 @@ from datetime import datetime, timedelta
 ARQUIVO_VIDEO_FUNDO = "video.mp4"
 ARQUIVO_VIDEO_ASSINATURA = "Gemini_Generated_Image_s8ldfcs8ldfcs8ld-removebg-preview.png"
 ARQUIVO_LOGO_LOGIN = "logo.png"
-ARQUIVO_MARCA_DAGUA_MENU = "marca_dagua.jpg" 
+ARQUIVO_MARCA_DAGUA_MENU = "marca_dagua.png" # Atualizado para PNG!
 
 # ==========================================
 # CONFIGURAÇÕES INICIAIS DE TEMA
@@ -228,14 +228,14 @@ if not st.session_state['logado']:
 # 6. TELA DO SISTEMA (DASHBOARD) - TEMA CYBER E MARCA D'ÁGUA
 # ==========================================
 else:
-    # LÓGICA DA MARCA D'ÁGUA NO MENU 
+    # LÓGICA DA MARCA D'ÁGUA NO MENU (ATUALIZADO PARA PNG COM SUPORTE A TRANSPARÊNCIA)
     marca_b64 = get_base64_file(ARQUIVO_MARCA_DAGUA_MENU)
     css_marca_dagua = ""
     if marca_b64:
-        # AUMENTADO DE 85% PARA 180% E DIMINUÍDA A ESCURIDÃO (de 0.75 para 0.40) PARA A MARCA BRILHAR
+        # Lê a imagem como PNG e aplica o gradiente escuro por cima
         css_marca_dagua = f"""
         section[data-testid="stSidebar"] {{
-            background: linear-gradient(rgba(11, 17, 32, 0.40), rgba(11, 17, 32, 0.90)), url("data:image/jpeg;base64,{marca_b64}") !important;
+            background: linear-gradient(rgba(11, 17, 32, 0.40), rgba(11, 17, 32, 0.90)), url("data:image/png;base64,{marca_b64}") !important;
             background-size: 180% !important;
             background-position: center 50% !important;
             background-repeat: no-repeat !important;
