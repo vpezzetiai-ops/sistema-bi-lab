@@ -11,11 +11,12 @@ import random
 from datetime import datetime, timedelta
 
 # ==========================================
-# 1. PAINEL DE CONTROLE DE ARQUIVOS (Nomes EXATOS do seu GitHub)
+# 1. PAINEL DE CONTROLE DE ARQUIVOS
 # ==========================================
 ARQUIVO_VIDEO_FUNDO = "video.mp4"
-ARQUIVO_ASSINATURA = "assinatura.png"
-ARQUIVO_LOGO_ANIMADO_MENU = "logo_animado.mp4" 
+ARQUIVO_LOGO_LOGIN = "logo.png"
+ARQUIVO_ASSINATURA = "21880.png" # Arquivo de assinatura corrigido
+ARQUIVO_LOGO_ANIMADO_MENU = "gemini_generated_video_95e8509b.mp4" # Vídeo 3D
 
 # ==========================================
 # CONFIGURAÇÕES INICIAIS DE TEMA
@@ -131,7 +132,7 @@ if not st.session_state['logado']:
         </video>
         ''', unsafe_allow_html=True)
     else:
-        st.error(f"🚨 Vídeo '{ARQUIVO_VIDEO_FUNDO}' não encontrado no GitHub. Renomeie o arquivo corretamente.")
+        st.error(f"🚨 Vídeo '{ARQUIVO_VIDEO_FUNDO}' não encontrado.")
         st.markdown('<style>.stApp { background-color: #0b132b !important; }</style>', unsafe_allow_html=True)
 
     st.markdown("""
@@ -185,6 +186,10 @@ if not st.session_state['logado']:
     with col_login:
         with st.form(key="login_form"):
             
+            logo_b64 = get_base64_file(ARQUIVO_LOGO_LOGIN)
+            if logo_b64:
+                st.markdown(f'''<div style="display: flex; justify-content: center; margin-bottom: 15px;"><img src="data:image/png;base64,{logo_b64}" style="max-height: 80px; filter: drop-shadow(0px 0px 15px rgba(255,255,255,0.4));"></div>''', unsafe_allow_html=True)
+            
             st.markdown("<h3 style='text-align: center; color:#ffffff !important; font-weight: 900; margin-bottom: 25px; text-shadow: 0px 4px 20px rgba(0,0,0,0.9);'>Sistema Analítico BI</h3>", unsafe_allow_html=True)
             
             usuario_input = st.text_input("👤 Usuário:")
@@ -195,9 +200,9 @@ if not st.session_state['logado']:
             
             assinatura_b64 = get_base64_file(ARQUIVO_ASSINATURA)
             if assinatura_b64:
+                # Assinatura corrigida (Usa apenas a imagem 21880.png)
                 st.markdown(f'''
-                    <div style="text-align: center; padding-bottom: 5px;">
-                        <p style="color: #94a3b8; font-size: 9px; font-weight: 900; margin-bottom: 5px; text-transform: uppercase; letter-spacing: 2px;">Desenvolvido Por</p>
+                    <div style="text-align: center; padding-top: 5px;">
                         <img src="data:image/png;base64,{assinatura_b64}" style="max-height: 55px; max-width: 100%; object-fit: contain; margin: 0 auto; display: block; filter: drop-shadow(0px 0px 8px rgba(0,238,255,0.3));">
                     </div>
                 ''', unsafe_allow_html=True)
@@ -363,27 +368,26 @@ else:
         df_mock = df_todos_dados[df_todos_dados['Período_Arquivo'] == 'Gerado Demo']
 
     # ==========================
-    # LOGOTIPO ANIMADO 3D NA BARRA LATERAL (A MÁGICA ACONTECE AQUI)
+    # LOGOTIPO ANIMADO 3D (COM TRUQUE DE TRANSPARÊNCIA)
     # ==========================
     video_logo_b64 = get_base64_file(ARQUIVO_LOGO_ANIMADO_MENU)
     html_animacao = ""
     
     if video_logo_b64:
-        html_animacao = f'''
-        <video autoplay loop muted playsinline style="width: 140px; margin-bottom: 5px; filter: drop-shadow(0px 0px 20px rgba(0, 238, 255, 0.4));">
-            <source src="data:video/mp4;base64,{video_logo_b64}" type="video/mp4">
-        </video>
-        '''
+        # A propriedade "mix-blend-mode: screen;" é o que faz o fundo preto do MP4 sumir e se misturar perfeitamente ao azul do menu.
+        html_animacao = f'<video autoplay loop muted playsinline style="width: 140px; margin-bottom: 5px; filter: drop-shadow(0px 0px 20px rgba(0, 238, 255, 0.4)); mix-blend-mode: screen;"><source src="data:video/mp4;base64,{video_logo_b64}" type="video/mp4"></video>'
     else:
-        st.sidebar.error(f"⚠️ Vídeo animado '{ARQUIVO_LOGO_ANIMADO_MENU}' não encontrado.")
+        st.sidebar.error(f"⚠️ Vídeo '{ARQUIVO_LOGO_ANIMADO_MENU}' não encontrado.")
 
-    st.sidebar.markdown(f"""
+    # HTML reescrito em bloco contínuo para evitar que o Streamlit mostre as tags de texto
+    html_menu = f"""
         <div style="text-align: center; margin-top: 0px; margin-bottom: 30px;">
             {html_animacao}
-            <h1 style="font-family: 'Orbitron', sans-serif; color: #00eeff; font-size: 22px; font-weight: 700; text-transform: uppercase; letter-spacing: 2px; text-shadow: 0px 0px 15px rgba(0, 238, 255, 0.6); margin: 0;">SÃO FRANCISCO</h1>
+            <h1 style="font-family: 'Orbitron', sans-serif; color: #00eeff; font-size: 22px; font-weight: 700; text-transform: uppercase; letter-spacing: 2px; text-shadow: 0px 0px 15px rgba(0, 238, 255, 0.6); margin: 0; padding-top: 5px;">SÃO FRANCISCO</h1>
             <h2 style="font-family: 'Montserrat', sans-serif; color: #f8fafc; font-size: 11px; font-weight: 800; letter-spacing: 5px; text-transform: uppercase; margin: 5px 0 0 0; opacity: 0.8;">Laboratório</h2>
         </div>
-    """, unsafe_allow_html=True)
+    """
+    st.sidebar.markdown(html_menu, unsafe_allow_html=True)
 
     nivel_atual = st.session_state.get('nivel_acesso', 'Visualizador')
 
