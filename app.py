@@ -11,11 +11,18 @@ import random
 from datetime import datetime, timedelta
 
 # ==========================================
-# 1. CONFIGURAÇÕES INICIAIS
+# 1. PAINEL DE CONTROLE DE ARQUIVOS (Nomes exatos do seu GitHub)
+# ==========================================
+ARQUIVO_VIDEO_FUNDO = "video.mp4"
+ARQUIVO_VIDEO_ASSINATURA = "Gemini_Generated_Image_s8ldfcs8ldfcs8ld-removebg-preview.png"
+ARQUIVO_LOGO_LOGIN = "logo.png"
+ARQUIVO_MARCA_DAGUA_MENU = "marca_dagua.jpg" # Alterado para .jpg
+
+# ==========================================
+# CONFIGURAÇÕES INICIAIS DE TEMA
 # ==========================================
 st.set_page_config(page_title="Sistema BI - Laboratorial", layout="wide", initial_sidebar_state="expanded")
 
-# Paleta CyberLab Premium
 COR_NEON = '#00eeff'
 COR_AZUL_ESCURO = '#002395'
 PALETA_CORES = ['#00eeff', '#3b82f6', '#002395', '#8b5cf6', '#6366f1', '#a855f7']
@@ -116,8 +123,7 @@ if 'unidades_permitidas' not in st.session_state: st.session_state['unidades_per
 # ==========================================
 if not st.session_state['logado']:
     
-    # 🚨 NOME EXATO DO SEU VÍDEO NO GITHUB
-    video_b64 = get_base64_file("video.mp4")
+    video_b64 = get_base64_file(ARQUIVO_VIDEO_FUNDO)
     
     if video_b64:
         st.markdown(f'''
@@ -126,25 +132,23 @@ if not st.session_state['logado']:
         </video>
         ''', unsafe_allow_html=True)
     else:
-        st.error("🚨 O vídeo 'video.mp4' não foi encontrado! Verifique o nome do arquivo no GitHub.")
+        st.error(f"🚨 O vídeo '{ARQUIVO_VIDEO_FUNDO}' não foi encontrado! Verifique o nome do arquivo no GitHub.")
         st.markdown('<style>.stApp { background-color: #0b132b !important; }</style>', unsafe_allow_html=True)
 
     st.markdown("""
     <style>
-    /* Animação Zoom e Fade Elegante */
     @keyframes zoomIn { 0% { opacity: 0; transform: scale(0.9); } 100% { opacity: 1; transform: scale(1); } }
 
     html, body, [data-testid="stAppViewContainer"], .block-container { overflow: hidden !important; padding: 0 !important; margin: 0 !important; }
     .stApp { background: transparent !important; }
     [data-testid="stHeader"] { display: none !important; }
     
-    /* Caixa de Login Cyber Premium */
     [data-testid="stForm"] {
         background: linear-gradient(145deg, rgba(15, 23, 42, 0.8), rgba(15, 23, 42, 0.4)) !important;
         backdrop-filter: blur(20px) !important;
         -webkit-backdrop-filter: blur(20px) !important;
         border-radius: 20px !important;
-        border: 1px solid rgba(0, 238, 255, 0.2) !important; /* Borda Neon */
+        border: 1px solid rgba(0, 238, 255, 0.2) !important; 
         box-shadow: 0px 20px 50px rgba(0,0,0,0.9), 0px 0px 20px rgba(0, 238, 255, 0.1) !important;
         padding: 35px 25px 25px 25px !important;
         margin-top: 10vh !important; 
@@ -154,7 +158,6 @@ if not st.session_state['logado']:
     
     [data-testid="stForm"] p, [data-testid="stForm"] label { color: #e2e8f0 !important; font-weight: 700; text-shadow: 0px 2px 4px rgba(0,0,0,0.9) !important; letter-spacing: 0.5px;}
     
-    /* Inputs Dark Mode */
     input[type="text"], input[type="password"] {
         background-color: rgba(0, 0, 0, 0.4) !important; color: #00eeff !important; -webkit-text-fill-color: #00eeff !important;
         border: 1px solid rgba(255, 255, 255, 0.1) !important; border-radius: 8px !important; padding: 12px !important;
@@ -164,7 +167,6 @@ if not st.session_state['logado']:
         border-color: #00eeff !important; box-shadow: 0 0 10px rgba(0, 238, 255, 0.3) !important; background-color: rgba(0, 0, 0, 0.6) !important;
     }
     
-    /* Botão Neon */
     [data-testid="stFormSubmitButton"] button {
         background: linear-gradient(90deg, #002395, #3b82f6) !important; color: #FFFFFF !important; border: none !important; border-radius: 8px !important; 
         padding: 12px !important; margin-top: 15px !important; box-shadow: 0px 4px 15px rgba(0, 35, 149, 0.6) !important; width: 100%;
@@ -184,7 +186,7 @@ if not st.session_state['logado']:
     with col_login:
         with st.form(key="login_form"):
             
-            logo_b64 = get_base64_file("logo.png")
+            logo_b64 = get_base64_file(ARQUIVO_LOGO_LOGIN)
             if logo_b64:
                 st.markdown(f'''<div style="display: flex; justify-content: center; margin-bottom: 15px;"><img src="data:image/png;base64,{logo_b64}" style="max-height: 80px; filter: drop-shadow(0px 0px 15px rgba(255,255,255,0.4));"></div>''', unsafe_allow_html=True)
             
@@ -196,8 +198,7 @@ if not st.session_state['logado']:
             submit_button = st.form_submit_button("Acessar Plataforma 🚀", use_container_width=True)
             st.markdown("<hr class='custom-divider'>", unsafe_allow_html=True)
             
-            # 🚨 A SUA ASSINATURA EXATA (NOME DO ARQUIVO)
-            assinatura_b64 = get_base64_file("Gemini_Generated_Image_s8ldfcs8ldfcs8ld-removebg-preview.png")
+            assinatura_b64 = get_base64_file(ARQUIVO_VIDEO_ASSINATURA)
             if assinatura_b64:
                 st.markdown(f'''
                     <div style="text-align: center; padding-bottom: 5px;">
@@ -206,7 +207,7 @@ if not st.session_state['logado']:
                     </div>
                 ''', unsafe_allow_html=True)
             else:
-                st.error("⚠️ Assinatura não encontrada.")
+                st.error(f"⚠️ Assinatura '{ARQUIVO_VIDEO_ASSINATURA}' não encontrada.")
 
             if submit_button:
                 df_usuarios = carregar_usuarios()
@@ -224,66 +225,80 @@ if not st.session_state['logado']:
     st.stop()
 
 # ==========================================
-# 6. TELA DO SISTEMA (DASHBOARD) - TEMA CYBER PREMIUM
+# 6. TELA DO SISTEMA (DASHBOARD) - TEMA CYBER E MARCA D'ÁGUA
 # ==========================================
 else:
-    # CSS GLOBAL PARA ESTILIZAR O DASHBOARD (HOVER EFEITOS E PDF)
-    st.markdown("""
+    # LÓGICA DA MARCA D'ÁGUA NO MENU (Adaptado para ler image/jpeg)
+    marca_b64 = get_base64_file(ARQUIVO_MARCA_DAGUA_MENU)
+    css_marca_dagua = ""
+    if marca_b64:
+        css_marca_dagua = f"""
+        section[data-testid="stSidebar"] {{
+            background: linear-gradient(rgba(15, 23, 42, 0.93), rgba(15, 23, 42, 0.98)), url("data:image/jpeg;base64,{marca_b64}") !important;
+            background-size: 90% !important;
+            background-position: center center !important;
+            background-repeat: no-repeat !important;
+            border-right: 1px solid #1e293b !important;
+        }}
+        """
+    else:
+        css_marca_dagua = """
+        section[data-testid="stSidebar"] {
+            background-color: #0f172a !important; 
+            border-right: 1px solid #1e293b !important;
+        }
+        """
+
+    # CSS GLOBAL (FONTES E ESTILOS)
+    st.markdown(f"""
         <style>
-        video { display: none !important; }
-        html, body, [data-testid="stAppViewContainer"], .block-container { overflow: visible !important; height: auto !important; }
+        @import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@800&family=Orbitron:wght@700&display=swap');
         
-        /* TEMA DARK GLOBAL */
-        .stApp { background-color: #0b1120 !important; color: #f8fafc !important; animation: none !important; }
-        header[data-testid="stHeader"] { background: transparent !important; }
+        video {{ display: none !important; }}
+        html, body, [data-testid="stAppViewContainer"], .block-container {{ overflow: visible !important; height: auto !important; }}
         
-        /* Barra Lateral (Menu) mais escura */
-        section[data-testid="stSidebar"] { background-color: #0f172a !important; border-right: 1px solid #1e293b !important; }
-        section[data-testid="stSidebar"] * { color: #e2e8f0 !important; }
+        .stApp {{ background-color: #0b1120 !important; color: #f8fafc !important; animation: none !important; }}
+        header[data-testid="stHeader"] {{ background: transparent !important; }}
         
-        /* CARTÕES DE MÉTRICAS (CYBER EFFECT COM HOVER) */
-        div[data-testid="metric-container"] {
+        {css_marca_dagua}
+        section[data-testid="stSidebar"] * {{ color: #e2e8f0 !important; }}
+        
+        div[data-testid="metric-container"] {{
             background: linear-gradient(145deg, #111827, #1e293b) !important; 
             border: 1px solid rgba(0, 238, 255, 0.15) !important;
-            border-left: 4px solid #00eeff !important; /* Fio de Neon Ciano */
+            border-left: 4px solid #00eeff !important;
             padding: 20px !important; border-radius: 12px !important;
             box-shadow: 0 8px 20px rgba(0,0,0,0.5) !important; 
             transition: transform 0.3s ease, box-shadow 0.3s ease !important;
-        }
-        div[data-testid="metric-container"]:hover {
+        }}
+        div[data-testid="metric-container"]:hover {{
             transform: translateY(-6px) !important;
             box-shadow: 0 12px 25px rgba(0, 238, 255, 0.2) !important;
             border-color: rgba(0, 238, 255, 0.4) !important;
-        }
-        div[data-testid="metric-container"] label { color: #94a3b8 !important; font-weight: bold !important;}
-        div[data-testid="metric-container"] div { color: #00eeff !important; text-shadow: 0px 0px 10px rgba(0, 238, 255, 0.3) !important; }
+        }}
+        div[data-testid="metric-container"] label {{ color: #94a3b8 !important; font-weight: bold !important;}}
+        div[data-testid="metric-container"] div {{ color: #00eeff !important; text-shadow: 0px 0px 10px rgba(0, 238, 255, 0.3) !important; }}
         
-        /* Tabelas Dark */
-        .stDataFrame { border-radius: 10px; border: 1px solid #1e293b !important; }
-        h1, h2, h3, h4, p, label { color: #f8fafc !important; }
+        .stDataFrame {{ border-radius: 10px; border: 1px solid #1e293b !important; }}
+        h1, h2, h3, h4, p, label {{ color: #f8fafc !important; }}
         
-        /* Botões Dark Blue */
-        div.stButton > button { background: #1e3a8a !important; border: 1px solid #3b82f6 !important; border-radius: 8px !important; transition: 0.3s; }
-        div.stButton > button * { color: #FFFFFF !important; font-weight: bold !important; }
-        div.stButton > button:hover { background: #3b82f6 !important; box-shadow: 0 0 15px rgba(59, 130, 246, 0.5) !important;}
+        div.stButton > button {{ background: #1e3a8a !important; border: 1px solid #3b82f6 !important; border-radius: 8px !important; transition: 0.3s; }}
+        div.stButton > button * {{ color: #FFFFFF !important; font-weight: bold !important; }}
+        div.stButton > button:hover {{ background: #3b82f6 !important; box-shadow: 0 0 15px rgba(59, 130, 246, 0.5) !important;}}
         
-        /* ============================================================== */
-        /* SOLUÇÃO DEFINITIVA DO PDF (PAISAGEM, BRANCO, SEM CORTES)       */
-        /* ============================================================== */
-        @media print {
-            @page { size: A4 landscape; margin: 10mm; } 
-            body, .stApp { background: white !important; color: black !important; -webkit-print-color-adjust: exact !important; }
-            h1, h2, h3, h4, p, label { color: black !important; text-shadow: none !important;}
-            section[data-testid="stSidebar"], header[data-testid="stHeader"], iframe, button { display: none !important; }
-            div[data-testid="stAppViewBlockContainer"] { padding: 0 !important; margin: 0 !important; max-width: 100% !important; width: 100% !important;}
-            .js-plotly-plot { max-width: 100% !important; page-break-inside: avoid !important; }
-            div[data-testid="metric-container"] { background: #f1f5f9 !important; border: 1px solid #cbd5e1 !important; box-shadow: none !important; transform: none !important;}
-            div[data-testid="metric-container"] label, div[data-testid="metric-container"] div { color: black !important; text-shadow: none !important; }
-        }
+        @media print {{
+            @page {{ size: A4 landscape; margin: 10mm; }} 
+            body, .stApp {{ background: white !important; color: black !important; -webkit-print-color-adjust: exact !important; }}
+            h1, h2, h3, h4, p, label {{ color: black !important; text-shadow: none !important;}}
+            section[data-testid="stSidebar"], header[data-testid="stHeader"], iframe, button {{ display: none !important; }}
+            div[data-testid="stAppViewBlockContainer"] {{ padding: 0 !important; margin: 0 !important; max-width: 100% !important; width: 100% !important;}}
+            .js-plotly-plot {{ max-width: 100% !important; page-break-inside: avoid !important; }}
+            div[data-testid="metric-container"] {{ background: #f1f5f9 !important; border: 1px solid #cbd5e1 !important; box-shadow: none !important; transform: none !important;}}
+            div[data-testid="metric-container"] label, div[data-testid="metric-container"] div {{ color: black !important; text-shadow: none !important; }}
+        }}
         </style>
     """, unsafe_allow_html=True)
 
-    # Botão de Impressão Injetado
     st.components.v1.html("""
         <script>function printPDF() { window.parent.print(); }</script>
         <button onclick="printPDF()" style="background: linear-gradient(90deg, #002395, #00eeff);color:white;padding:12px 20px;border:none;border-radius:8px;cursor:pointer;font-weight:900;width:100%;box-shadow: 0px 4px 15px rgba(0,238,255,0.3); text-transform: uppercase;">🖨️ Exportar Relatório (PDF)</button>
@@ -351,10 +366,8 @@ else:
                 dados.append(linha)
         return pd.DataFrame(dados)
 
-    # =============== CARREGAR TODOS OS DADOS DA NUVEM ===============
     df_todos_dados = carregar_dados_salvos()
     
-    # SEPARAÇÃO DE DADOS MOCK VS REAIS
     df_reais = pd.DataFrame()
     df_mock = pd.DataFrame()
 
@@ -370,12 +383,12 @@ else:
         df_reais = df_todos_dados[df_todos_dados['Período_Arquivo'] != 'Gerado Demo']
         df_mock = df_todos_dados[df_todos_dados['Período_Arquivo'] == 'Gerado Demo']
 
-    # MENU LATERAL COM LOGO
-    logo_b64 = get_base64_file("logo.png")
-    if logo_b64:
-        st.sidebar.markdown(f'<div style="text-align:center;"><img src="data:image/png;base64,{logo_b64}" style="max-height:80px; margin-bottom:20px; filter: drop-shadow(0px 0px 10px rgba(0,238,255,0.4));"></div>', unsafe_allow_html=True)
-    else:
-        st.sidebar.markdown("<h3 style='text-align: center; color:#00eeff;'>Sistema BI</h3>", unsafe_allow_html=True)
+    st.sidebar.markdown("""
+        <div style="text-align: center; margin-top: 10px; margin-bottom: 30px;">
+            <h1 style="font-family: 'Orbitron', sans-serif; color: #00eeff; font-size: 24px; font-weight: 700; text-transform: uppercase; letter-spacing: 2px; text-shadow: 0px 0px 15px rgba(0, 238, 255, 0.6); margin: 0;">SÃO FRANCISCO</h1>
+            <h2 style="font-family: 'Montserrat', sans-serif; color: #f8fafc; font-size: 12px; font-weight: 800; letter-spacing: 5px; text-transform: uppercase; margin: 5px 0 0 0; opacity: 0.8;">Laboratório</h2>
+        </div>
+    """, unsafe_allow_html=True)
 
     nivel_atual = st.session_state.get('nivel_acesso', 'Visualizador')
 
@@ -395,8 +408,6 @@ else:
         st.session_state['logado'] = False
         st.rerun()
 
-    # ========================== MÓDULOS ==========================
-    
     if menu == "⚙️ Console Admin":
         st.title("⚙️ Console Administrativo Central")
         
