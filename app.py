@@ -16,7 +16,7 @@ from datetime import datetime, timedelta
 ARQUIVO_VIDEO_FUNDO = "video.mp4"
 ARQUIVO_VIDEO_ASSINATURA = "Gemini_Generated_Image_s8ldfcs8ldfcs8ld-removebg-preview.png"
 ARQUIVO_LOGO_LOGIN = "logo.png"
-ARQUIVO_MARCA_DAGUA_MENU = "marca_dagua.jpg" # O ficheiro TEM de ter exatamente este nome, tudo em minúsculas.
+ARQUIVO_MARCA_DAGUA_MENU = "marca_dagua.jpg" 
 
 # ==========================================
 # CONFIGURAÇÕES INICIAIS DE TEMA
@@ -228,16 +228,16 @@ if not st.session_state['logado']:
 # 6. TELA DO SISTEMA (DASHBOARD) - TEMA CYBER E MARCA D'ÁGUA
 # ==========================================
 else:
-    # LÓGICA DA MARCA D'ÁGUA NO MENU (Adaptado para ler image/jpeg)
+    # LÓGICA DA MARCA D'ÁGUA NO MENU 
     marca_b64 = get_base64_file(ARQUIVO_MARCA_DAGUA_MENU)
     css_marca_dagua = ""
     if marca_b64:
-        # AQUI REDUZI A OPACIDADE DO GRADIENTE DE 0.93 PARA 0.75 PARA A TUA MARCA D'ÁGUA BRILHAR MAIS
+        # AUMENTADO DE 85% PARA 180% E DIMINUÍDA A ESCURIDÃO (de 0.75 para 0.40) PARA A MARCA BRILHAR
         css_marca_dagua = f"""
         section[data-testid="stSidebar"] {{
-            background: linear-gradient(rgba(11, 17, 32, 0.75), rgba(11, 17, 32, 0.95)), url("data:image/jpeg;base64,{marca_b64}") !important;
-            background-size: 85% !important;
-            background-position: center center !important;
+            background: linear-gradient(rgba(11, 17, 32, 0.40), rgba(11, 17, 32, 0.90)), url("data:image/jpeg;base64,{marca_b64}") !important;
+            background-size: 180% !important;
+            background-position: center 50% !important;
             background-repeat: no-repeat !important;
             border-right: 1px solid #1e293b !important;
         }}
@@ -384,11 +384,8 @@ else:
         df_reais = df_todos_dados[df_todos_dados['Período_Arquivo'] != 'Gerado Demo']
         df_mock = df_todos_dados[df_todos_dados['Período_Arquivo'] == 'Gerado Demo']
 
-    # ==========================
-    # AVISO DE DEBUG DA MARCA D'ÁGUA (SE O ARQUIVO NÃO FOR ENCONTRADO)
-    # ==========================
     if not marca_b64:
-        st.sidebar.error(f"⚠️ Imagem '{ARQUIVO_MARCA_DAGUA_MENU}' não encontrada.")
+        st.sidebar.error(f"⚠️ Imagem '{ARQUIVO_MARCA_DAGUA_MENU}' não encontrada no GitHub.")
 
     st.sidebar.markdown("""
         <div style="text-align: center; margin-top: 10px; margin-bottom: 30px;">
