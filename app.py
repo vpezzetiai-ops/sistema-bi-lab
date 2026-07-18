@@ -21,9 +21,9 @@ ARQUIVO_GIF_CARREGAMENTO = "logocarregador.gif"
 ARQUIVO_LOGO_PROGRAMA = "logoprograma.png" 
 
 # ==========================================
-# CONFIGURAÇÕES INICIAIS DE TEMA
+# CONFIGURAÇÕES INICIAIS
 # ==========================================
-st.set_page_config(page_title="S.I.B.C. - Sistema Integrado", layout="wide", initial_sidebar_state="expanded")
+st.set_page_config(page_title="S.I.B.C.", layout="wide", initial_sidebar_state="expanded")
 
 COR_NEON = '#00eeff'
 COR_POSITIVO = '#f43f5e'
@@ -37,15 +37,25 @@ def get_base64_file(file_path):
     return None
 
 # ==========================================
-# OCULTAR ELEMENTOS EM INGLÊS DO STREAMLIT
+# OCULTAR ITENS DO STREAMLIT E ELIMINAR MARGENS INVISÍVEIS (FIM DA BARRA DE ROLAGEM)
 # ==========================================
 st.markdown("""
     <style>
+    @import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@800&display=swap');
+    
     #MainMenu {visibility: hidden;}
     header {visibility: hidden;}
     footer {visibility: hidden;}
     [data-testid="stToolbar"] {visibility: hidden !important;}
-    div[data-testid="InputInstructions"] {display: none !important;}
+    
+    /* MATA AS MARGENS QUE CAUSAM A BARRA DE ROLAGEM */
+    .block-container { padding-top: 1rem !important; padding-bottom: 0rem !important; max-width: 100% !important; }
+    [data-testid="stAppViewContainer"] > section:first-child { overflow: hidden !important; }
+    
+    /* TEMA GERAL */
+    .stApp { background-color: #0b1120 !important; color: #f8fafc !important; }
+    section[data-testid="stSidebar"] { background-color: #0f172a !important; border-right: 1px solid #1e293b !important; }
+    section[data-testid="stSidebar"] * { color: #e2e8f0 !important; }
     </style>
 """, unsafe_allow_html=True)
 
@@ -58,15 +68,15 @@ if gif_b64:
     st.markdown(f"""
     <style>
     @keyframes fadeOutLoader_{loader_id} {{ 0% {{ opacity: 1; backdrop-filter: blur(10px); }} 70% {{ opacity: 1; backdrop-filter: blur(10px); }} 100% {{ opacity: 0; visibility: hidden; backdrop-filter: blur(0px); display: none; }} }}
-    .splash-screen-{loader_id} {{ position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background-color: rgba(5, 10, 20, 0.85); z-index: 9999999; display: flex; flex-direction: column; justify-content: center; align-items: center; animation: fadeOutLoader_{loader_id} 1.2s forwards ease-out; pointer-events: none; }}
+    .splash-screen-{loader_id} {{ position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background-color: rgba(11, 17, 32, 0.9); z-index: 9999999; display: flex; flex-direction: column; justify-content: center; align-items: center; animation: fadeOutLoader_{loader_id} 1.2s forwards ease-out; pointer-events: none; }}
     .splash-screen-{loader_id} img {{ width: 150px; filter: drop-shadow(0px 0px 20px rgba(0,238,255,0.7)); }}
-    .splash-screen-{loader_id} h2 {{ color: #00eeff; font-family: 'Arial', sans-serif; margin-top: 20px; text-shadow: 0px 0px 15px rgba(0,238,255,0.9); letter-spacing: 5px; font-size: 20px; font-weight: 900; }}
+    .splash-screen-{loader_id} h2 {{ color: #00eeff; font-family: 'Montserrat', sans-serif; margin-top: 20px; text-shadow: 0px 0px 15px rgba(0,238,255,0.9); letter-spacing: 5px; font-size: 20px; font-weight: 900; }}
     </style>
-    <div class="splash-screen-{loader_id}"><img src="data:image/gif;base64,{gif_b64}"><h2>PROCESSANDO...</h2></div>
+    <div class="splash-screen-{loader_id}"><img src="data:image/gif;base64,{gif_b64}"><h2>PROCESSANDO</h2></div>
     """, unsafe_allow_html=True)
 
 # ==========================================
-# 2. MOTOR DE BANCO DE DADOS (CORREÇÃO DE NOMES)
+# 2. MOTOR DE BANCO DE DADOS
 # ==========================================
 def padronizar_unidade(unidade):
     if pd.isna(unidade) or str(unidade).strip() == "" or "Não Informada" in str(unidade): return "Sede / Sem Unidade"
@@ -91,8 +101,7 @@ def padronizar_bacteria(nome):
 
 def padronizar_material(material):
     if pd.isna(material): return "Desconhecido"
-    # Remove tags como [URAB], [HEMO], [SWAB]
-    mat_limpo = re.sub(r'\[.*?\]\s*', '', str(material))
+    mat_limpo = re.sub(r'\[.*?\]\s*', '', str(material)) # Remove [URAB], [SWAB], etc
     if not mat_limpo.strip(): return "Desconhecido"
     return mat_limpo.strip().rstrip('.').strip()
 
@@ -204,68 +213,74 @@ if 'nivel_acesso' not in st.session_state: st.session_state['nivel_acesso'] = "V
 if 'unidades_permitidas' not in st.session_state: st.session_state['unidades_permitidas'] = "Todas"
 
 # ==========================================
-# 5. TELA DE LOGIN (COMPACTA, SEM ROLAGEM, SEM INGLÊS)
+# 5. TELA DE LOGIN (SEM ROLAGEM, FONTES CORRETAS, BOTÃO BONITO)
 # ==========================================
 if not st.session_state['logado']:
     
     video_fundo_b64 = get_base64_file(ARQUIVO_VIDEO_FUNDO)
     if video_fundo_b64:
         st.markdown(f'''<video autoplay loop muted playsinline style="position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; z-index: -999; object-fit: cover; filter: brightness(0.35) contrast(1.1);"><source src="data:video/mp4;base64,{video_fundo_b64}" type="video/mp4"></video>''', unsafe_allow_html=True)
-    else:
-        st.markdown('<style>.stApp { background-color: #040d21 !important; }</style>', unsafe_allow_html=True)
 
     st.markdown("""
     <style>
     @keyframes floating { 0% { transform: translateY(0px); } 50% { transform: translateY(-8px); } 100% { transform: translateY(0px); } }
-    .stApp { background: transparent !important; }
     
-    .login-wrapper {
+    .login-container {
         display: flex; flex-direction: column; justify-content: center; align-items: center;
-        height: 100vh; width: 100%; overflow: hidden; /* Corta a rolagem */
+        height: 90vh; /* Ajustado para caber perfeito sem rolar */
+        width: 100%;
     }
     
     [data-testid="stForm"] {
-        width: 380px !important; height: 380px !important; border-radius: 50% !important; 
+        aspect-ratio: 1 / 1; width: 400px !important; height: 400px !important; border-radius: 50% !important; 
         background: radial-gradient(circle at 40% 40%, rgba(200, 180, 50, 0.15) 0%, rgba(0, 30, 40, 0.4) 60%, rgba(0, 0, 0, 0.8) 100%) !important;
         backdrop-filter: blur(15px) !important; -webkit-backdrop-filter: blur(15px) !important;
         border: 6px solid rgba(255, 255, 255, 0.1) !important;
         border-top: 6px solid rgba(255, 255, 255, 0.3) !important;
         border-bottom: 6px solid rgba(0, 0, 0, 0.8) !important;
-        box-shadow: inset 0px 0px 40px rgba(0, 238, 255, 0.1), 0px 30px 50px rgba(0,0,0,0.8), 0px 0px 30px rgba(0, 238, 255, 0.15) !important;
+        box-shadow: inset 0px 0px 40px rgba(0, 238, 255, 0.1), 0px 30px 50px rgba(0,0,0,0.8) !important;
         display: flex !important; flex-direction: column !important; justify-content: center !important; align-items: center !important;
-        margin: 15px auto !important; z-index: 10;
+        margin: 10px auto !important; padding: 20px !important; z-index: 10;
         animation: floating 6s ease-in-out infinite;
     }
     
-    [data-testid="stForm"] > div { width: 100% !important; max-width: 250px !important; margin: 0 auto !important; }
+    [data-testid="stForm"] > div { width: 100% !important; max-width: 260px !important; margin: 0 auto !important; }
     [data-testid="stForm"] label, [data-testid="stForm"] p { color: #f8fafc !important; font-weight: 700; text-shadow: 0px 2px 4px rgba(0,0,0,1) !important; font-size: 13px; text-align: center; width:100%;}
     
     input[type="text"], input[type="password"] {
-        background-color: rgba(0, 10, 20, 0.5) !important; color: #00eeff !important; -webkit-text-fill-color: #00eeff !important;
-        border: 1px solid rgba(255, 255, 255, 0.2) !important; border-bottom: 2px solid #00eeff !important; border-radius: 5px !important; padding: 10px !important;
+        background-color: rgba(0, 10, 20, 0.6) !important; color: #00eeff !important; -webkit-text-fill-color: #00eeff !important;
+        border: 1px solid rgba(255, 255, 255, 0.2) !important; border-bottom: 2px solid #00eeff !important; border-radius: 5px !important; padding: 12px !important;
         font-family: monospace !important; text-align: center; letter-spacing: 1px; width: 100% !important; transition: 0.3s; margin-bottom: 5px;
     }
-    input[type="text"]:focus, input[type="password"]:focus { background-color: rgba(0, 0, 0, 0.8) !important; box-shadow: 0 5px 15px rgba(0, 238, 255, 0.3) !important;}
+    input[type="text"]:focus, input[type="password"]:focus { background-color: rgba(0, 0, 0, 0.9) !important; box-shadow: 0 5px 15px rgba(0, 238, 255, 0.4) !important; border: 1px solid #00eeff !important;}
     
-    [data-testid="stFormSubmitButton"] { width: 100% !important; margin-top: 15px !important; }
+    /* BOTÃO PROFISSIONAL E ALINHADO */
+    [data-testid="stFormSubmitButton"] { width: 100% !important; margin-top: 15px !important; display: flex; justify-content: center;}
     [data-testid="stFormSubmitButton"] button {
-        background: #0f172a !important; color: #00eeff !important;
-        border: 1px solid rgba(0, 238, 255, 0.5) !important; border-radius: 5px !important; padding: 10px 0 !important;
-        font-weight: 800 !important; font-size: 13px !important; letter-spacing: 1px;
-        width: 100% !important; transition: 0.3s; box-shadow: 0px 5px 15px rgba(0,0,0,0.5) !important; text-transform: uppercase;
+        background: linear-gradient(90deg, #0f172a, #1e293b) !important; color: #00eeff !important;
+        border: 1px solid rgba(0, 238, 255, 0.4) !important; border-radius: 6px !important; padding: 10px 0 !important;
+        font-family: 'Montserrat', sans-serif !important; font-weight: 800 !important; font-size: 12px !important; letter-spacing: 2px;
+        width: 100% !important; max-width: 260px !important; transition: 0.3s; box-shadow: 0px 4px 10px rgba(0,0,0,0.6) !important; text-transform: uppercase;
     }
-    [data-testid="stFormSubmitButton"] button:hover { background: #00eeff !important; color: #0f172a !important; box-shadow: 0px 5px 20px rgba(0, 238, 255, 0.6) !important; }
+    [data-testid="stFormSubmitButton"] button:hover { background: #00eeff !important; color: #0f172a !important; box-shadow: 0px 5px 20px rgba(0, 238, 255, 0.6) !important; border-color: #00eeff !important;}
     </style>
     """, unsafe_allow_html=True)
 
-    st.markdown('<div class="login-wrapper">', unsafe_allow_html=True)
+    st.markdown('<div class="login-container">', unsafe_allow_html=True)
 
     logo_b64 = get_base64_file(ARQUIVO_LOGO_LOGIN)
     if logo_b64:
-        st.markdown(f'''<div style="text-align: center;"><img src="data:image/png;base64,{logo_b64}" style="height: 100px; filter: drop-shadow(0px 5px 15px rgba(255,255,255,0.4));"></div>''', unsafe_allow_html=True)
+        st.markdown(f'''<div style="text-align: center; margin-bottom: 5px;"><img src="data:image/png;base64,{logo_b64}" style="height: 100px; filter: drop-shadow(0px 5px 10px rgba(0,0,0,0.8));"></div>''', unsafe_allow_html=True)
 
     with st.form(key="login_form", clear_on_submit=False):
-        st.markdown("<h2 style='text-align: center; color:#00eeff !important; font-family: monospace; font-weight: 900; margin-bottom: 20px; font-size: 15px; text-shadow: 0px 0px 10px rgba(0,0,0,1);'>🧫 ACESSO RESTRITO 🦠</h2>", unsafe_allow_html=True)
+        # TÍTULO CORRIGIDO COM O NOME DO SISTEMA E FONTE BONITA
+        st.markdown("""
+        <h2 style='text-align: center; color:#00eeff !important; font-family: "Montserrat", sans-serif; font-weight: 900; margin-bottom: 20px; font-size: 22px; text-shadow: 0px 0px 15px rgba(0,238,255,0.6); line-height: 1.2;'>
+            🧫 S.I.B.C. 🦠<br>
+            <span style="font-size: 10px; color: #e2e8f0; font-weight: 600; letter-spacing: 1px; text-shadow: none;">SISTEMA INTEGRADO DE BIOLOGIA COMPUTACIONAL</span>
+        </h2>
+        """, unsafe_allow_html=True)
+        
         usuario_input = st.text_input("🔬 Identificação:")
         senha_input = st.text_input("🧬 Sequência Genética:", type="password")
         submit_button = st.form_submit_button("INICIAR PROTOCOLO")
@@ -284,49 +299,52 @@ if not st.session_state['logado']:
 
     assinatura_b64 = get_base64_file(ARQUIVO_ASSINATURA)
     if assinatura_b64:
-        st.markdown(f'''<div style="text-align: center; margin-top: 10px;"><img src="data:image/png;base64,{assinatura_b64}" style="height: 50px; filter: drop-shadow(0px 2px 5px rgba(0,0,0,0.8)); opacity: 0.9;"></div>''', unsafe_allow_html=True)
+        st.markdown(f'''<div style="text-align: center; margin-top: 15px;"><img src="data:image/png;base64,{assinatura_b64}" style="height: 50px; filter: drop-shadow(0px 2px 5px rgba(0,0,0,0.8)); opacity: 0.8;"></div>''', unsafe_allow_html=True)
 
     st.markdown('</div>', unsafe_allow_html=True)
     st.stop()
 
 # ==========================================
-# 6. SISTEMA INTERNO (TUDO EM PORTUGUÊS E PDF CORRIGIDO)
+# 6. SISTEMA INTERNO E PDF (DESTRUIDOR DE BARRAS DE ROLAGEM)
 # ==========================================
 else:
 
     st.markdown(f"""
         <style>
-        @import url('https://fonts.googleapis.com/css2?family=Arial:wght@800&display=swap');
-        
-        .stApp {{ background-color: #0b1120 !important; color: #f8fafc !important; }}
-        section[data-testid="stSidebar"] {{ background-color: #0f172a !important; border-right: 1px solid #1e293b !important; }}
-        section[data-testid="stSidebar"] * {{ color: #e2e8f0 !important; }}
-        
         div[data-testid="metric-container"] {{ background: linear-gradient(145deg, #111827, #1e293b) !important; border-left: 3px solid #00eeff !important; padding: 20px !important; border-radius: 8px !important; box-shadow: 0 5px 15px rgba(0,0,0,0.5) !important; }}
         div[data-testid="metric-container"] label {{ color: #94a3b8 !important; font-size: 14px !important;}}
         div[data-testid="metric-container"] div {{ color: #00eeff !important; text-shadow: 0px 0px 10px rgba(0,238,255,0.3) !important;}}
         
-        /* O MODO DE IMPRESSÃO - DESTRÓI BARRAS DE ROLAGEM E EXPANDÉ TUDO */
+        /* 🔥 PDF: FORÇA BRUTA ABSOLUTA PARA NÃO CORTAR PÁGINAS 🔥 */
         @media print {{
             @page {{ size: A4 landscape !important; margin: 10mm !important; }}
-            html, body, .stApp, .block-container, div[data-testid="stAppViewContainer"], .main {{ height: auto !important; max-height: none !important; overflow: visible !important; position: static !important; background: white !important; background-color: white !important; color: black !important; padding: 0 !important; margin: 0 !important; }}
-            h1, h2, h3, h4, p, label, div, span {{ color: black !important; text-shadow: none !important; box-shadow: none !important; }}
-            section[data-testid="stSidebar"], header, button, .stButton, input, select, .stMultiSelect, div[data-testid="stFileUploader"], [data-testid="stToolbar"] {{ display: none !important; }}
+            * {{ background: transparent !important; color: black !important; box-shadow: none !important; text-shadow: none !important; }}
+            
+            /* Destrava qualquer container do Streamlit que impeça a rolagem vertical na impressão */
+            body, html, .stApp, .main, .block-container, div[data-testid="stAppViewContainer"], div[class^="st-"] {{ 
+                background-color: white !important; display: block !important; height: auto !important; max-height: none !important; position: relative !important; overflow: visible !important;
+            }}
+            
+            /* Esconde itens irrelevantes para o papel */
+            [data-testid="stSidebar"], header, .stButton, [data-testid="stToolbar"], button, input, select, .stMultiSelect {{ display: none !important; }}
+            
+            /* Força as quebras de linha corretas */
             div[data-testid="column"] {{ width: 100% !important; max-width: 100% !important; flex: 0 0 100% !important; display: block !important; margin-bottom: 20px !important; page-break-inside: avoid !important; }}
-            div[data-testid="stVerticalBlock"] {{ display: block !important; width: 100% !important; flex: none !important; height: auto !important; overflow: visible !important; }}
-            .stDataFrame, [data-testid="stDataFrameContainer"], [data-testid="stDataFrameContainer"] > div, .stDataFrame > div {{ height: auto !important; max-height: none !important; overflow: visible !important; width: 100% !important; display: table !important; position: static !important; }}
-            table {{ width: 100% !important; border-collapse: collapse !important; table-layout: auto !important; }}
-            th, td {{ border: 1px solid #000 !important; padding: 6px !important; color: black !important; background: white !important; white-space: normal !important; word-wrap: break-word !important; }}
+            
+            /* Expande tabelas infinitamente */
+            .stDataFrame, .stDataFrame > div, .stDataFrame > div > div, table {{ height: auto !important; max-height: none !important; overflow: visible !important; width: 100% !important; display: table !important; }}
+            th, td {{ border: 1px solid #ccc !important; padding: 6px !important; white-space: normal !important; word-wrap: break-word !important; }}
+            
+            /* Gráficos */
             .js-plotly-plot, .plotly {{ width: 100% !important; max-width: 100% !important; page-break-inside: avoid !important; }}
-            div[data-testid="metric-container"] {{ background: white !important; border: 1px solid #000 !important; margin-bottom: 15px !important; border-left: 5px solid #000 !important; padding: 10px !important; page-break-inside: avoid !important;}}
-            div[data-testid="metric-container"] div {{ color: black !important; }}
+            div[data-testid="metric-container"] {{ border: 1px solid #000 !important; border-left: 5px solid #000 !important; padding: 10px !important; page-break-inside: avoid !important; margin-bottom:10px !important;}}
         }}
         </style>
     """, unsafe_allow_html=True)
 
     st.components.v1.html("""
         <script>function doPrint() { window.parent.print(); }</script>
-        <button onclick="doPrint()" style="background: linear-gradient(90deg, #002395, #3b82f6); color:white; padding:12px 20px; border:none; border-radius:5px; cursor:pointer; font-weight:bold; width:100%; text-transform: uppercase; letter-spacing: 1px; box-shadow: 0px 4px 10px rgba(0,0,0,0.5);">🖨️ Exportar Documento Oficial</button>
+        <button onclick="doPrint()" style="background: linear-gradient(90deg, #002395, #3b82f6); color:white; padding:12px 20px; border:none; border-radius:5px; cursor:pointer; font-weight:bold; width:100%; text-transform: uppercase; letter-spacing: 1px; box-shadow: 0px 4px 10px rgba(0,0,0,0.5);">🖨️ Exportar Relatório (Habilite 'Gráficos de Fundo' no navegador)</button>
     """, height=50)
 
     df_todos_dados = carregar_dados_salvos()
@@ -343,15 +361,13 @@ else:
         df_mock = df_todos_dados[df_todos_dados['Período_Arquivo'] == 'Gerado Demo']
 
     # ==========================================
-    # LOGO DO MENU LATERAL (AGORA FICA VISÍVEL NO FUNDO ESCURO)
+    # LOGO DO MENU LATERAL (PURO, SEM FUNDO BRANCO, COM GLOW)
     # ==========================================
     logo_prog_b64 = get_base64_file(ARQUIVO_LOGO_PROGRAMA)
     if logo_prog_b64:
         st.sidebar.markdown(f'''
             <div style="display: flex; justify-content: center; margin-bottom: 25px;">
-                <div style="background-color: rgba(255, 255, 255, 0.15); padding: 5px; border-radius: 50%; box-shadow: 0px 0px 20px rgba(0, 238, 255, 0.4);">
-                    <img src="data:image/png;base64,{logo_prog_b64}" style="width: 120px; height: 120px; border-radius: 50%; object-fit: cover;">
-                </div>
+                <img src="data:image/png;base64,{logo_prog_b64}" style="width: 140px; filter: drop-shadow(0px 0px 15px rgba(0, 238, 255, 0.4));">
             </div>
         ''', unsafe_allow_html=True)
     
@@ -368,7 +384,7 @@ else:
     menu = st.sidebar.radio("Navegação do Sistema", opcoes_menu)
     
     # ========================================================
-    # FILTROS GLOBAIS (SÓ APARECEM SE TIVER NOS PAINÉIS DE DADOS)
+    # FILTROS SEM TRAVAMENTO (DENTRO DE UM FORMULÁRIO)
     # ========================================================
     df_f = pd.DataFrame()
     df_base_ativa = df_reais if not df_reais.empty else df_mock
@@ -381,10 +397,14 @@ else:
         unid_disp = sorted(list(df_base_ativa['Unidade'].unique()))
         exame_disp = sorted(list(df_base_ativa['Material_Exame'].unique()))
         
-        meses_sel = st.sidebar.multiselect("📅 Selecione o Mês/Ano", meses_disp, default=meses_disp)
-        unid_sel = st.sidebar.multiselect("🏢 Selecione a Unidade", unid_disp, default=unid_disp)
-        exame_sel = st.sidebar.multiselect("🧪 Selecione o Material", exame_disp, default=exame_disp)
+        # O formulário evita que a página recarregue a cada clique no filtro
+        with st.sidebar.form("form_filtros"):
+            meses_sel = st.multiselect("📅 Selecione o Mês/Ano", meses_disp, default=meses_disp)
+            unid_sel = st.multiselect("🏢 Selecione a Unidade", unid_disp, default=unid_disp)
+            exame_sel = st.multiselect("🧪 Selecione o Material", exame_disp, default=exame_disp)
+            aplicar_filtros = st.form_submit_button("Aplicar Filtros ✔️")
         
+        # Só filtra com base no que estiver selecionado
         df_f = df_base_ativa[df_base_ativa['Mês/Ano'].isin(meses_sel) & df_base_ativa['Unidade'].isin(unid_sel) & df_base_ativa['Material_Exame'].isin(exame_sel)]
 
     st.sidebar.markdown("---")
@@ -398,9 +418,9 @@ else:
     if menu == "📊 Painel Principal":
         st.title("📊 Monitoramento Clínico Operacional")
         if df_base_ativa.empty: 
-            st.info("Nenhum Laudo Oficial processado. Vá em 'Carregar Laudos' para iniciar.")
+            st.info("Nenhum Laudo processado. Vá em 'Carregar Laudos' para iniciar.")
         elif df_f.empty: 
-            st.warning("Nenhum dado corresponde aos filtros selecionados na barra lateral.")
+            st.warning("Nenhum dado corresponde aos filtros. Clique em 'Aplicar Filtros' na barra lateral.")
         else:
             t_total = len(df_f)
             t_pos = len(df_f[df_f['Resultado'] == 'Positivo'])
@@ -443,7 +463,7 @@ else:
         if df_base_ativa.empty:
             st.info("O sistema não possui dados para gerar a análise.")
         elif df_f.empty:
-            st.warning("Nenhum dado corresponde aos filtros selecionados na barra lateral.")
+            st.warning("Nenhum dado corresponde aos filtros selecionados.")
         else:
             df_pos_comp = df_f[df_f['Resultado'] == 'Positivo'].copy()
             if not df_pos_comp.empty:
