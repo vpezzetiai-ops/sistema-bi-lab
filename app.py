@@ -49,7 +49,7 @@ def padronizar_material(material):
     return str(material).strip().rstrip('.').strip()
 
 # ==========================================
-# 3. CONEXÃO COM GOOGLE SHEETS E FUNÇÕES B64
+# 3. CONEXÃO COM GOOGLE SHEETS
 # ==========================================
 conn = st.connection("gsheets", type=GSheetsConnection)
 COLUNAS_DB = ["Data", "Código_Paciente", "Idade", "Sexo", "Material_Exame", "Resultado", "Bactéria", "Indicados (S)", "Resistentes (R)", "Unidade", "Período_Arquivo"]
@@ -59,7 +59,6 @@ def carregar_dados_salvos():
         df = conn.read(worksheet="Página1", ttl=0).dropna(how="all")
         if df.empty: return pd.DataFrame(columns=COLUNAS_DB)
         
-        # Garante compatibilidade com planilhas antigas
         if 'Idade' not in df.columns: df['Idade'] = "Não Informada"
         if 'Sexo' not in df.columns: df['Sexo'] = "Não Informado"
             
@@ -88,17 +87,14 @@ def get_base64_file(file_path):
             return base64.b64encode(f.read()).decode()
     return None
 
-# ==========================================
-# FUNÇÃO: GERAR DADOS DE DEMONSTRAÇÃO
-# ==========================================
 def gerar_dados_teste():
     exames_mock = ["[URAB] Urina", "[HEMO] Sangue", "[SWAB] Secreção", "[LCR] Líquido"]
     bacterias_mock = ["Escherichia coli", "Staphylococcus aureus", "Klebsiella sp.", "Pseudomonas sp.", "Proteus sp."]
     sexos_mock = ["Feminino", "Masculino"]
     
     novos_dados = []
-    for _ in range(100): # Gera 100 laudos fictícios
-        res = random.choice(["Positivo", "Positivo", "Negativo"]) # Mais chance de positivo para os gráficos
+    for _ in range(100): 
+        res = random.choice(["Positivo", "Positivo", "Negativo"])
         bac = random.choice(bacterias_mock) if res == "Positivo" else "N/A"
         data_mock = (datetime.today() - timedelta(days=random.randint(0, 180))).strftime("%d/%m/%Y")
         
@@ -138,6 +134,13 @@ if not st.session_state['logado']:
             <source src="data:video/mp4;base64,{video_b64}" type="video/mp4">
         </video>
         ''', unsafe_allow_html=True)
+    else:
+        # PLANO B: Se o vídeo falhar, puxa o microscópio da internet para nunca ficar feio/branco
+        st.markdown('''
+        <video autoplay loop muted playsinline style="position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; z-index: -999; object-fit: cover; object-position: center; filter: brightness(0.4) sepia(0.3) hue-rotate(180deg);">
+            <source src="https://cdn.pixabay.com/vimeo/32822180/microscope-23545.mp4?width=1280&hash=0e0b3c647b0e118939c4a8cf822bb2bcf2b3e8e1" type="video/mp4">
+        </video>
+        ''', unsafe_allow_html=True)
 
     st.markdown("""
     <style>
@@ -151,29 +154,30 @@ if not st.session_state['logado']:
     
     [data-testid="stForm"] {
         background: rgba(255, 255, 255, 0.2) !important;
-        backdrop-filter: blur(12px) !important;
-        -webkit-backdrop-filter: blur(12px) !important;
+        backdrop-filter: blur(16px) !important;
+        -webkit-backdrop-filter: blur(16px) !important;
         border-radius: 15px !important;
-        border: 1px solid rgba(255, 255, 255, 0.3) !important;
-        box-shadow: 0px 15px 30px rgba(0,0,0,0.6) !important;
+        border: 1px solid rgba(255, 255, 255, 0.4) !important;
+        box-shadow: 0px 15px 30px rgba(0,0,0,0.8) !important;
         padding: 25px 20px 15px 20px !important;
         margin-top: 8vh !important; 
-        z-index: 10; max-width: 330px; margin-left: auto; margin-right: auto;
+        z-index: 10; max-width: 350px; margin-left: auto; margin-right: auto;
         animation: fadeInDown 1.2s ease-out forwards;
     }
     
-    [data-testid="stForm"] p, [data-testid="stForm"] label, [data-testid="stForm"] div { color: #111827 !important; font-weight: 600; text-shadow: 0px 1px 2px rgba(255,255,255,0.8) !important; }
+    [data-testid="stForm"] p, [data-testid="stForm"] label, [data-testid="stForm"] div { color: #111827 !important; font-weight: 800; text-shadow: 0px 1px 2px rgba(255,255,255,0.9) !important; }
     
     input[type="text"], input[type="password"] {
         background-color: rgba(255, 255, 255, 0.95) !important; color: #111827 !important; -webkit-text-fill-color: #111827 !important;
         border: 1px solid rgba(255, 255, 255, 0.8) !important; border-radius: 8px !important; padding: 10px !important;
     }
     
-    div.stButton > button {
+    /* BLINDAGEM DO BOTÃO PARA SEMPRE FICAR AZUL, IGNORANDO O VERMELHO DO STREAMLIT */
+    [data-testid="stFormSubmitButton"] button {
         background-color: #002395 !important; color: #FFFFFF !important; border: none !important; border-radius: 8px !important; 
-        padding: 10px !important; margin-top: 5px !important; box-shadow: 0px 4px 15px rgba(0, 35, 149, 0.4) !important;
+        padding: 10px !important; margin-top: 5px !important; box-shadow: 0px 4px 15px rgba(0, 35, 149, 0.6) !important;
     }
-    div.stButton > button * { color: #FFFFFF !important; font-weight: 900 !important; font-size: 16px !important; }
+    [data-testid="stFormSubmitButton"] button * { color: #FFFFFF !important; font-weight: 900 !important; font-size: 16px !important; }
     
     hr.custom-divider { border: 0; height: 1px; background: linear-gradient(to right, rgba(255,255,255,0), rgba(255,255,255,0.8), rgba(255,255,255,0)); margin: 15px 0 10px 0; }
     </style>
@@ -187,16 +191,16 @@ if not st.session_state['logado']:
             
             usuario_input = st.text_input("👤 Nome de Usuário:")
             senha_input = st.text_input("🔑 Senha de Acesso:", type="password")
-            lembrar_senha = st.checkbox("Lembrar senha (Habilitar preenchimento)")
+            lembrar_senha = st.checkbox("Manter sessão ativa")
             
-            submit_button = st.form_submit_button("Fazer Login 🚀", type="primary", use_container_width=True)
+            submit_button = st.form_submit_button("Fazer Login 🚀", use_container_width=True)
             st.markdown("<hr class='custom-divider'>", unsafe_allow_html=True)
             
             assinatura_b64 = get_base64_file("assinatura.png")
             if assinatura_b64:
                 st.markdown(f'''
                     <div style="text-align: center; padding-bottom: 5px;">
-                        <p style="color: #4B5563; font-size: 9px; font-weight: 800; margin-bottom: 5px; text-transform: uppercase; letter-spacing: 2px;">Desenvolvido Por</p>
+                        <p style="color: #111827; font-size: 9px; font-weight: 900; margin-bottom: 5px; text-transform: uppercase; letter-spacing: 2px;">Desenvolvido Por</p>
                         <img src="data:image/png;base64,{assinatura_b64}" style="max-height: 45px; max-width: 100%; object-fit: contain; margin: 0 auto; display: block;">
                     </div>
                 ''', unsafe_allow_html=True)
@@ -220,7 +224,7 @@ if not st.session_state['logado']:
 # 6. TELA DO SISTEMA (DASHBOARD)
 # ==========================================
 else:
-    # CSS dinâmico: Funciona perfeitamente no Dark Mode!
+    # CSS dinâmico e OTIMIZAÇÃO PARA IMPRESSÃO EM PDF
     st.markdown("""
         <style>
         video { display: none !important; }
@@ -230,6 +234,14 @@ else:
         
         div.stButton > button { background-color: #002395 !important; border: none !important; }
         div.stButton > button * { color: #FFFFFF !important; font-weight: bold !important; }
+        
+        /* MAGIA DO PDF: Esconde a barra lateral na hora de imprimir */
+        @media print {
+            section[data-testid="stSidebar"] { display: none !important; }
+            header[data-testid="stHeader"] { display: none !important; }
+            div[data-testid="stAppViewBlockContainer"] { padding: 1rem !important; max-width: 100% !important; }
+            iframe { display: none !important; } /* Esconde o botão de imprimir */
+        }
         </style>
     """, unsafe_allow_html=True)
 
@@ -238,7 +250,7 @@ else:
         <script>
         function printPDF() { window.parent.print(); }
         </script>
-        <button onclick="printPDF()" style="background-color:#002395;color:white;padding:10px 20px;border:none;border-radius:5px;cursor:pointer;font-weight:bold;width:100%;">🖨️ Exportar Tela para PDF</button>
+        <button onclick="printPDF()" style="background-color:#002395;color:white;padding:10px 20px;border:none;border-radius:5px;cursor:pointer;font-weight:bold;width:100%;box-shadow: 0px 4px 6px rgba(0,0,0,0.2);">🖨️ Exportar Tela para PDF</button>
     """, height=50)
 
     def extrair_dados_pdf(texto_bruto):
@@ -314,7 +326,8 @@ else:
     st.sidebar.markdown(f"<span style='color:#002395; font-weight:bold;'>• {nivel_atual}</span>", unsafe_allow_html=True)
     st.sidebar.markdown("---")
 
-    opcoes_menu = ["🏢 Análise por Unidade", "📈 Relatório Comparativo", "🧬 Demografia (Idade e Sexo)"]
+    # Demografia integrada de volta no Relatório Comparativo Avançado
+    opcoes_menu = ["🏢 Análise por Unidade", "📈 Relatório Comparativo Avançado"]
     if nivel_atual in ["Operador", "Administrador"] or st.session_state['usuario'] == "vhpezzeti":
         opcoes_menu.append("📂 Upload de Dados")
     if nivel_atual == "Administrador" or st.session_state['usuario'] == "vhpezzeti":
@@ -447,8 +460,8 @@ else:
                     st.markdown("#### 📋 Detalhamento dos Pacientes Positivos")
                     st.dataframe(df_pos[['Data', 'Código_Paciente', 'Idade', 'Sexo', 'Unidade', 'Material_Exame', 'Bactéria', 'Indicados (S)', 'Resistentes (R)']], use_container_width=True, hide_index=True)
 
-    elif menu == "📈 Relatório Comparativo":
-        st.title("📈 Tendências e Campeões")
+    elif menu == "📈 Relatório Comparativo Avançado":
+        st.title("📈 Tendências, Campeões e Demografia")
         if not df_historico.empty:
             df_pos_comp = df_historico[df_historico['Resultado'] == 'Positivo']
             if not df_pos_comp.empty:
@@ -460,27 +473,32 @@ else:
                 c2.metric("Exame com Mais Positivos", exame_top)
                 c3.metric("Mês com Mais Casos", df_pos_comp['Mês/Ano'].value_counts().idxmax())
                 
-                st.markdown("#### 📉 Curva Epidemiológica")
-                agrupado = df_pos_comp.groupby('Mês/Ano').size().reset_index(name='Casos')
-                st.plotly_chart(px.area(agrupado, x='Mês/Ano', y='Casos', markers=True, color_discrete_sequence=[COR_AZUL_BIC]), use_container_width=True)
+                st.markdown("---")
                 
-                st.markdown("#### 🏆 Top Bactérias por Tipo de Exame")
-                top_b_exame = df_pos_comp.groupby(['Material_Exame', 'Bactéria']).size().reset_index(name='Qtd').sort_values(['Material_Exame', 'Qtd'], ascending=[True, False])
-                st.dataframe(top_b_exame.groupby('Material_Exame').head(2), use_container_width=True, hide_index=True)
+                # Gráficos Temporais e de Bactéria
+                col_g1, col_g2 = st.columns(2)
+                with col_g1:
+                    st.markdown("#### 📉 Curva Epidemiológica")
+                    agrupado = df_pos_comp.groupby('Mês/Ano').size().reset_index(name='Casos')
+                    st.plotly_chart(px.area(agrupado, x='Mês/Ano', y='Casos', markers=True, color_discrete_sequence=[COR_AZUL_BIC]), use_container_width=True)
+                with col_g2:
+                    st.markdown("#### 🏆 Top Bactérias por Tipo de Exame")
+                    top_b_exame = df_pos_comp.groupby(['Material_Exame', 'Bactéria']).size().reset_index(name='Qtd').sort_values(['Material_Exame', 'Qtd'], ascending=[True, False])
+                    st.dataframe(top_b_exame.groupby('Material_Exame').head(2), use_container_width=True, hide_index=True)
 
-    elif menu == "🧬 Demografia (Idade e Sexo)":
-        st.title("🧬 Análise Demográfica de Infecções")
-        if df_historico.empty: st.info("Sem dados.")
-        else:
-            df_demo = df_historico[(df_historico['Resultado'] == 'Positivo') & (df_historico['Idade'] != 'Não Informada')]
-            if df_demo.empty: st.warning("⚠️ Você precisa gerar dados de teste ou fazer upload de PDFs que contenham idade.")
-            else:
-                df_demo['Idade'] = pd.to_numeric(df_demo['Idade'])
+                st.markdown("---")
+                st.markdown("### 🧬 Análise Demográfica (Sexo e Faixa Etária)")
+                df_demo = df_pos_comp[df_pos_comp['Idade'] != 'Não Informada'].copy()
                 
-                d1, d2 = st.columns(2)
-                with d1:
-                    st.markdown("#### 👥 Infecções por Sexo")
-                    st.plotly_chart(px.pie(df_demo, names='Sexo', hole=0.4, color_discrete_sequence=['#ff4b4b', '#002395']), use_container_width=True)
-                with d2:
-                    st.markdown("#### 📊 Faixa Etária dos Positivos")
-                    st.plotly_chart(px.histogram(df_demo, x='Idade', nbins=10, color_discrete_sequence=[COR_AZUL_BIC], text_auto=True), use_container_width=True)
+                if df_demo.empty:
+                    st.warning("⚠️ Não há dados de idade ou sexo suficientes nos laudos registados.")
+                else:
+                    df_demo['Idade'] = pd.to_numeric(df_demo['Idade'], errors='coerce')
+                    
+                    d1, d2 = st.columns(2)
+                    with d1:
+                        st.markdown("#### 👥 Infecções por Sexo")
+                        st.plotly_chart(px.pie(df_demo, names='Sexo', hole=0.4, color_discrete_sequence=['#ff4b4b', '#002395']), use_container_width=True)
+                    with d2:
+                        st.markdown("#### 📊 Faixa Etária dos Positivos")
+                        st.plotly_chart(px.histogram(df_demo, x='Idade', nbins=10, color_discrete_sequence=[COR_AZUL_BIC], text_auto=True), use_container_width=True)
