@@ -11,13 +11,13 @@ import random
 from datetime import datetime, timedelta
 
 # ==========================================
-# 1. CONFIGURAÇÕES INICIAIS E TEMA
+# 1. CONFIGURAÇÕES INICIAIS
 # ==========================================
 st.set_page_config(page_title="Sistema BI - Laboratorial", layout="wide", initial_sidebar_state="expanded")
 
-COR_AZUL_BIC = '#002395'
-COR_CINZA = '#808080'
-PALETA_CORES = ['#002395', '#4A69BD', '#708ad4', '#808080', '#A6A6A6', '#C0C0C0', '#d9d9d9']
+COR_AZUL_BIC = '#4A69BD' # Azul mais claro para destacar no fundo escuro
+COR_CINZA = '#A6A6A6'
+PALETA_CORES = ['#4A69BD', '#002395', '#708ad4', '#808080', '#A6A6A6', '#C0C0C0', '#d9d9d9']
 UNIDADES_OFICIAIS = ["1 - Serra Negra", "3 - AME", "4 - Amparo Unidade 4", "5 - Monte Alegre", "6 - Lindóia", "9 - Cenam", "10 - Amparo Unidade BPA", "12 - Águas de Lindóia", "Sede / Sem Unidade"]
 
 # ==========================================
@@ -58,10 +58,8 @@ def carregar_dados_salvos():
     try:
         df = conn.read(worksheet="Página1", ttl=0).dropna(how="all")
         if df.empty: return pd.DataFrame(columns=COLUNAS_DB)
-        
         if 'Idade' not in df.columns: df['Idade'] = "Não Informada"
         if 'Sexo' not in df.columns: df['Sexo'] = "Não Informado"
-            
         df['Bactéria'] = df['Bactéria'].apply(padronizar_bacteria)
         df['Unidade'] = df['Unidade'].apply(padronizar_unidade)
         df['Material_Exame'] = df['Material_Exame'].apply(padronizar_material)
@@ -83,32 +81,23 @@ def salvar_novo_usuario(df_users): conn.update(worksheet="Usuarios", data=df_use
 
 def get_base64_file(file_path):
     if os.path.exists(file_path):
-        with open(file_path, "rb") as f:
-            return base64.b64encode(f.read()).decode()
+        with open(file_path, "rb") as f: return base64.b64encode(f.read()).decode()
     return None
 
 def gerar_dados_teste():
     exames_mock = ["[URAB] Urina", "[HEMO] Sangue", "[SWAB] Secreção", "[LCR] Líquido"]
     bacterias_mock = ["Escherichia coli", "Staphylococcus aureus", "Klebsiella sp.", "Pseudomonas sp.", "Proteus sp."]
     sexos_mock = ["Feminino", "Masculino"]
-    
     novos_dados = []
     for _ in range(100): 
         res = random.choice(["Positivo", "Positivo", "Negativo"])
         bac = random.choice(bacterias_mock) if res == "Positivo" else "N/A"
         data_mock = (datetime.today() - timedelta(days=random.randint(0, 180))).strftime("%d/%m/%Y")
-        
         novos_dados.append({
-            "Data": data_mock,
-            "Código_Paciente": str(random.randint(10000, 99999)),
-            "Idade": random.randint(1, 90),
-            "Sexo": random.choice(sexos_mock),
-            "Material_Exame": random.choice(exames_mock),
-            "Resultado": res,
-            "Bactéria": bac,
-            "Indicados (S)": "Amicacina, Cefepime" if res=="Positivo" else "",
-            "Resistentes (R)": "Ampicilina, Penicilina" if res=="Positivo" else "",
-            "Unidade": random.choice(UNIDADES_OFICIAIS[:-1]),
+            "Data": data_mock, "Código_Paciente": str(random.randint(10000, 99999)), "Idade": random.randint(1, 90),
+            "Sexo": random.choice(sexos_mock), "Material_Exame": random.choice(exames_mock), "Resultado": res,
+            "Bactéria": bac, "Indicados (S)": "Amicacina, Cefepime" if res=="Positivo" else "",
+            "Resistentes (R)": "Ampicilina, Penicilina" if res=="Positivo" else "", "Unidade": random.choice(UNIDADES_OFICIAIS[:-1]),
             "Período_Arquivo": "Gerado Demo"
         })
     return pd.DataFrame(novos_dados)
@@ -122,13 +111,12 @@ if 'nivel_acesso' not in st.session_state: st.session_state['nivel_acesso'] = "V
 if 'unidades_permitidas' not in st.session_state: st.session_state['unidades_permitidas'] = "Todas"
 
 # ==========================================
-# 5. TELA DE LOGIN (COM BACKUP BLINDADO)
+# 5. TELA DE LOGIN (COM VÍDEOS REAIS E ANIMAÇÕES)
 # ==========================================
 if not st.session_state['logado']:
     
     video_b64 = get_base64_file("video_apresentacao.mp4")
     
-    # Se houver vídeo, mostra o vídeo. Se falhar, mostra a imagem fotográfica do laboratório.
     if video_b64:
         st.markdown(f'''
         <video autoplay loop muted playsinline style="position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; z-index: -999; object-fit: cover; object-position: center; filter: brightness(0.85) contrast(1.15);">
@@ -136,44 +124,38 @@ if not st.session_state['logado']:
         </video>
         ''', unsafe_allow_html=True)
     else:
-        st.markdown('''
-        <style>
-        .stApp {
-            background: linear-gradient(rgba(0, 15, 60, 0.7), rgba(0, 15, 60, 0.9)), url("https://images.unsplash.com/photo-1579154204601-01588f351e67?q=80&w=2000&auto=format&fit=crop") no-repeat center center fixed !important;
-            background-size: cover !important;
-        }
-        </style>
-        ''', unsafe_allow_html=True)
+        st.error("🚨 O vídeo 'video_apresentacao.mp4' não foi encontrado no GitHub. Por favor, verifique se o nome está exatamente igual.")
+        st.markdown('<style>.stApp { background-color: #0b132b !important; }</style>', unsafe_allow_html=True)
 
     st.markdown("""
     <style>
     @keyframes fadeInDown { 0% { opacity: 0; transform: translateY(-50px); } 100% { opacity: 1; transform: translateY(0); } }
 
-    html, body, [data-testid="stAppViewContainer"], .block-container { 
-        overflow: hidden !important; padding-top: 0rem !important; padding-bottom: 0rem !important; margin: 0 !important;
-    }
-    .stApp { background-color: transparent !important; }
-    [data-testid="stHeader"] { background: transparent !important; display: none !important; }
+    html, body, [data-testid="stAppViewContainer"], .block-container { overflow: hidden !important; padding: 0 !important; margin: 0 !important; }
+    .stApp { background: transparent !important; }
+    [data-testid="stHeader"] { display: none !important; }
     
+    /* Caixa de Login DARK GLASS */
     [data-testid="stForm"] {
-        background: rgba(255, 255, 255, 0.15) !important;
+        background: rgba(10, 15, 30, 0.65) !important;
         backdrop-filter: blur(15px) !important;
         -webkit-backdrop-filter: blur(15px) !important;
         border-radius: 20px !important;
-        border: 1px solid rgba(255, 255, 255, 0.3) !important;
-        box-shadow: 0px 15px 35px rgba(0,0,0,0.6) !important;
+        border: 1px solid rgba(255, 255, 255, 0.1) !important;
+        box-shadow: 0px 15px 40px rgba(0,0,0,0.8) !important;
         padding: 30px 25px 20px 25px !important;
         margin-top: 10vh !important; 
         z-index: 10; max-width: 360px; margin-left: auto; margin-right: auto;
         animation: fadeInDown 1.2s ease-out forwards;
     }
     
-    [data-testid="stForm"] p, [data-testid="stForm"] label, [data-testid="stForm"] div { color: #FFFFFF !important; font-weight: 800; text-shadow: 0px 1px 3px rgba(0,0,0,0.8) !important; }
+    [data-testid="stForm"] p, [data-testid="stForm"] label, [data-testid="stForm"] div { color: #E2E8F0 !important; font-weight: 700; text-shadow: 0px 2px 4px rgba(0,0,0,0.9) !important; }
     
     input[type="text"], input[type="password"] {
-        background-color: rgba(255, 255, 255, 0.95) !important; color: #111827 !important; -webkit-text-fill-color: #111827 !important;
-        border: 1px solid rgba(255, 255, 255, 0.8) !important; border-radius: 8px !important; padding: 12px !important;
+        background-color: rgba(255, 255, 255, 0.1) !important; color: #FFFFFF !important; -webkit-text-fill-color: #FFFFFF !important;
+        border: 1px solid rgba(255, 255, 255, 0.2) !important; border-radius: 8px !important; padding: 12px !important;
     }
+    input[type="text"]:focus, input[type="password"]:focus { border-color: #4A69BD !important; box-shadow: 0 0 0 2px rgba(74, 105, 189, 0.4) !important; }
     
     [data-testid="stFormSubmitButton"] button {
         background-color: #002395 !important; color: #FFFFFF !important; border: none !important; border-radius: 8px !important; 
@@ -182,7 +164,7 @@ if not st.session_state['logado']:
     [data-testid="stFormSubmitButton"] button * { color: #FFFFFF !important; font-weight: 900 !important; font-size: 16px !important; text-shadow: none !important;}
     [data-testid="stFormSubmitButton"] button:hover { background-color: #4A69BD !important; transform: scale(1.02); }
     
-    hr.custom-divider { border: 0; height: 1px; background: linear-gradient(to right, rgba(255,255,255,0), rgba(255,255,255,0.8), rgba(255,255,255,0)); margin: 20px 0 15px 0; }
+    hr.custom-divider { border: 0; height: 1px; background: linear-gradient(to right, rgba(255,255,255,0), rgba(255,255,255,0.3), rgba(255,255,255,0)); margin: 20px 0 15px 0; }
     </style>
     """, unsafe_allow_html=True)
 
@@ -190,7 +172,13 @@ if not st.session_state['logado']:
     
     with col_login:
         with st.form(key="login_form"):
-            st.markdown("<h2 style='text-align: center; color:#FFFFFF !important; font-weight: 900; margin-bottom: 25px; text-shadow: 0px 4px 15px rgba(0,0,0,0.8);'>Sistema BI - Laboratorial</h2>", unsafe_allow_html=True)
+            
+            # LOGO DO LABORATÓRIO NO TOPO DA CAIXA
+            logo_b64 = get_base64_file("logo.png")
+            if logo_b64:
+                st.markdown(f'''<div style="display: flex; justify-content: center; margin-bottom: 15px;"><img src="data:image/png;base64,{logo_b64}" style="max-height: 80px; filter: drop-shadow(0px 0px 10px rgba(255,255,255,0.3));"></div>''', unsafe_allow_html=True)
+            
+            st.markdown("<h3 style='text-align: center; color:#FFFFFF !important; font-weight: 900; margin-bottom: 25px; text-shadow: 0px 4px 15px rgba(0,0,0,0.8);'>Acesso ao Sistema</h3>", unsafe_allow_html=True)
             
             usuario_input = st.text_input("👤 Nome de Usuário:")
             senha_input = st.text_input("🔑 Senha de Acesso:", type="password")
@@ -198,14 +186,19 @@ if not st.session_state['logado']:
             submit_button = st.form_submit_button("Fazer Login 🚀", use_container_width=True)
             st.markdown("<hr class='custom-divider'>", unsafe_allow_html=True)
             
-            assinatura_b64 = get_base64_file("assinatura.png")
-            if assinatura_b64:
+            # ASSINATURA ANIMADA (O VIDEO DA ENGRENAGEM)
+            assinatura_video_b64 = get_base64_file("assinatura_animada.mp4")
+            if assinatura_video_b64:
                 st.markdown(f'''
-                    <div style="text-align: center; padding-bottom: 5px;">
-                        <p style="color: #FFFFFF; font-size: 9px; font-weight: 900; margin-bottom: 5px; text-transform: uppercase; letter-spacing: 2px;">Desenvolvido Por</p>
-                        <img src="data:image/png;base64,{assinatura_b64}" style="max-height: 45px; max-width: 100%; object-fit: contain; margin: 0 auto; display: block; filter: drop-shadow(0px 2px 4px rgba(0,0,0,0.8));">
+                    <div style="text-align: center;">
+                        <p style="color: #A0AEC0; font-size: 9px; font-weight: 900; margin-bottom: 5px; text-transform: uppercase; letter-spacing: 2px;">Desenvolvido Por</p>
+                        <video autoplay loop muted playsinline style="max-height: 60px; max-width: 100%; object-fit: contain; margin: 0 auto; display: block; border-radius: 8px;">
+                            <source src="data:video/mp4;base64,{assinatura_video_b64}" type="video/mp4">
+                        </video>
                     </div>
                 ''', unsafe_allow_html=True)
+            else:
+                st.error("⚠️ Falta o arquivo 'assinatura_animada.mp4'")
 
             if submit_button:
                 df_usuarios = carregar_usuarios()
@@ -218,43 +211,69 @@ if not st.session_state['logado']:
                     st.session_state['unidades_permitidas'] = str(usuario_encontrado.iloc[0]['Unidades_Permitidas'])
                     st.rerun()
                 else:
-                    st.error("❌ Usuário ou senha incorretos. Acesso negado.")
+                    st.error("❌ Usuário ou senha incorretos.")
 
     st.stop()
 
 # ==========================================
-# 6. TELA DO SISTEMA (DASHBOARD) E MÓDULOS
+# 6. TELA DO SISTEMA (DASHBOARD) - TEMA DARK PREMIUM & PDF PERFEITO
 # ==========================================
 else:
-    # CSS GLOBAL PARA ESTILIZAR O DASHBOARD E FORÇAR PDF PERFEITO
     st.markdown("""
         <style>
         video { display: none !important; }
-        html, body, [data-testid="stAppViewContainer"], .block-container { 
-            overflow: visible !important; height: auto !important; 
-        }
-        .stApp { background-image: none !important; background-color: #F4F6F9 !important; animation: none !important;}
-        header[data-testid="stHeader"] { display: flex !important; background-color: #F4F6F9 !important;}
+        html, body, [data-testid="stAppViewContainer"], .block-container { overflow: visible !important; height: auto !important; }
         
-        /* Estilização Premium dos Cartões (Metrics) */
+        /* TEMA DARK PREMIUM NO DASHBOARD */
+        .stApp { background: #0f172a !important; color: #f8fafc !important; animation: none !important;}
+        header[data-testid="stHeader"] { background: transparent !important; }
+        
+        /* Barra Lateral (Menu) */
+        section[data-testid="stSidebar"] { background-color: #020617 !important; border-right: 1px solid #1e293b !important; }
+        section[data-testid="stSidebar"] * { color: #e2e8f0 !important; }
+        
+        /* Estilização dos Cartões de Métricas (Glass Dark) */
         div[data-testid="metric-container"] {
-            background-color: #FFFFFF !important; border: 1px solid #E5E7EB !important;
+            background-color: rgba(30, 41, 59, 0.7) !important; 
+            backdrop-filter: blur(10px) !important;
+            border: 1px solid rgba(255, 255, 255, 0.1) !important;
             padding: 20px !important; border-radius: 12px !important;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.05) !important; border-left: 6px solid #002395 !important;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.3) !important; border-left: 6px solid #4A69BD !important;
         }
+        div[data-testid="metric-container"] label { color: #94a3b8 !important; }
+        div[data-testid="metric-container"] div { color: #f8fafc !important; }
         
-        div.stButton > button { background-color: #002395 !important; border: none !important; border-radius: 8px !important;}
+        /* Botões do Sistema */
+        div.stButton > button { background-color: #1e3a8a !important; border: 1px solid #3b82f6 !important; border-radius: 8px !important;}
         div.stButton > button * { color: #FFFFFF !important; font-weight: bold !important; }
-        div.stButton > button:hover { background-color: #4A69BD !important; }
+        div.stButton > button:hover { background-color: #2563eb !important; }
         
-        /* SOLUÇÃO DEFINITIVA PARA O PDF NÃO CORTAR */
+        /* Tabelas e Textos */
+        .stDataFrame { background: rgba(30, 41, 59, 0.5) !important; border-radius: 10px; }
+        h1, h2, h3, h4, p, label { color: #f8fafc !important; }
+        
+        /* ============================================================== */
+        /* SOLUÇÃO DEFINITIVA DO PDF (PAISAGEM, BRANCO, SEM CORTES)       */
+        /* ============================================================== */
         @media print {
-            section[data-testid="stSidebar"] { display: none !important; }
-            header[data-testid="stHeader"] { display: none !important; }
-            .stApp { background: white !important; }
-            div[data-testid="stAppViewBlockContainer"] { padding: 0 !important; max-width: 100% !important; margin: 0 !important; width: 100% !important;}
-            iframe { display: none !important; } 
-            .js-plotly-plot { page-break-inside: avoid !important; }
+            @page { size: A4 landscape; margin: 10mm; } /* Força página deitada */
+            
+            /* Transforma o fundo em Branco para poupar tinta e ser legível */
+            body, .stApp { background: white !important; color: black !important; -webkit-print-color-adjust: exact !important; }
+            h1, h2, h3, h4, p, label { color: black !important; }
+            
+            /* Esconde itens inúteis na impressão */
+            section[data-testid="stSidebar"], header[data-testid="stHeader"], iframe, button { display: none !important; }
+            
+            /* Ajusta a área para usar toda a folha */
+            div[data-testid="stAppViewBlockContainer"] { padding: 0 !important; margin: 0 !important; max-width: 100% !important; width: 100% !important;}
+            
+            /* Garante que os gráficos fiquem na folha e não cortem */
+            .js-plotly-plot { max-width: 100% !important; page-break-inside: avoid !important; }
+            
+            /* Remove a transparência dark dos cartões no PDF */
+            div[data-testid="metric-container"] { background: #f1f5f9 !important; border: 1px solid #cbd5e1 !important; color: black !important; box-shadow: none !important;}
+            div[data-testid="metric-container"] label, div[data-testid="metric-container"] div { color: black !important; }
         }
         </style>
     """, unsafe_allow_html=True)
@@ -264,7 +283,7 @@ else:
         <script>
         function printPDF() { window.parent.print(); }
         </script>
-        <button onclick="printPDF()" style="background-color:#002395;color:white;padding:12px 20px;border:none;border-radius:8px;cursor:pointer;font-weight:bold;width:100%;box-shadow: 0px 4px 6px rgba(0,0,0,0.2);">🖨️ Exportar Tela para PDF</button>
+        <button onclick="printPDF()" style="background-color:#2563eb;color:white;padding:12px 20px;border:none;border-radius:8px;cursor:pointer;font-weight:bold;width:100%;box-shadow: 0px 4px 6px rgba(0,0,0,0.3);">🖨️ Gerar PDF do Relatório (Imprimir)</button>
     """, height=60)
 
     def extrair_dados_pdf(texto_bruto):
@@ -279,7 +298,6 @@ else:
             match_header = re.search(r'(\d{2}/\d{2}/\d{4})\s+(\d{4,})', bloco)
             if not match_header: continue
             data_pac, cod_pac = match_header.group(1), match_header.group(2)
-            
             unidade_pac = "Sede / Sem Unidade"
             match_unidade = re.search(r'Unidade Sigla:\s*(\d+)', bloco)
             if match_unidade: unidade_pac = padronizar_unidade(match_unidade.group(1))
@@ -333,7 +351,7 @@ else:
     # =============== CARREGAR TODOS OS DADOS DA NUVEM ===============
     df_todos_dados = carregar_dados_salvos()
     
-    # SEPARAÇÃO DE DADOS (CRÍTICO: PACIENTES MOCK NÃO MISTURAM COM OS REAIS)
+    # SEPARAÇÃO DE DADOS MOCK VS REAIS
     df_reais = pd.DataFrame()
     df_mock = pd.DataFrame()
 
@@ -341,22 +359,25 @@ else:
         df_todos_dados['Data_Obj'] = pd.to_datetime(df_todos_dados['Data'], format="%d/%m/%Y", errors='coerce')
         df_todos_dados['Mês/Ano'] = df_todos_dados['Data_Obj'].dt.strftime('%m/%Y').fillna('Desconhecido')
         
-        # Filtra permissão de unidade do usuário logado
         unid_perm = st.session_state.get('unidades_permitidas', 'Todas')
         if unid_perm != "Todas" and st.session_state['usuario'] != "vhpezzeti":
             unidades_liberadas = [u.strip() for u in unid_perm.split(",")]
             df_todos_dados = df_todos_dados[df_todos_dados['Unidade'].isin(unidades_liberadas)]
 
-        # Cria os dois dataframes (Real e Teste)
         df_reais = df_todos_dados[df_todos_dados['Período_Arquivo'] != 'Gerado Demo']
         df_mock = df_todos_dados[df_todos_dados['Período_Arquivo'] == 'Gerado Demo']
 
-    # MENU LATERAL
-    st.sidebar.markdown("<h3 style='text-align: center; color:#002395; font-weight: 900;'>Sistema BI</h3>", unsafe_allow_html=True)
+    # MENU LATERAL COM LOGO
+    logo_b64 = get_base64_file("logo.png")
+    if logo_b64:
+        st.sidebar.markdown(f'<div style="text-align:center;"><img src="data:image/png;base64,{logo_b64}" style="max-height:80px; margin-bottom:20px; filter: drop-shadow(0px 0px 10px rgba(255,255,255,0.2));"></div>', unsafe_allow_html=True)
+    else:
+        st.sidebar.markdown("<h3 style='text-align: center;'>Sistema BI</h3>", unsafe_allow_html=True)
+
     nivel_atual = st.session_state.get('nivel_acesso', 'Visualizador')
 
     st.sidebar.markdown(f"### 👋 Olá, **{st.session_state['usuario'].capitalize()}**")
-    st.sidebar.markdown(f"<span style='color:#002395; font-weight:bold;'>• Nível: {nivel_atual}</span>", unsafe_allow_html=True)
+    st.sidebar.markdown(f"<span style='color:#3b82f6; font-weight:bold;'>• Nível: {nivel_atual}</span>", unsafe_allow_html=True)
     st.sidebar.markdown("---")
 
     opcoes_menu = ["🏢 Análise por Unidade", "📈 Relatório Comparativo Avançado"]
@@ -376,7 +397,7 @@ else:
     if menu == "⚙️ Painel do Administrador":
         st.title("⚙️ Painel de Controle Administrativo")
         
-        tab1, tab2, tab3, tab4 = st.tabs(["➕ Cadastrar Novo", "✏️ Editar / Excluir", "📋 Lista de Acessos", "📊 Ambiente de Teste (Gráficos)"])
+        tab1, tab2, tab3, tab4 = st.tabs(["➕ Cadastrar Novo", "✏️ Editar / Excluir", "📋 Lista de Acessos", "📊 Ambiente de Teste (Mock)"])
         df_users_adm = carregar_usuarios()
         lista_usuarios = df_users_adm['Usuario'].tolist() if not df_users_adm.empty else []
 
@@ -417,8 +438,8 @@ else:
             st.dataframe(df_users_adm, use_container_width=True)
 
         with tab4:
-            st.markdown("### 🧪 Laboratório de Teste de Gráficos")
-            st.warning("Estes dados são gerados aleatoriamente pelo robô e não aparecem nos relatórios oficiais do laboratório. Servem apenas para testares a aparência dos gráficos.")
+            st.markdown("### 🧪 Laboratório de Teste (Isolado)")
+            st.warning("Estes dados são falsos. Servem apenas para testar os gráficos abaixo e NUNCA se misturam aos relatórios das clínicas.")
             
             if st.button("Gerar Novos 100 Dados de Teste", use_container_width=True):
                 df_novos_mock = gerar_dados_teste()
@@ -431,15 +452,15 @@ else:
                 st.markdown("---")
                 df_mock_pos = df_mock[df_mock['Resultado'] == 'Positivo']
                 
-                # Exemplo Gráficos Demo
                 d1, d2 = st.columns(2)
                 with d1:
                     st.markdown("#### 👥 Infecções por Sexo (DEMO)")
-                    st.plotly_chart(px.pie(df_mock_pos, names='Sexo', hole=0.4, color_discrete_sequence=['#ff4b4b', '#002395']), use_container_width=True)
+                    # Utilizando template plotly_dark
+                    st.plotly_chart(px.pie(df_mock_pos, names='Sexo', hole=0.4, color_discrete_sequence=['#ff4b4b', '#3b82f6'], template="plotly_dark"), use_container_width=True)
                 with d2:
                     st.markdown("#### 📊 Faixa Etária (DEMO)")
                     df_mock_pos['Idade'] = pd.to_numeric(df_mock_pos['Idade'], errors='coerce')
-                    st.plotly_chart(px.histogram(df_mock_pos, x='Idade', nbins=10, color_discrete_sequence=[COR_AZUL_BIC], text_auto=True), use_container_width=True)
+                    st.plotly_chart(px.histogram(df_mock_pos, x='Idade', nbins=10, color_discrete_sequence=[COR_AZUL_BIC], text_auto=True, template="plotly_dark"), use_container_width=True)
             else:
                 st.info("Clica no botão acima para gerar dados e veres os gráficos de teste.")
 
@@ -493,12 +514,12 @@ else:
                     g1, g2 = st.columns(2)
                     with g1:
                         st.markdown("#### 📊 Distribuição Positivos x Negativos")
-                        st.plotly_chart(px.pie(df_f, names='Resultado', hole=0.5, color='Resultado', color_discrete_map={'Positivo': COR_AZUL_BIC, 'Negativo': COR_CINZA}), use_container_width=True)
+                        st.plotly_chart(px.pie(df_f, names='Resultado', hole=0.5, color='Resultado', color_discrete_map={'Positivo': COR_AZUL_BIC, 'Negativo': COR_CINZA}, template="plotly_dark"), use_container_width=True)
                     with g2:
                         st.markdown("#### 🧫 Frequência Bacteriana Global")
                         df_pct = df_pos['Bactéria'].value_counts(normalize=True).mul(100).round(2).reset_index()
                         df_pct.columns = ['Bactéria', '%']
-                        st.plotly_chart(px.bar(df_pct, x='%', y='Bactéria', orientation='h', text_auto=True, color='Bactéria', color_discrete_sequence=PALETA_CORES).update_layout(yaxis={'categoryorder':'total ascending'}), use_container_width=True)
+                        st.plotly_chart(px.bar(df_pct, x='%', y='Bactéria', orientation='h', text_auto=True, color='Bactéria', color_discrete_sequence=PALETA_CORES, template="plotly_dark").update_layout(yaxis={'categoryorder':'total ascending'}), use_container_width=True)
 
                     st.markdown("#### 📋 Listagem de Pacientes Positivados")
                     st.dataframe(df_pos[['Data', 'Código_Paciente', 'Unidade', 'Material_Exame', 'Bactéria', 'Indicados (S)', 'Resistentes (R)']], use_container_width=True, hide_index=True)
@@ -523,7 +544,7 @@ else:
                 with col_g1:
                     st.markdown("#### 📉 Curva Epidemiológica (Positivos)")
                     agrupado = df_pos_comp.groupby('Mês/Ano').size().reset_index(name='Casos')
-                    st.plotly_chart(px.area(agrupado, x='Mês/Ano', y='Casos', markers=True, color_discrete_sequence=[COR_AZUL_BIC]), use_container_width=True)
+                    st.plotly_chart(px.area(agrupado, x='Mês/Ano', y='Casos', markers=True, color_discrete_sequence=[COR_AZUL_BIC], template="plotly_dark"), use_container_width=True)
                 with col_g2:
                     st.markdown("#### 🏆 Top Bactérias por Tipo de Exame")
                     top_b_exame = df_pos_comp.groupby(['Material_Exame', 'Bactéria']).size().reset_index(name='Casos Registados').sort_values(['Material_Exame', 'Casos Registados'], ascending=[True, False])
@@ -534,17 +555,17 @@ else:
                 df_demo = df_pos_comp[df_pos_comp['Idade'] != 'Não Informada'].copy()
                 
                 if df_demo.empty:
-                    st.info("⚠️ Nenhum dos laudos REAIS submetidos contém a idade e sexo do paciente extraídos (ou a função do PDF ainda não lê este padrão laboratorial específico). O painel demográfico foi recolhido.")
+                    st.info("⚠️ Nenhum dos laudos REAIS submetidos contém a idade e sexo do paciente extraídos.")
                 else:
                     df_demo['Idade'] = pd.to_numeric(df_demo['Idade'], errors='coerce')
                     
                     d1, d2 = st.columns(2)
                     with d1:
                         st.markdown("#### 👥 Infecções por Sexo")
-                        st.plotly_chart(px.pie(df_demo, names='Sexo', hole=0.4, color_discrete_sequence=['#ff4b4b', '#002395']), use_container_width=True)
+                        st.plotly_chart(px.pie(df_demo, names='Sexo', hole=0.4, color_discrete_sequence=['#ff4b4b', '#3b82f6'], template="plotly_dark"), use_container_width=True)
                     with d2:
                         st.markdown("#### 📊 Faixa Etária dos Positivos")
-                        st.plotly_chart(px.histogram(df_demo, x='Idade', nbins=10, color_discrete_sequence=[COR_AZUL_BIC], text_auto=True), use_container_width=True)
+                        st.plotly_chart(px.histogram(df_demo, x='Idade', nbins=10, color_discrete_sequence=[COR_AZUL_BIC], text_auto=True, template="plotly_dark"), use_container_width=True)
 
             else:
-                st.info("Não existem casos positivos registados na base de dados para desenhar gráficos de tendência.")
+                st.info("Não existem casos positivos registados na base de dados para desenhar gráficos.")
