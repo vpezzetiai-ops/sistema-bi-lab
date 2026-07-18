@@ -15,9 +15,10 @@ from datetime import datetime, timedelta
 # 1. PAINEL DE CONTROLE DE ARQUIVOS
 # ==========================================
 ARQUIVO_VIDEO_FUNDO = "video.mp4"
-ARQUIVO_LOGO = "logo.png"
+ARQUIVO_LOGO_LOGIN = "logo.png"
 ARQUIVO_ASSINATURA = "Gemini_Generated_Image_s8ldfcs8ldfcs8ld-removebg-preview.png" 
-ARQUIVO_GIF_CARREGAMENTO = "logocarregador.gif" 
+ARQUIVO_GIF_CARREGAMENTO = "logocarregador.gif"
+ARQUIVO_LOGO_PROGRAMA = "logoprograma.png" # CORRIGIDO PARA PNG
 
 # ==========================================
 # CONFIGURAÇÕES INICIAIS DE TEMA
@@ -39,31 +40,19 @@ def get_base64_file(file_path):
     return None
 
 # ==========================================
-# TELA DE CARREGAMENTO DINÂMICA
+# TELA DE CARREGAMENTO (GIF)
 # ==========================================
 gif_b64 = get_base64_file(ARQUIVO_GIF_CARREGAMENTO)
 if gif_b64:
     loader_id = str(uuid.uuid4())[:8] 
     st.markdown(f"""
     <style>
-    @keyframes fadeOutLoader_{loader_id} {{
-        0% {{ opacity: 1; visibility: visible; backdrop-filter: blur(10px); }}
-        60% {{ opacity: 1; visibility: visible; backdrop-filter: blur(10px); }}
-        100% {{ opacity: 0; visibility: hidden; backdrop-filter: blur(0px); display: none; }}
-    }}
-    .splash-screen-{loader_id} {{
-        position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
-        background-color: rgba(5, 10, 20, 0.85); z-index: 9999999;
-        display: flex; flex-direction: column; justify-content: center; align-items: center;
-        animation: fadeOutLoader_{loader_id} 1.2s forwards ease-out; pointer-events: none;
-    }}
-    .splash-screen-{loader_id} img {{ width: 180px; filter: drop-shadow(0px 0px 25px rgba(0,238,255,0.7)); }}
-    .splash-screen-{loader_id} h2 {{
-        color: #00eeff; font-family: 'Orbitron', sans-serif; margin-top: 25px;
-        text-shadow: 0px 0px 20px rgba(0,238,255,0.9); letter-spacing: 6px; font-size: 26px; font-weight: 900;
-    }}
+    @keyframes fadeOutLoader_{loader_id} {{ 0% {{ opacity: 1; backdrop-filter: blur(10px); }} 70% {{ opacity: 1; backdrop-filter: blur(10px); }} 100% {{ opacity: 0; visibility: hidden; backdrop-filter: blur(0px); display: none; }} }}
+    .splash-screen-{loader_id} {{ position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background-color: rgba(5, 10, 20, 0.85); z-index: 9999999; display: flex; flex-direction: column; justify-content: center; align-items: center; animation: fadeOutLoader_{loader_id} 1.2s forwards ease-out; pointer-events: none; }}
+    .splash-screen-{loader_id} img {{ width: 150px; filter: drop-shadow(0px 0px 20px rgba(0,238,255,0.7)); }}
+    .splash-screen-{loader_id} h2 {{ color: #00eeff; font-family: 'Orbitron', sans-serif; margin-top: 20px; text-shadow: 0px 0px 15px rgba(0,238,255,0.9); letter-spacing: 5px; font-size: 20px; font-weight: 900; }}
     </style>
-    <div class="splash-screen-{loader_id}"><img src="data:image/gif;base64,{gif_b64}" alt="Loading..."><h2>PROCESSANDO</h2></div>
+    <div class="splash-screen-{loader_id}"><img src="data:image/gif;base64,{gif_b64}"><h2>PROCESSANDO...</h2></div>
     """, unsafe_allow_html=True)
 
 # ==========================================
@@ -144,22 +133,13 @@ def extrair_dados_pdf(texto_bruto):
             match_tag = re.search(r'\[\s*([A-Z]+)\s*\]', sub)
             if not match_tag: continue
             tag = match_tag.group(1)
-            
-            linha = {
-                "Data": data_pac, "Código_Paciente": cod_pac, "Idade": "Não Informada", "Sexo": "Não Informado",
-                "Material_Exame": f"[{tag}]", "Resultado": "Negativo", "Bactéria": "N/A", 
-                "Indicados (S)": "", "Resistentes (R)": "", "Unidade": unidade_pac, "Período_Arquivo": periodo_doc
-            }
+            linha = {"Data": data_pac, "Código_Paciente": cod_pac, "Idade": "Não Informada", "Sexo": "Não Informado", "Material_Exame": f"[{tag}]", "Resultado": "Negativo", "Bactéria": "N/A", "Indicados (S)": "", "Resistentes (R)": "", "Unidade": unidade_pac, "Período_Arquivo": periodo_doc}
             
             match_mat = re.search(r'(?:MAT(?:ERIAL)?):\s*(.*?)(?=RES|1:|\.1:|[A-Z]{3}2?:|\n|$)', sub)
-            if match_mat:
-                mat_text = re.sub(r'[\.\d]+$', '', match_mat.group(1)).strip()
-                linha["Material_Exame"] = padronizar_material(f"[{tag}] {mat_text}")
-            else:
-                linha["Material_Exame"] = padronizar_material(linha["Material_Exame"])
+            if match_mat: linha["Material_Exame"] = padronizar_material(f"[{tag}] {re.sub(r'[\.\d]+$', '', match_mat.group(1)).strip()}")
+            else: linha["Material_Exame"] = padronizar_material(linha["Material_Exame"])
             
-            if "Não houve desenvolvimento" in sub or "Não houve crescimento" in sub:
-                linha["Resultado"] = "Negativo"
+            if "Não houve desenvolvimento" in sub or "Não houve crescimento" in sub: linha["Resultado"] = "Negativo"
             else:
                 linha["Resultado"] = "Positivo"
                 regex_bac = r'(?i:identificado|MIC|\b1|\.1|aer[oó]bia[^:]*|anaer[oó]bia[^:]*)\s*:\s*([A-Z][a-z]{2,}(?:\s+[a-z]{2,})?(?:\s+sp\.?)?)'
@@ -217,114 +197,78 @@ if 'nivel_acesso' not in st.session_state: st.session_state['nivel_acesso'] = "V
 if 'unidades_permitidas' not in st.session_state: st.session_state['unidades_permitidas'] = "Todas"
 
 # ==========================================
-# 5. TELA DE LOGIN (LÂMINAS E PLACA REALISTA)
+# 5. TELA DE LOGIN (PLACA DE PETRI CLÁSSICA E CENTRALIZADA)
 # ==========================================
 if not st.session_state['logado']:
     
     video_fundo_b64 = get_base64_file(ARQUIVO_VIDEO_FUNDO)
     if video_fundo_b64:
-        st.markdown(f'''<video autoplay loop muted playsinline style="position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; z-index: -999; object-fit: cover; filter: brightness(0.3) contrast(1.2);"><source src="data:video/mp4;base64,{video_fundo_b64}" type="video/mp4"></video>''', unsafe_allow_html=True)
+        st.markdown(f'''<video autoplay loop muted playsinline style="position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; z-index: -999; object-fit: cover; filter: brightness(0.4) contrast(1.1);"><source src="data:video/mp4;base64,{video_fundo_b64}" type="video/mp4"></video>''', unsafe_allow_html=True)
     else:
         st.markdown('<style>.stApp { background-color: #040d21 !important; }</style>', unsafe_allow_html=True)
 
+    # CSS DA PLACA DE PETRI ORIGINAL MELHORADA E CENTRALIZADA
     st.markdown("""
     <style>
-    @keyframes floating { 0% { transform: translateY(0px); } 50% { transform: translateY(-10px); } 100% { transform: translateY(0px); } }
-    @keyframes fadeIn { 0% { opacity: 0; } 100% { opacity: 1; } }
-
+    @keyframes floating { 0% { transform: translateY(0px); } 50% { transform: translateY(-12px); } 100% { transform: translateY(0px); } }
     .stApp { background: transparent !important; }
     header[data-testid="stHeader"] { display: none !important; } 
     
-    /* ESTILO: LÂMINA DE MICROSCÓPIO (Para Logo e Assinatura) */
-    .microscope-slide {
-        background: rgba(255, 255, 255, 0.03);
-        backdrop-filter: blur(8px);
-        -webkit-backdrop-filter: blur(8px);
-        border: 1px solid rgba(255, 255, 255, 0.15);
-        border-left: 30px solid rgba(255, 255, 255, 0.4); /* Parte fosca da lâmina de vidro */
-        border-right: 2px solid rgba(255, 255, 255, 0.3);
-        border-radius: 4px;
-        box-shadow: 10px 15px 25px rgba(0,0,0,0.8), inset 0px 0px 10px rgba(255,255,255,0.1);
-        width: fit-content; margin: 0 auto; padding: 15px 40px;
-        position: relative; z-index: 5;
-        display: flex; justify-content: center; align-items: center;
-        animation: fadeIn 1s ease-in;
-    }
-    .slide-top { margin-top: 3vh; margin-bottom: -40px; } /* Sobrepõe levemente a placa */
-    .slide-bottom { margin-top: -30px; margin-bottom: 5vh; }
-    
-    /* A PLACA DE PETRI ULTRA REALISTA */
     [data-testid="stForm"] {
         width: 480px !important; height: 480px !important; border-radius: 50% !important; 
-        
-        /* Cor de Ágar verdadeiro com transparência */
-        background: radial-gradient(circle at 40% 40%, rgba(210, 180, 50, 0.15) 0%, rgba(0, 20, 30, 0.4) 60%, rgba(0, 0, 0, 0.7) 100%) !important;
-        backdrop-filter: blur(15px) !important; -webkit-backdrop-filter: blur(15px) !important;
-        
-        /* Borda simulando vidro curvado e polido */
-        border: 12px solid rgba(255, 255, 255, 0.08) !important;
-        border-top: 12px solid rgba(255, 255, 255, 0.35) !important; /* Luz batendo em cima */
-        border-bottom: 12px solid rgba(0, 0, 0, 0.6) !important; /* Sombra embaixo */
-        
-        box-shadow: 
-            inset 0px 20px 40px rgba(255, 255, 255, 0.15), /* Brilho interno do vidro */
-            inset -20px -20px 50px rgba(0, 0, 0, 0.9), /* Fundo da placa escura */
-            inset 0px 0px 30px rgba(0, 238, 255, 0.1), /* Biologia brilhando suave */
-            0px 40px 60px rgba(0,0,0,0.95), /* Sombra da placa pesada na mesa */
-            0px 0px 50px rgba(0, 238, 255, 0.25) !important; /* Glow exterior */
-            
+        background: radial-gradient(circle at 40% 40%, rgba(200, 180, 50, 0.15) 0%, rgba(0, 30, 40, 0.4) 60%, rgba(0, 0, 0, 0.8) 100%) !important;
+        backdrop-filter: blur(12px) !important; -webkit-backdrop-filter: blur(12px) !important;
+        border: 8px solid rgba(255, 255, 255, 0.1) !important;
+        border-top: 8px solid rgba(255, 255, 255, 0.3) !important;
+        border-bottom: 8px solid rgba(0, 0, 0, 0.8) !important;
+        box-shadow: inset 0px 0px 40px rgba(0, 238, 255, 0.1), 0px 30px 50px rgba(0,0,0,0.9), 0px 0px 30px rgba(0, 238, 255, 0.2) !important;
         display: flex !important; flex-direction: column !important; justify-content: center !important; align-items: center !important;
-        margin: 0 auto !important; padding: 0px !important; z-index: 10; position: relative;
-        animation: floating 8s ease-in-out infinite;
+        margin: 5vh auto !important; padding: 0px !important; z-index: 10;
+        animation: floating 6s ease-in-out infinite;
     }
     
     [data-testid="stForm"] > div { width: 100% !important; max-width: 320px !important; margin: 0 auto !important; }
-    [data-testid="stForm"] p, [data-testid="stForm"] label { color: #cbd5e1 !important; font-weight: 700; text-shadow: 0px 2px 4px rgba(0,0,0,1) !important; text-align: center; width: 100%; font-size: 13px; letter-spacing: 1px;}
+    [data-testid="stForm"] label, [data-testid="stForm"] p { color: #f8fafc !important; font-weight: 800; text-shadow: 0px 2px 4px rgba(0,0,0,1) !important; font-size: 14px;}
     
-    /* Inputs Transparentes com linha base */
     input[type="text"], input[type="password"] {
-        background-color: transparent !important; color: #00eeff !important; -webkit-text-fill-color: #00eeff !important;
-        border: none !important; border-bottom: 1px solid rgba(255,255,255,0.3) !important; border-radius: 0px !important; padding: 10px !important;
-        font-family: monospace !important; text-align: center; letter-spacing: 2px; width: 100% !important; font-size: 16px !important; transition: 0.3s;
+        background-color: rgba(0, 10, 20, 0.7) !important; color: #00eeff !important; -webkit-text-fill-color: #00eeff !important;
+        border: 1px solid rgba(0, 238, 255, 0.3) !important; border-radius: 8px !important; padding: 12px !important;
+        font-family: monospace !important; text-align: center; letter-spacing: 1px; width: 100% !important;
     }
-    input[type="text"]:focus, input[type="password"]:focus { border-bottom: 2px solid #00eeff !important; background-color: rgba(0,0,0,0.3) !important; box-shadow: 0px 10px 10px -10px rgba(0,238,255,0.5) !important;}
+    input[type="text"]:focus, input[type="password"]:focus { border-color: #00eeff !important; box-shadow: 0 0 15px rgba(0, 238, 255, 0.5) !important; background-color: rgba(0, 0, 0, 0.9) !important;}
     
-    /* BOTÃO DELICADO DE VIDRO NEON */
-    [data-testid="stFormSubmitButton"] { display: flex; justify-content: center; width: 100%; margin-top: 25px; }
+    /* BOTÃO TOTALMENTE CENTRALIZADO */
+    [data-testid="stFormSubmitButton"] { 
+        display: flex !important; justify-content: center !important; align-items: center !important; 
+        width: 100% !important; margin-top: 15px !important; 
+    }
     [data-testid="stFormSubmitButton"] button {
-        background: rgba(0, 15, 30, 0.4) !important; backdrop-filter: blur(5px) !important;
-        color: #00eeff !important; border: 1px solid rgba(0, 238, 255, 0.5) !important; border-radius: 30px !important; 
-        padding: 8px 30px !important; box-shadow: 0px 4px 10px rgba(0,0,0,0.5) !important; width: fit-content; transition: 0.4s;
+        background: linear-gradient(90deg, #002395, #00eeff) !important; color: white !important;
+        border: none !important; border-radius: 25px !important; padding: 12px 30px !important;
+        font-weight: 800 !important; font-size: 14px !important; letter-spacing: 1.5px;
+        box-shadow: 0px 5px 15px rgba(0,0,0,0.6) !important; width: auto !important; transition: 0.3s;
     }
-    [data-testid="stFormSubmitButton"] button * { font-weight: 500 !important; font-size: 14px !important; letter-spacing: 2px; color: #00eeff !important;}
-    [data-testid="stFormSubmitButton"] button:hover { 
-        background: rgba(0, 238, 255, 0.1) !important; border: 1px solid #00eeff !important;
-        box-shadow: 0px 0px 20px rgba(0, 238, 255, 0.6), inset 0px 0px 10px rgba(0,238,255,0.3) !important; text-shadow: 0px 0px 5px rgba(0,238,255,0.8) !important;
-    }
+    [data-testid="stFormSubmitButton"] button:hover { transform: scale(1.05); box-shadow: 0px 5px 20px rgba(0, 238, 255, 0.6) !important; }
     </style>
     """, unsafe_allow_html=True)
 
-    # 1. LÂMINA SUPERIOR (LOGO E GRAVAÇÃO)
-    logo_b64 = get_base64_file(ARQUIVO_LOGO)
-    img_logo_html = f'<img src="data:image/png;base64,{logo_b64}" style="height: 60px; filter: drop-shadow(0px 0px 8px rgba(255,255,255,0.5)); opacity: 0.9;">' if logo_b64 else ''
-    st.markdown(f'''
-        <div class="microscope-slide slide-top">
-            <div style="display:flex; flex-direction:column; align-items:center;">
-                {img_logo_html}
-                <div style="color: #64748b; font-family: monospace; font-size: 10px; margin-top: 5px; letter-spacing: 2px;">GRAVAÇÃO A LASER - SLIDE #001</div>
-            </div>
-        </div>
-    ''', unsafe_allow_html=True)
-
-    # 2. PLACA DE PETRI CENTRAL (FORMULÁRIO)
     with st.form(key="login_form", clear_on_submit=False):
-        st.markdown("<h2 style='text-align: center; color:#e2e8f0 !important; font-family: Orbitron, sans-serif; font-weight: 800; margin-bottom: 30px; font-size: 18px; text-shadow: 0px 0px 15px rgba(0,0,0,1); letter-spacing: 3px;'>SISTEMA INTEGRADO DE<br><span style='color:#00eeff;'>BIOLOGIA COMPUTACIONAL</span></h2>", unsafe_allow_html=True)
+        logo_b64 = get_base64_file(ARQUIVO_LOGO_LOGIN)
+        if logo_b64:
+            st.markdown(f'''<div style="text-align: center; margin-bottom: 5px; margin-top: -10px;"><img src="data:image/png;base64,{logo_b64}" style="height: 70px; filter: drop-shadow(0px 0px 10px rgba(255,255,255,0.7));"></div>''', unsafe_allow_html=True)
         
-        usuario_input = st.text_input("IDENTIFICAÇÃO:")
-        senha_input = st.text_input("SEQUÊNCIA GENÉTICA:", type="password")
+        # EMOTICONS DE VOLTA!
+        st.markdown("<h2 style='text-align: center; color:#00eeff !important; font-family: monospace; font-weight: 900; margin-bottom: 20px; font-size: 16px; text-shadow: 0px 0px 10px rgba(0,238,255,0.8);'>🧫 SISTEMA INTEGRADO DE BIOLOGIA COMPUTACIONAL 🦠</h2>", unsafe_allow_html=True)
+        
+        usuario_input = st.text_input("🔬 Identificação:")
+        senha_input = st.text_input("🧬 Sequência Genética:", type="password")
         
         submit_button = st.form_submit_button("INICIAR PROTOCOLO")
         
+        assinatura_b64 = get_base64_file(ARQUIVO_ASSINATURA)
+        if assinatura_b64:
+            st.markdown(f'''<div style="text-align: center; margin-top: 15px;"><img src="data:image/png;base64,{assinatura_b64}" style="height: 45px; filter: drop-shadow(0px 2px 5px rgba(0,0,0,1));"></div>''', unsafe_allow_html=True)
+
         if submit_button:
             df_usuarios = carregar_usuarios()
             usuario_encontrado = df_usuarios[df_usuarios['Usuario'] == usuario_input]
@@ -337,26 +281,14 @@ if not st.session_state['logado']:
             else:
                 st.error("❌ Acesso Negado.")
 
-    # 3. LÂMINA INFERIOR (ASSINATURA)
-    assinatura_b64 = get_base64_file(ARQUIVO_ASSINATURA)
-    if assinatura_b64:
-        st.markdown(f'''
-            <div class="microscope-slide slide-bottom">
-                <div style="display:flex; flex-direction:column; align-items:center;">
-                    <img src="data:image/png;base64,{assinatura_b64}" style="height: 40px; filter: drop-shadow(0px 2px 5px rgba(0,0,0,0.8)); opacity: 0.85;">
-                    <div style="color: #64748b; font-family: monospace; font-size: 10px; margin-top: 5px; letter-spacing: 2px;">SLIDE #002 - AUTHORIZED</div>
-                </div>
-            </div>
-        ''', unsafe_allow_html=True)
-
     st.stop()
 
 # ==========================================
-# 6. DASHBOARD & CSS DE IMPRESSÃO (PDF RESOLVIDO)
+# 6. DASHBOARD & CSS DE IMPRESSÃO (PDF FORÇA BRUTA)
 # ==========================================
 else:
 
-    # CSS REFINADO E PDF PERFEITO
+    # CSS REFINADO E PDF RESOLVIDO POR COMPLETO
     st.markdown(f"""
         <style>
         @import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@800&family=Orbitron:wght@700&display=swap');
@@ -367,43 +299,40 @@ else:
         section[data-testid="stSidebar"] {{ background-color: #0f172a !important; border-right: 1px solid #1e293b !important; }}
         section[data-testid="stSidebar"] * {{ color: #e2e8f0 !important; }}
         
-        div[data-testid="metric-container"] {{ 
-            background: linear-gradient(145deg, #111827, #1e293b) !important; border-left: 3px solid #00eeff !important; 
-            padding: 20px !important; border-radius: 8px !important; box-shadow: 0 5px 15px rgba(0,0,0,0.5) !important; 
-        }}
+        div[data-testid="metric-container"] {{ background: linear-gradient(145deg, #111827, #1e293b) !important; border-left: 3px solid #00eeff !important; padding: 20px !important; border-radius: 8px !important; box-shadow: 0 5px 15px rgba(0,0,0,0.5) !important; }}
         div[data-testid="metric-container"] label {{ color: #94a3b8 !important; font-size: 14px !important;}}
         div[data-testid="metric-container"] div {{ color: #00eeff !important; text-shadow: 0px 0px 10px rgba(0,238,255,0.3) !important;}}
         
-        .stTabs [data-baseweb="tab"] {{ padding: 10px 20px; border-radius: 5px 5px 0 0; background-color: #1e293b; }}
-        .stTabs [aria-selected="true"] {{ background-color: #002395 !important; border-bottom: 3px solid #00eeff !important; color: white !important; font-weight: bold; }}
-        
-        /* 🔥 A MÁGICA DA EXPORTAÇÃO PDF 🔥 */
+        /* 🔥 PDF - MODO FORÇA BRUTA 🔥 */
         @media print {{
             @page {{ size: A4 landscape !important; margin: 5mm !important; }}
             
-            /* Destrói fundo escuro e coloca tudo branco para não gastar tinta e focar na leitura */
-            html, body, .stApp, .block-container {{ background: white !important; background-color: white !important; color: black !important; padding: 0 !important; margin: 0 !important; }}
+            /* Remove fundos e força tudo para branco/preto */
+            html, body, .stApp, .block-container, [data-testid="stAppViewContainer"] {{ 
+                background: white !important; background-color: white !important; color: black !important; 
+                padding: 0 !important; margin: 0 !important; max-width: 100% !important; width: 100% !important; overflow: visible !important;
+            }}
             h1, h2, h3, h4, p, label, div, span {{ color: black !important; text-shadow: none !important; box-shadow: none !important; }}
             
-            /* Esconde menus, botões de imprimir, e áreas inúteis */
+            /* Esconde itens de interface */
             section[data-testid="stSidebar"], header, button, .stButton, input, select, .stMultiSelect, div[data-testid="stFileUploader"] {{ display: none !important; }}
             
-            /* DESTRÓI O FLEXBOX DO STREAMLIT - Força blocos a caírem em linha reta naturalmente */
-            div[data-testid="column"] {{ width: 100% !important; flex: none !important; display: block !important; margin-bottom: 20px !important; }}
+            /* QUEBRA DE COLUNAS - ESSENCIAL PARA IMPRESSÃO DO STREAMLIT */
+            div[data-testid="column"] {{ width: 100% !important; max-width: 100% !important; flex: 0 0 100% !important; display: block !important; margin-bottom: 20px !important; }}
             div[data-testid="stVerticalBlock"] {{ display: block !important; width: 100% !important; flex: none !important; }}
             
-            /* EXPANSÃO DE TABELAS: Remove barras de rolagem e mostra tudo */
-            .stDataFrame, [data-testid="stDataFrameContainer"], [data-testid="stDataFrameContainer"] > div {{ 
-                height: auto !important; max-height: none !important; overflow: visible !important; width: 100% !important; display: table !important; 
+            /* EXPANSÃO DE TABELAS SEM BARRA DE ROLAGEM */
+            .stDataFrame, [data-testid="stDataFrameContainer"], [data-testid="stDataFrameContainer"] > div, .stDataFrame > div {{ 
+                height: auto !important; max-height: 9999px !important; overflow: visible !important; width: 100% !important; display: table !important; position: static !important;
             }}
-            table {{ width: 100% !important; border-collapse: collapse !important; }}
-            th, td {{ border: 1px solid #ccc !important; padding: 8px !important; color: black !important; background: white !important; white-space: normal !important; }}
+            table {{ width: 100% !important; border-collapse: collapse !important; table-layout: auto !important; }}
+            th, td {{ border: 1px solid #000 !important; padding: 8px !important; color: black !important; background: white !important; white-space: normal !important; word-wrap: break-word !important; }}
             
             /* Gráficos Plotly */
             .js-plotly-plot, .plotly {{ width: 100% !important; max-width: 100% !important; page-break-inside: avoid !important; }}
             
-            /* Métricas viram caixas brancas simples com borda */
-            div[data-testid="metric-container"] {{ background: white !important; border: 1px solid #aaa !important; margin-bottom: 15px !important; border-left: 5px solid #000 !important; padding: 10px !important; page-break-inside: avoid !important;}}
+            /* Ajuste de Métricas para impressão */
+            div[data-testid="metric-container"] {{ background: white !important; border: 1px solid #000 !important; margin-bottom: 15px !important; border-left: 5px solid #000 !important; padding: 10px !important; page-break-inside: avoid !important;}}
             div[data-testid="metric-container"] div {{ color: black !important; }}
         }}
         </style>
@@ -412,7 +341,7 @@ else:
     # BOTÃO DE PDF
     st.components.v1.html("""
         <script>function doPrint() { window.parent.print(); }</script>
-        <button onclick="doPrint()" style="background: linear-gradient(90deg, #002395, #3b82f6); color:white; padding:12px 20px; border:none; border-radius:5px; cursor:pointer; font-weight:bold; width:100%; text-transform: uppercase; letter-spacing: 1px; box-shadow: 0px 4px 10px rgba(0,0,0,0.5);">🖨️ Exportar Documento PDF</button>
+        <button onclick="doPrint()" style="background: linear-gradient(90deg, #002395, #3b82f6); color:white; padding:12px 20px; border:none; border-radius:5px; cursor:pointer; font-weight:bold; width:100%; text-transform: uppercase; letter-spacing: 1px; box-shadow: 0px 4px 10px rgba(0,0,0,0.5);">🖨️ Exportar Documento PDF Oficial</button>
     """, height=50)
 
     df_todos_dados = carregar_dados_salvos()
@@ -428,26 +357,29 @@ else:
         df_reais = df_todos_dados[df_todos_dados['Período_Arquivo'] != 'Gerado Demo']
         df_mock = df_todos_dados[df_todos_dados['Período_Arquivo'] == 'Gerado Demo']
 
-    logo_menu_b64 = get_base64_file(ARQUIVO_LOGO)
-    if logo_menu_b64:
-        st.sidebar.markdown(f'<div style="text-align: center; margin-bottom: 10px;"><img src="data:image/png;base64,{logo_menu_b64}" style="width: 120px; filter: drop-shadow(0px 0px 10px rgba(255, 255, 255, 0.5));"></div>', unsafe_allow_html=True)
+    # ==========================================
+    # LOGO DO PROGRAMA NO MENU LATERAL COM EFEITO
+    # ==========================================
+    logo_prog_b64 = get_base64_file(ARQUIVO_LOGO_PROGRAMA)
+    if logo_prog_b64:
+        st.sidebar.markdown(f'''
+            <div style="display: flex; justify-content: center; margin-bottom: 20px;">
+                <img src="data:image/png;base64,{logo_prog_b64}" 
+                     style="width: 150px; filter: drop-shadow(0px 0px 20px rgba(0, 238, 255, 0.5));">
+            </div>
+        ''', unsafe_allow_html=True)
+    else:
+        st.sidebar.markdown("<h2 style='text-align:center; color:#00eeff;'>S.I.B.C.</h2>", unsafe_allow_html=True)
     
-    st.sidebar.markdown("""
-        <div style="text-align: center; margin-bottom: 20px;">
-            <h1 style="font-family: 'Orbitron', sans-serif; color: #00eeff; font-size: 18px; margin: 0;">S.I.B.C.</h1>
-            <h2 style="font-family: 'Montserrat', sans-serif; color: #f8fafc; font-size: 9px; letter-spacing: 3px; opacity: 0.8;">Laboratório Analítico</h2>
-        </div>
-    """, unsafe_allow_html=True)
-
     st.sidebar.markdown(f"👤 **{st.session_state['usuario'].upper()}**")
     st.sidebar.markdown(f"🛡️ **Nível:** <span style='color:#00eeff;'>{st.session_state.get('nivel_acesso', '')}</span>", unsafe_allow_html=True)
     st.sidebar.markdown("---")
 
-    opcoes_menu = ["🏢 Dashboard Principal"]
+    opcoes_menu = ["🏢 Dashboard Principal", "📈 Analytics & Tendências"] # Analytics Restaurado
     if st.session_state.get('nivel_acesso') in ["Operador", "Administrador"] or st.session_state['usuario'] == "vhpezzeti":
-        opcoes_menu.append("📂 Upload de Laudos") # OPÇÃO RESTAURADA
+        opcoes_menu.append("📂 Upload de Laudos")
     if st.session_state.get('nivel_acesso') == "Administrador" or st.session_state['usuario'] == "vhpezzeti":
-        opcoes_menu.append("⚙️ Console Admin") # OPÇÃO RESTAURADA
+        opcoes_menu.append("⚙️ Console Admin")
 
     menu = st.sidebar.radio("Navegação do Sistema", opcoes_menu)
     st.sidebar.markdown("---")
@@ -456,115 +388,9 @@ else:
         st.rerun()
 
     # ========================================================
-    # RESTAURADO: UPLOAD DE LAUDOS (PDF)
+    # TELA 1: DASHBOARD PRINCIPAL
     # ========================================================
-    if menu == "📂 Upload de Laudos":
-        st.title("📂 Processamento Lógico de Laudos (PDF)")
-        st.info("O algoritmo de extração irá varrer os arquivos em busca de cultura positiva/negativa, antibiograma e dados do paciente.")
-        
-        arq = st.file_uploader("Arraste os laudos laboratoriais aqui", type=['pdf', 'txt'])
-        if arq and st.button("Executar Varredura e Salvar no Banco", use_container_width=True):
-            texto_bruto = ""
-            with st.spinner("Decodificando documento..."):
-                if arq.name.endswith('.pdf'):
-                    try:
-                        leitor = PyPDF2.PdfReader(arq)
-                        for p in leitor.pages: texto_bruto += p.extract_text() + "\n"
-                    except Exception as e:
-                        st.error(f"Erro ao ler PDF: {e}")
-                else: 
-                    texto_bruto = arq.read().decode("utf-8")
-                
-                df_novo = extrair_dados_pdf(texto_bruto)
-                if not df_novo.empty:
-                    df_atual = conn.read(worksheet="Página1", ttl=0).dropna(how="all")
-                    # Remove duplicatas baseadas na data, código, material e unidade
-                    df_combinado = pd.concat([df_atual, df_novo]).drop_duplicates(subset=['Data', 'Código_Paciente', 'Material_Exame', 'Unidade'])
-                    salvar_dados(df_combinado)
-                    st.success(f"✅ Sucesso! {len(df_novo)} registros foram extraídos e integrados ao banco central.")
-                    st.balloons()
-                    st.dataframe(df_novo, use_container_width=True)
-                else: 
-                    st.error("❌ O sistema não conseguiu localizar padrões microbiológicos reconhecidos neste arquivo.")
-
-    # ========================================================
-    # RESTAURADO: TELA ADMIN COMPLETA
-    # ========================================================
-    elif menu == "⚙️ Console Admin":
-        st.title("⚙️ Painel Administrativo")
-        tab1, tab2, tab3, tab4 = st.tabs(["➕ Criar Acesso", "✏️ Gerenciar Usuários", "📋 Dados Brutos", "🧪 Simulador"])
-        
-        df_users_adm = carregar_usuarios()
-        lista_usuarios = df_users_adm['Usuario'].tolist() if not df_users_adm.empty else []
-
-        with tab1:
-            st.markdown("### Criar Nova Credencial")
-            with st.form("form_cadastro"):
-                c1, c2 = st.columns(2)
-                novo_usuario = c1.text_input("Nome de Usuário:")
-                nova_senha = c2.text_input("Senha Segura:", type="password")
-                c3, c4 = st.columns(2)
-                novo_nivel = c3.selectbox("Nível de Privilégio:", ["Visualizador", "Operador", "Administrador"])
-                nova_unid = c4.multiselect("Unidades Visíveis (Deixe vazio para ver todas):", UNIDADES_OFICIAIS)
-                if st.form_submit_button("Gerar Credencial"):
-                    if novo_usuario and nova_senha:
-                        if novo_usuario not in lista_usuarios:
-                            str_unidades = ", ".join(nova_unid) if nova_unid else "Todas"
-                            novo_registro = pd.DataFrame([{"Usuario": novo_usuario, "Senha": f"'{nova_senha}", "Nivel_Acesso": novo_nivel, "Unidades_Permitidas": str_unidades}])
-                            salvar_novo_usuario(pd.concat([df_users_adm, novo_registro], ignore_index=True))
-                            st.success("✅ Usuário criado com sucesso!")
-                            time.sleep(1); st.rerun()
-                        else: st.warning("Usuário já existe no banco.")
-                    else: st.warning("Preencha usuário e senha.")
-
-        with tab2:
-            st.markdown("### Editar ou Revogar Credenciais")
-            usr_editar = st.selectbox("Selecione o Usuário:", [""] + lista_usuarios)
-            if usr_editar:
-                udata = df_users_adm[df_users_adm['Usuario'] == usr_editar].iloc[0]
-                with st.form("form_edicao"):
-                    n_senha = st.text_input("Nova Senha (Deixe em branco para não alterar):", type="password")
-                    n_nivel = st.selectbox("Nível de Privilégio:", ["Visualizador", "Operador", "Administrador"], index=["Visualizador", "Operador", "Administrador"].index(udata['Nivel_Acesso']))
-                    if st.form_submit_button("Atualizar Permissões"):
-                        idx = df_users_adm.index[df_users_adm['Usuario'] == usr_editar][0]
-                        if n_senha: df_users_adm.at[idx, 'Senha'] = f"'{n_senha}"
-                        df_users_adm.at[idx, 'Nivel_Acesso'] = n_nivel
-                        salvar_novo_usuario(df_users_adm)
-                        st.success("✅ Credencial atualizada!"); time.sleep(1); st.rerun()
-                    if st.form_submit_button("🗑️ Revogar Acesso Permanentemente"):
-                        salvar_novo_usuario(df_users_adm[df_users_adm['Usuario'] != usr_editar])
-                        st.success("✅ Acesso excluído!"); time.sleep(1); st.rerun()
-        
-        with tab3: 
-            st.markdown("### Log de Usuários do Sistema")
-            st.dataframe(df_users_adm, use_container_width=True)
-
-        with tab4:
-            st.markdown("### 🧪 Central de Simulação B2B")
-            st.info("Gera 500 registros clinicamente realistas para demonstração a clientes.")
-            if st.button("🚀 INJETAR 500 LAUDOS SINTÉTICOS", use_container_width=True):
-                df_novos_mock = gerar_dados_teste_premium()
-                df_atual = conn.read(worksheet="Página1", ttl=0).dropna(how="all")
-                salvar_dados(pd.concat([df_atual, df_novos_mock]))
-                st.success("✅ Base corporativa injetada no Data Lake!")
-                time.sleep(1.5); st.rerun()
-            
-            if not df_mock.empty:
-                st.markdown("---")
-                df_mock_pos = df_mock[df_mock['Resultado'] == 'Positivo'].copy()
-                k1, k2, k3 = st.columns(3)
-                vol_total = int(len(df_mock))
-                vol_pos = int(len(df_mock_pos))
-                k1.metric("Volume Simulado", f"{vol_total:,}".replace(",", "."))
-                k2.metric("Positivados", f"{vol_pos:,}".replace(",", "."))
-                k3.metric("Taxa de Positividade", f"{(vol_pos/vol_total)*100:.1f}%")
-            else:
-                st.warning("Banco simulado ocioso. Inicie a injeção.")
-
-    # ========================================================
-    # TELA PRINCIPAL (DASHBOARD)
-    # ========================================================
-    elif menu == "🏢 Dashboard Principal":
+    if menu == "🏢 Dashboard Principal":
         st.title("🏢 Monitoramento Clínico Operacional")
         if df_reais.empty: 
             st.info("Nenhum Laudo Oficial processado. Vá em 'Upload de Laudos' para iniciar.")
@@ -612,3 +438,171 @@ else:
 
                     st.markdown("#### 📋 Matriz Analítica e Perfil de Resistência (Pacientes Críticos)")
                     st.dataframe(df_pos[['Data', 'Código_Paciente', 'Unidade', 'Material_Exame', 'Bactéria', 'Indicados (S)', 'Resistentes (R)']], use_container_width=True, hide_index=True)
+
+    # ========================================================
+    # TELA 2: ANALYTICS E TENDÊNCIAS (RESTAURADO E MELHORADO)
+    # ========================================================
+    elif menu == "📈 Analytics & Tendências":
+        st.title("📈 Motor Analítico e Tendências Demográficas")
+        
+        # Usa os dados reais para Analytics, se existirem e tiverem Idade/Sexo extraídos, senão mostra aviso.
+        # Caso o cliente queira demonstrar isso, ele usa os dados do Mock injetado no admin.
+        df_base = df_reais if not df_reais.empty else df_mock
+        
+        if df_base.empty:
+            st.info("Nenhuma base de dados (Real ou Simulada) encontrada para gerar tendências.")
+        else:
+            df_pos_comp = df_base[df_base['Resultado'] == 'Positivo'].copy()
+            if not df_pos_comp.empty:
+                b_top = df_pos_comp['Bactéria'].value_counts().idxmax()
+                exame_top = df_pos_comp['Material_Exame'].value_counts().idxmax()
+                
+                c1, c2, c3 = st.columns(3)
+                c1.metric("Patógeno Dominante", b_top)
+                c2.metric("Vetor Material Crítico", exame_top)
+                c3.metric("Volume Crítico Analisado", len(df_pos_comp))
+                
+                st.markdown("---")
+                col_g1, col_g2 = st.columns(2)
+                with col_g1:
+                    st.markdown("#### 📉 Traçado Epidemiológico Histórico")
+                    # Tenta converter data real ou mock
+                    df_pos_comp['Data_Obj'] = pd.to_datetime(df_pos_comp['Data'], format="%d/%m/%Y", errors='coerce')
+                    linha_tempo = df_pos_comp.dropna(subset=['Data_Obj']).groupby(df_pos_comp['Data_Obj'].dt.to_period("W")).size().reset_index(name='Casos Registrados')
+                    linha_tempo['Data_Obj'] = linha_tempo['Data_Obj'].dt.to_timestamp()
+                    if not linha_tempo.empty:
+                        fig_linha = px.area(linha_tempo, x='Data_Obj', y='Casos Registrados', markers=True, color_discrete_sequence=[COR_NEON], template="plotly_dark")
+                        fig_linha.update_layout(plot_bgcolor='rgba(0,0,0,0)', paper_bgcolor='rgba(0,0,0,0)', xaxis_title="Evolução Temporal")
+                        st.plotly_chart(fig_linha, use_container_width=True)
+                    else:
+                        st.warning("Datas em formato inválido para linha do tempo.")
+                        
+                with col_g2:
+                    st.markdown("#### 🏆 Top Patógenos por Unidade")
+                    top_b_unidade = df_pos_comp.groupby(['Unidade', 'Bactéria']).size().reset_index(name='Volume').sort_values(['Unidade', 'Volume'], ascending=[True, False])
+                    st.dataframe(top_b_unidade.groupby('Unidade').head(2), use_container_width=True, hide_index=True)
+
+                st.markdown("---")
+                st.markdown("### 🧬 Vetor Demográfico (População Atingida)")
+                df_demo = df_pos_comp[df_pos_comp['Idade'] != 'Não Informada'].copy()
+                
+                if df_demo.empty:
+                    st.info("⚠️ Extração biométrica (Idade/Sexo) não encontrada nos laudos reais. Use o Simulador no Console Admin para ver estes gráficos.")
+                else:
+                    df_demo['Idade'] = pd.to_numeric(df_demo['Idade'], errors='coerce')
+                    
+                    d1, d2 = st.columns(2)
+                    with d1:
+                        st.markdown("#### 👥 Impacto Cruzado por Gênero")
+                        fig_sexo = px.pie(df_demo, names='Sexo', hole=0.5, color_discrete_sequence=['#f43f5e', '#38bdf8'], template="plotly_dark")
+                        fig_sexo.update_traces(textposition='inside', textinfo='percent+label')
+                        fig_sexo.update_layout(plot_bgcolor='rgba(0,0,0,0)', paper_bgcolor='rgba(0,0,0,0)')
+                        st.plotly_chart(fig_sexo, use_container_width=True)
+                    with d2:
+                        st.markdown("#### 📊 Pirâmide Etária Infecciosa")
+                        fig_idade = px.histogram(df_demo, x='Idade', nbins=12, color_discrete_sequence=[COR_NEON], text_auto=True, template="plotly_dark")
+                        fig_idade.update_layout(plot_bgcolor='rgba(0,0,0,0)', paper_bgcolor='rgba(0,0,0,0)', xaxis_title="Idade do Paciente", yaxis_title="Quantidade")
+                        st.plotly_chart(fig_idade, use_container_width=True)
+            else:
+                st.warning("Variáveis insuficientes para construção de gráficos analíticos.")
+
+    # ========================================================
+    # TELA 3: UPLOAD DE LAUDOS
+    # ========================================================
+    elif menu == "📂 Upload de Laudos":
+        st.title("📂 Processamento Lógico de Laudos (PDF)")
+        st.info("O algoritmo de extração irá varrer os arquivos em busca de cultura positiva/negativa, antibiograma e dados do paciente.")
+        
+        arq = st.file_uploader("Arraste os laudos laboratoriais aqui", type=['pdf', 'txt'])
+        if arq and st.button("Executar Varredura e Salvar no Banco", use_container_width=True):
+            texto_bruto = ""
+            with st.spinner("Decodificando documento..."):
+                if arq.name.endswith('.pdf'):
+                    try:
+                        leitor = PyPDF2.PdfReader(arq)
+                        for p in leitor.pages: texto_bruto += p.extract_text() + "\n"
+                    except Exception as e: st.error(f"Erro ao ler PDF: {e}")
+                else: texto_bruto = arq.read().decode("utf-8")
+                
+                df_novo = extrair_dados_pdf(texto_bruto)
+                if not df_novo.empty:
+                    df_atual = conn.read(worksheet="Página1", ttl=0).dropna(how="all")
+                    df_combinado = pd.concat([df_atual, df_novo]).drop_duplicates(subset=['Data', 'Código_Paciente', 'Material_Exame', 'Unidade'])
+                    salvar_dados(df_combinado)
+                    st.success(f"✅ Sucesso! {len(df_novo)} registros foram extraídos e integrados ao banco central.")
+                    st.balloons()
+                    st.dataframe(df_novo, use_container_width=True)
+                else: st.error("❌ O sistema não conseguiu localizar padrões microbiológicos reconhecidos neste arquivo.")
+
+    # ========================================================
+    # TELA 4: CONSOLE ADMIN
+    # ========================================================
+    elif menu == "⚙️ Console Admin":
+        st.title("⚙️ Painel Administrativo")
+        tab1, tab2, tab3, tab4 = st.tabs(["➕ Criar Acesso", "✏️ Gerenciar Usuários", "📋 Dados Brutos", "🧪 Simulador"])
+        
+        df_users_adm = carregar_usuarios()
+        lista_usuarios = df_users_adm['Usuario'].tolist() if not df_users_adm.empty else []
+
+        with tab1:
+            st.markdown("### Criar Nova Credencial")
+            with st.form("form_cadastro"):
+                c1, c2 = st.columns(2)
+                novo_usuario = c1.text_input("Nome de Usuário:")
+                nova_senha = c2.text_input("Senha Segura:", type="password")
+                c3, c4 = st.columns(2)
+                novo_nivel = c3.selectbox("Nível de Privilégio:", ["Visualizador", "Operador", "Administrador"])
+                nova_unid = c4.multiselect("Unidades Visíveis (Deixe vazio para ver todas):", UNIDADES_OFICIAIS)
+                if st.form_submit_button("Gerar Credencial"):
+                    if novo_usuario and nova_senha:
+                        if novo_usuario not in lista_usuarios:
+                            str_unidades = ", ".join(nova_unid) if nova_unid else "Todas"
+                            novo_registro = pd.DataFrame([{"Usuario": novo_usuario, "Senha": f"'{nova_senha}", "Nivel_Acesso": novo_nivel, "Unidades_Permitidas": str_unidades}])
+                            salvar_novo_usuario(pd.concat([df_users_adm, novo_registro], ignore_index=True))
+                            st.success("✅ Usuário criado com sucesso!"); time.sleep(1); st.rerun()
+                        else: st.warning("Usuário já existe no banco.")
+                    else: st.warning("Preencha usuário e senha.")
+
+        with tab2:
+            st.markdown("### Editar ou Revogar Credenciais")
+            usr_editar = st.selectbox("Selecione o Usuário:", [""] + lista_usuarios)
+            if usr_editar:
+                udata = df_users_adm[df_users_adm['Usuario'] == usr_editar].iloc[0]
+                with st.form("form_edicao"):
+                    n_senha = st.text_input("Nova Senha (Deixe em branco para não alterar):", type="password")
+                    n_nivel = st.selectbox("Nível de Privilégio:", ["Visualizador", "Operador", "Administrador"], index=["Visualizador", "Operador", "Administrador"].index(udata['Nivel_Acesso']))
+                    if st.form_submit_button("Atualizar Permissões"):
+                        idx = df_users_adm.index[df_users_adm['Usuario'] == usr_editar][0]
+                        if n_senha: df_users_adm.at[idx, 'Senha'] = f"'{n_senha}"
+                        df_users_adm.at[idx, 'Nivel_Acesso'] = n_nivel
+                        salvar_novo_usuario(df_users_adm)
+                        st.success("✅ Credencial atualizada!"); time.sleep(1); st.rerun()
+                    if st.form_submit_button("🗑️ Revogar Acesso Permanentemente"):
+                        salvar_novo_usuario(df_users_adm[df_users_adm['Usuario'] != usr_editar])
+                        st.success("✅ Acesso excluído!"); time.sleep(1); st.rerun()
+        
+        with tab3: 
+            st.markdown("### Log de Usuários do Sistema")
+            st.dataframe(df_users_adm, use_container_width=True)
+
+        with tab4:
+            st.markdown("### 🧪 Central de Simulação B2B")
+            st.info("Gera 500 registros clinicamente realistas para preencher o Dashboard e a aba Analytics (ideal para demonstrar o sistema a clientes sem usar dados reais).")
+            if st.button("🚀 INJETAR 500 LAUDOS SINTÉTICOS", use_container_width=True):
+                df_novos_mock = gerar_dados_teste_premium()
+                df_atual = conn.read(worksheet="Página1", ttl=0).dropna(how="all")
+                salvar_dados(pd.concat([df_atual, df_novos_mock]))
+                st.success("✅ Base corporativa injetada no Data Lake!")
+                time.sleep(1.5); st.rerun()
+            
+            if not df_mock.empty:
+                st.markdown("---")
+                df_mock_pos = df_mock[df_mock['Resultado'] == 'Positivo'].copy()
+                k1, k2, k3 = st.columns(3)
+                vol_total = int(len(df_mock))
+                vol_pos = int(len(df_mock_pos))
+                k1.metric("Volume Simulado", f"{vol_total:,}".replace(",", "."))
+                k2.metric("Positivados", f"{vol_pos:,}".replace(",", "."))
+                k3.metric("Taxa de Positividade", f"{(vol_pos/vol_total)*100:.1f}%")
+            else:
+                st.warning("Banco simulado ocioso. Inicie a injeção.")
