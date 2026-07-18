@@ -11,12 +11,11 @@ import random
 from datetime import datetime, timedelta
 
 # ==========================================
-# 1. PAINEL DE CONTROLE DE ARQUIVOS (Nomes exatos do seu GitHub)
+# 1. PAINEL DE CONTROLE DE ARQUIVOS (Nomes EXATOS do seu GitHub)
 # ==========================================
 ARQUIVO_VIDEO_FUNDO = "video.mp4"
-ARQUIVO_VIDEO_ASSINATURA = "Gemini_Generated_Image_s8ldfcs8ldfcs8ld-removebg-preview.png"
-ARQUIVO_LOGO_LOGIN = "logo.png"
-ARQUIVO_MARCA_DAGUA_MENU = "marca_dagua.png" # Atualizado para PNG!
+ARQUIVO_ASSINATURA = "assinatura.png"
+ARQUIVO_LOGO_ANIMADO_MENU = "logo_animado.mp4" 
 
 # ==========================================
 # CONFIGURAÇÕES INICIAIS DE TEMA
@@ -132,7 +131,7 @@ if not st.session_state['logado']:
         </video>
         ''', unsafe_allow_html=True)
     else:
-        st.error(f"🚨 O vídeo '{ARQUIVO_VIDEO_FUNDO}' não foi encontrado! Verifique o nome do arquivo no GitHub.")
+        st.error(f"🚨 Vídeo '{ARQUIVO_VIDEO_FUNDO}' não encontrado no GitHub. Renomeie o arquivo corretamente.")
         st.markdown('<style>.stApp { background-color: #0b132b !important; }</style>', unsafe_allow_html=True)
 
     st.markdown("""
@@ -186,10 +185,6 @@ if not st.session_state['logado']:
     with col_login:
         with st.form(key="login_form"):
             
-            logo_b64 = get_base64_file(ARQUIVO_LOGO_LOGIN)
-            if logo_b64:
-                st.markdown(f'''<div style="display: flex; justify-content: center; margin-bottom: 15px;"><img src="data:image/png;base64,{logo_b64}" style="max-height: 80px; filter: drop-shadow(0px 0px 15px rgba(255,255,255,0.4));"></div>''', unsafe_allow_html=True)
-            
             st.markdown("<h3 style='text-align: center; color:#ffffff !important; font-weight: 900; margin-bottom: 25px; text-shadow: 0px 4px 20px rgba(0,0,0,0.9);'>Sistema Analítico BI</h3>", unsafe_allow_html=True)
             
             usuario_input = st.text_input("👤 Usuário:")
@@ -198,7 +193,7 @@ if not st.session_state['logado']:
             submit_button = st.form_submit_button("Acessar Plataforma 🚀", use_container_width=True)
             st.markdown("<hr class='custom-divider'>", unsafe_allow_html=True)
             
-            assinatura_b64 = get_base64_file(ARQUIVO_VIDEO_ASSINATURA)
+            assinatura_b64 = get_base64_file(ARQUIVO_ASSINATURA)
             if assinatura_b64:
                 st.markdown(f'''
                     <div style="text-align: center; padding-bottom: 5px;">
@@ -207,7 +202,7 @@ if not st.session_state['logado']:
                     </div>
                 ''', unsafe_allow_html=True)
             else:
-                st.error(f"⚠️ Assinatura '{ARQUIVO_VIDEO_ASSINATURA}' não encontrada.")
+                st.error(f"⚠️ Imagem de Assinatura '{ARQUIVO_ASSINATURA}' não encontrada.")
 
             if submit_button:
                 df_usuarios = carregar_usuarios()
@@ -225,43 +220,25 @@ if not st.session_state['logado']:
     st.stop()
 
 # ==========================================
-# 6. TELA DO SISTEMA (DASHBOARD) - TEMA CYBER E MARCA D'ÁGUA
+# 6. TELA DO SISTEMA (DASHBOARD) E LOGO 3D ANIMADO
 # ==========================================
 else:
-    # LÓGICA DA MARCA D'ÁGUA NO MENU (ATUALIZADO PARA PNG COM SUPORTE A TRANSPARÊNCIA)
-    marca_b64 = get_base64_file(ARQUIVO_MARCA_DAGUA_MENU)
-    css_marca_dagua = ""
-    if marca_b64:
-        # Lê a imagem como PNG e aplica o gradiente escuro por cima
-        css_marca_dagua = f"""
-        section[data-testid="stSidebar"] {{
-            background: linear-gradient(rgba(11, 17, 32, 0.40), rgba(11, 17, 32, 0.90)), url("data:image/png;base64,{marca_b64}") !important;
-            background-size: 180% !important;
-            background-position: center 50% !important;
-            background-repeat: no-repeat !important;
-            border-right: 1px solid #1e293b !important;
-        }}
-        """
-    else:
-        css_marca_dagua = """
-        section[data-testid="stSidebar"] {
-            background-color: #0f172a !important; 
-            border-right: 1px solid #1e293b !important;
-        }
-        """
 
-    # CSS GLOBAL (FONTES E ESTILOS)
+    # CSS GLOBAL (FONTES E ESTILOS CYBER PREMIUM)
     st.markdown(f"""
         <style>
         @import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@800&family=Orbitron:wght@700&display=swap');
         
-        video {{ display: none !important; }}
+        video.escondido {{ display: none !important; }}
         html, body, [data-testid="stAppViewContainer"], .block-container {{ overflow: visible !important; height: auto !important; }}
         
         .stApp {{ background-color: #0b1120 !important; color: #f8fafc !important; animation: none !important; }}
         header[data-testid="stHeader"] {{ background: transparent !important; }}
         
-        {css_marca_dagua}
+        section[data-testid="stSidebar"] {{
+            background-color: #0f172a !important; 
+            border-right: 1px solid #1e293b !important;
+        }}
         section[data-testid="stSidebar"] * {{ color: #e2e8f0 !important; }}
         
         div[data-testid="metric-container"] {{
@@ -287,6 +264,7 @@ else:
         div.stButton > button * {{ color: #FFFFFF !important; font-weight: bold !important; }}
         div.stButton > button:hover {{ background: #3b82f6 !important; box-shadow: 0 0 15px rgba(59, 130, 246, 0.5) !important;}}
         
+        /* OTIMIZAÇÃO DO PDF */
         @media print {{
             @page {{ size: A4 landscape; margin: 10mm; }} 
             body, .stApp {{ background: white !important; color: black !important; -webkit-print-color-adjust: exact !important; }}
@@ -384,13 +362,26 @@ else:
         df_reais = df_todos_dados[df_todos_dados['Período_Arquivo'] != 'Gerado Demo']
         df_mock = df_todos_dados[df_todos_dados['Período_Arquivo'] == 'Gerado Demo']
 
-    if not marca_b64:
-        st.sidebar.error(f"⚠️ Imagem '{ARQUIVO_MARCA_DAGUA_MENU}' não encontrada no GitHub.")
+    # ==========================
+    # LOGOTIPO ANIMADO 3D NA BARRA LATERAL (A MÁGICA ACONTECE AQUI)
+    # ==========================
+    video_logo_b64 = get_base64_file(ARQUIVO_LOGO_ANIMADO_MENU)
+    html_animacao = ""
+    
+    if video_logo_b64:
+        html_animacao = f'''
+        <video autoplay loop muted playsinline style="width: 140px; margin-bottom: 5px; filter: drop-shadow(0px 0px 20px rgba(0, 238, 255, 0.4));">
+            <source src="data:video/mp4;base64,{video_logo_b64}" type="video/mp4">
+        </video>
+        '''
+    else:
+        st.sidebar.error(f"⚠️ Vídeo animado '{ARQUIVO_LOGO_ANIMADO_MENU}' não encontrado.")
 
-    st.sidebar.markdown("""
-        <div style="text-align: center; margin-top: 10px; margin-bottom: 30px;">
-            <h1 style="font-family: 'Orbitron', sans-serif; color: #00eeff; font-size: 24px; font-weight: 700; text-transform: uppercase; letter-spacing: 2px; text-shadow: 0px 0px 15px rgba(0, 238, 255, 0.6); margin: 0;">SÃO FRANCISCO</h1>
-            <h2 style="font-family: 'Montserrat', sans-serif; color: #f8fafc; font-size: 12px; font-weight: 800; letter-spacing: 5px; text-transform: uppercase; margin: 5px 0 0 0; opacity: 0.8;">Laboratório</h2>
+    st.sidebar.markdown(f"""
+        <div style="text-align: center; margin-top: 0px; margin-bottom: 30px;">
+            {html_animacao}
+            <h1 style="font-family: 'Orbitron', sans-serif; color: #00eeff; font-size: 22px; font-weight: 700; text-transform: uppercase; letter-spacing: 2px; text-shadow: 0px 0px 15px rgba(0, 238, 255, 0.6); margin: 0;">SÃO FRANCISCO</h1>
+            <h2 style="font-family: 'Montserrat', sans-serif; color: #f8fafc; font-size: 11px; font-weight: 800; letter-spacing: 5px; text-transform: uppercase; margin: 5px 0 0 0; opacity: 0.8;">Laboratório</h2>
         </div>
     """, unsafe_allow_html=True)
 
