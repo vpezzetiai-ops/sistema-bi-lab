@@ -7,11 +7,13 @@ from streamlit_gsheets import GSheetsConnection
 import time
 import base64
 import os
+import random
+from datetime import datetime, timedelta
 
 # ==========================================
 # 1. CONFIGURAÇÕES INICIAIS
 # ==========================================
-st.set_page_config(page_title="Sistema BI - São Francisco", layout="wide", initial_sidebar_state="expanded")
+st.set_page_config(page_title="Sistema BI - Laboratorial", layout="wide", initial_sidebar_state="expanded")
 
 COR_AZUL_BIC = '#002395'
 COR_CINZA = '#808080'
@@ -50,12 +52,17 @@ def padronizar_material(material):
 # 3. CONEXÃO COM GOOGLE SHEETS E FUNÇÕES B64
 # ==========================================
 conn = st.connection("gsheets", type=GSheetsConnection)
-COLUNAS_DB = ["Data", "Código_Paciente", "Material_Exame", "Resultado", "Bactéria", "Indicados (S)", "Resistentes (R)", "Unidade", "Período_Arquivo"]
+COLUNAS_DB = ["Data", "Código_Paciente", "Idade", "Sexo", "Material_Exame", "Resultado", "Bactéria", "Indicados (S)", "Resistentes (R)", "Unidade", "Período_Arquivo"]
 
 def carregar_dados_salvos():
     try:
         df = conn.read(worksheet="Página1", ttl=0).dropna(how="all")
         if df.empty: return pd.DataFrame(columns=COLUNAS_DB)
+        
+        # Garante compatibilidade com planilhas antigas
+        if 'Idade' not in df.columns: df['Idade'] = "Não Informada"
+        if 'Sexo' not in df.columns: df['Sexo'] = "Não Informado"
+            
         df['Bactéria'] = df['Bactéria'].apply(padronizar_bacteria)
         df['Unidade'] = df['Unidade'].apply(padronizar_unidade)
         df['Material_Exame'] = df['Material_Exame'].apply(padronizar_material)
@@ -68,8 +75,6 @@ def carregar_usuarios():
     try:
         df_users = conn.read(worksheet="Usuarios", ttl=0).dropna(how="all")
         if df_users.empty: return pd.DataFrame(columns=["Usuario", "Senha", "Nivel_Acesso", "Unidades_Permitidas"])
-        if "Nivel_Acesso" not in df_users.columns: df_users["Nivel_Acesso"] = "Administrador"
-        if "Unidades_Permitidas" not in df_users.columns: df_users["Unidades_Permitidas"] = "Todas"
         df_users['Usuario'] = df_users['Usuario'].astype(str).str.strip()
         df_users['Senha'] = df_users['Senha'].astype(str).str.replace(r'\.0$', '', regex=True).str.lstrip("'").str.strip()
         return df_users
@@ -84,6 +89,35 @@ def get_base64_file(file_path):
     return None
 
 # ==========================================
+# FUNÇÃO: GERAR DADOS DE DEMONSTRAÇÃO
+# ==========================================
+def gerar_dados_teste():
+    exames_mock = ["[URAB] Urina", "[HEMO] Sangue", "[SWAB] Secreção", "[LCR] Líquido"]
+    bacterias_mock = ["Escherichia coli", "Staphylococcus aureus", "Klebsiella sp.", "Pseudomonas sp.", "Proteus sp."]
+    sexos_mock = ["Feminino", "Masculino"]
+    
+    novos_dados = []
+    for _ in range(100): # Gera 100 laudos fictícios
+        res = random.choice(["Positivo", "Positivo", "Negativo"]) # Mais chance de positivo para os gráficos
+        bac = random.choice(bacterias_mock) if res == "Positivo" else "N/A"
+        data_mock = (datetime.today() - timedelta(days=random.randint(0, 180))).strftime("%d/%m/%Y")
+        
+        novos_dados.append({
+            "Data": data_mock,
+            "Código_Paciente": str(random.randint(10000, 99999)),
+            "Idade": random.randint(1, 90),
+            "Sexo": random.choice(sexos_mock),
+            "Material_Exame": random.choice(exames_mock),
+            "Resultado": res,
+            "Bactéria": bac,
+            "Indicados (S)": "Amicacina, Cefepime" if res=="Positivo" else "",
+            "Resistentes (R)": "Ampicilina, Penicilina" if res=="Positivo" else "",
+            "Unidade": random.choice(UNIDADES_OFICIAIS[:-1]),
+            "Período_Arquivo": "Gerado Demo"
+        })
+    return pd.DataFrame(novos_dados)
+
+# ==========================================
 # 4. CONTROLE DE ESTADO (SESSÃO)
 # ==========================================
 if 'logado' not in st.session_state: st.session_state['logado'] = False
@@ -92,148 +126,78 @@ if 'nivel_acesso' not in st.session_state: st.session_state['nivel_acesso'] = "V
 if 'unidades_permitidas' not in st.session_state: st.session_state['unidades_permitidas'] = "Todas"
 
 # ==========================================
-# 5. TELA DE LOGIN (VÍDEO CINEMATOGRÁFICO DE FUNDO)
+# 5. TELA DE LOGIN 
 # ==========================================
 if not st.session_state['logado']:
     
-    # 1. Tenta carregar o vídeo
-    video_b64 = get_base64_file("video.mp4")
+    video_b64 = get_base64_file("video_apresentacao.mp4")
     
     if video_b64:
-        # Injeta o VÍDEO MUTADO em loop como plano de fundo
         st.markdown(f'''
-        <video autoplay loop muted playsinline style="position: fixed; right: 0; bottom: 0; min-width: 100vw; min-height: 100vh; z-index: -999; object-fit: cover; filter: brightness(0.45) sepia(0.2) hue-rotate(180deg);">
+        <video autoplay loop muted playsinline style="position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; z-index: -999; object-fit: cover; object-position: center; filter: brightness(0.85) contrast(1.15);">
             <source src="data:video/mp4;base64,{video_b64}" type="video/mp4">
         </video>
         ''', unsafe_allow_html=True)
-    else:
-        # Plano B caso o vídeo não seja encontrado
-        st.markdown('''
-        <style>
-        .stApp { background: linear-gradient(135deg, #000c24 0%, #002395 100%) !important; }
-        </style>
-        ''', unsafe_allow_html=True)
 
-    # 2. CSS para deixar o Streamlit transparente para o vídeo aparecer
     st.markdown("""
     <style>
-    /* Torna o app transparente para ver o vídeo */
-    .stApp, [data-testid="stAppViewContainer"] { background: transparent !important; }
+    @keyframes fadeInDown { 0% { opacity: 0; transform: translateY(-80px); } 100% { opacity: 1; transform: translateY(0); } }
+
+    html, body, [data-testid="stAppViewContainer"], .block-container { 
+        overflow: hidden !important; padding-top: 0rem !important; padding-bottom: 0rem !important; margin: 0 !important;
+    }
+    .stApp { background: transparent !important; }
     [data-testid="stHeader"] { background: transparent !important; display: none !important; }
     
-    /* Card de Login (Vidro Fosco) */
     [data-testid="stForm"] {
-        background: rgba(255, 255, 255, 0.25) !important;
-        backdrop-filter: blur(16px) !important;
-        -webkit-backdrop-filter: blur(16px) !important;
-        border-radius: 20px !important;
-        border: 1px solid rgba(255, 255, 255, 0.4) !important;
-        box-shadow: 0px 30px 60px rgba(0,0,0,0.8) !important;
-        padding: 40px 30px 20px 30px !important;
-        margin-top: 3vh;
-        z-index: 10;
+        background: rgba(255, 255, 255, 0.2) !important;
+        backdrop-filter: blur(12px) !important;
+        -webkit-backdrop-filter: blur(12px) !important;
+        border-radius: 15px !important;
+        border: 1px solid rgba(255, 255, 255, 0.3) !important;
+        box-shadow: 0px 15px 30px rgba(0,0,0,0.6) !important;
+        padding: 25px 20px 15px 20px !important;
+        margin-top: 8vh !important; 
+        z-index: 10; max-width: 330px; margin-left: auto; margin-right: auto;
+        animation: fadeInDown 1.2s ease-out forwards;
     }
     
-    /* Textos Escuros no Vidro */
-    [data-testid="stForm"] p, [data-testid="stForm"] label, [data-testid="stForm"] div { 
-        color: #111827 !important; 
-        font-weight: 600;
-        text-shadow: 0px 1px 2px rgba(255,255,255,0.8) !important;
-    }
+    [data-testid="stForm"] p, [data-testid="stForm"] label, [data-testid="stForm"] div { color: #111827 !important; font-weight: 600; text-shadow: 0px 1px 2px rgba(255,255,255,0.8) !important; }
     
-    /* Inputs Brancos/Claros */
     input[type="text"], input[type="password"] {
-        background-color: rgba(255, 255, 255, 0.95) !important;
-        color: #111827 !important;
-        -webkit-text-fill-color: #111827 !important;
-        border: 1px solid rgba(255, 255, 255, 0.8) !important;
-        border-radius: 8px !important;
-        padding: 10px !important;
-        box-shadow: inset 0px 2px 4px rgba(0,0,0,0.05) !important;
-    }
-    input[type="text"]:focus, input[type="password"]:focus {
-        border-color: #002395 !important;
-        box-shadow: 0 0 0 2px rgba(0, 35, 149, 0.3) !important;
+        background-color: rgba(255, 255, 255, 0.95) !important; color: #111827 !important; -webkit-text-fill-color: #111827 !important;
+        border: 1px solid rgba(255, 255, 255, 0.8) !important; border-radius: 8px !important; padding: 10px !important;
     }
     
-    /* Olho da Senha transparente */
-    button[kind="secondary"] { background-color: transparent !important; border: none !important; }
-    button[kind="secondary"] * { color: #4B5563 !important; text-shadow: none !important;}
+    div.stButton > button {
+        background-color: #002395 !important; color: #FFFFFF !important; border: none !important; border-radius: 8px !important; 
+        padding: 10px !important; margin-top: 5px !important; box-shadow: 0px 4px 15px rgba(0, 35, 149, 0.4) !important;
+    }
+    div.stButton > button * { color: #FFFFFF !important; font-weight: 900 !important; font-size: 16px !important; }
     
-    /* Botão de Login Azul São Francisco */
-    div.stButton > button, button[kind="primaryFormSubmit"] {
-        background-color: #002395 !important; 
-        background: #002395 !important;
-        color: #FFFFFF !important;
-        border: none !important; 
-        border-radius: 8px !important; 
-        padding: 10px !important;
-        margin-top: 10px !important;
-        box-shadow: 0px 4px 15px rgba(0, 35, 149, 0.4) !important;
-    }
-    div.stButton > button *, button[kind="primaryFormSubmit"] * { 
-        color: #FFFFFF !important; font-weight: 900 !important; font-size: 16px !important; text-shadow: none !important;
-    }
-    div.stButton > button:hover, button[kind="primaryFormSubmit"]:hover { 
-        background-color: #4A69BD !important; transform: scale(1.02); 
-    }
-    
-    /* Linha divisória da assinatura */
-    hr.custom-divider {
-        border: 0;
-        height: 1px;
-        background: linear-gradient(to right, rgba(255,255,255,0), rgba(255,255,255,0.8), rgba(255,255,255,0));
-        margin: 25px 0 15px 0;
-    }
+    hr.custom-divider { border: 0; height: 1px; background: linear-gradient(to right, rgba(255,255,255,0), rgba(255,255,255,0.8), rgba(255,255,255,0)); margin: 15px 0 10px 0; }
     </style>
     """, unsafe_allow_html=True)
 
-    col_vazia_esq, col_login, col_vazia_dir = st.columns([1.5, 1.1, 1.5]) 
+    col_vazia_esq, col_login, col_vazia_dir = st.columns([1, 1, 1]) 
     
     with col_login:
-        st.markdown("<br>", unsafe_allow_html=True)
         with st.form(key="login_form"):
-            
-            # ==========================================
-            # LOGO MAIOR E COM BRILHO 
-            # ==========================================
-            logo_b64 = get_base64_file("logo.png")
-            if logo_b64:
-                st.markdown(f'''
-                    <div style="display: flex; justify-content: center; margin-bottom: 25px;">
-                        <img src="data:image/png;base64,{logo_b64}" style="max-height: 135px; object-fit: contain; filter: drop-shadow(0px 0px 18px rgba(255, 255, 255, 0.8));">
-                    </div>
-                ''', unsafe_allow_html=True)
-            else:
-                st.markdown("<h2 style='text-align: center; color:#002395 !important; font-weight: 900; margin-bottom: 20px; text-shadow: 0px 0px 15px rgba(255,255,255,0.8);'>SÃO FRANCISCO</h2>", unsafe_allow_html=True)
-            
-            st.markdown("<h5 style='text-align: center; color:#111827 !important; margin-bottom:25px; font-weight: 800; text-shadow: 0px 1px 2px rgba(255,255,255,0.8);'>Acesso ao Sistema Analítico</h5>", unsafe_allow_html=True)
+            st.markdown("<h3 style='text-align: center; color:#002395 !important; font-weight: 900; margin-bottom: 20px; text-shadow: 0px 0px 15px rgba(255,255,255,0.8);'>Sistema BI - Laboratorial</h3>", unsafe_allow_html=True)
             
             usuario_input = st.text_input("👤 Nome de Usuário:")
             senha_input = st.text_input("🔑 Senha de Acesso:", type="password")
-            
-            lembrar_senha = st.checkbox("Lembrar senha neste computador")
+            lembrar_senha = st.checkbox("Lembrar senha (Habilitar preenchimento)")
             
             submit_button = st.form_submit_button("Fazer Login 🚀", type="primary", use_container_width=True)
-            
-            # ==========================================
-            # ASSINATURA WARMACHINE
-            # ==========================================
             st.markdown("<hr class='custom-divider'>", unsafe_allow_html=True)
             
-            assinatura_b64 = get_base64_file("Gemini_Generated_Image_s8ldfcs8ldfcs8ld-removebg-preview.png")
+            assinatura_b64 = get_base64_file("assinatura.png")
             if assinatura_b64:
                 st.markdown(f'''
                     <div style="text-align: center; padding-bottom: 5px;">
-                        <p style="color: #4B5563; font-size: 9px; font-weight: 800; margin-bottom: 5px; text-transform: uppercase; letter-spacing: 2px; text-shadow: 0px 1px 1px rgba(255,255,255,0.8);">Desenvolvido Por</p>
-                        <img src="data:image/png;base64,{assinatura_b64}" style="max-height: 60px; max-width: 100%; object-fit: contain; margin: 0 auto; display: block; opacity: 0.95;">
-                    </div>
-                ''', unsafe_allow_html=True)
-            else:
-                st.markdown('''
-                    <div style="text-align: center; padding-bottom: 5px;">
-                        <p style="color: #4B5563; font-size: 9px; font-weight: 800; margin-bottom: 2px; text-transform: uppercase; letter-spacing: 2px; text-shadow: 0px 1px 1px rgba(255,255,255,0.8);">Desenvolvido Por</p>
-                        <p style="text-align: center; color: #002395; font-weight: 900; margin: 0; font-size: 16px; text-shadow: 0px 1px 2px rgba(255,255,255,0.9);">V PEZZETI WarMachine</p>
+                        <p style="color: #4B5563; font-size: 9px; font-weight: 800; margin-bottom: 5px; text-transform: uppercase; letter-spacing: 2px;">Desenvolvido Por</p>
+                        <img src="data:image/png;base64,{assinatura_b64}" style="max-height: 45px; max-width: 100%; object-fit: contain; margin: 0 auto; display: block;">
                     </div>
                 ''', unsafe_allow_html=True)
 
@@ -256,25 +220,26 @@ if not st.session_state['logado']:
 # 6. TELA DO SISTEMA (DASHBOARD)
 # ==========================================
 else:
+    # CSS dinâmico: Funciona perfeitamente no Dark Mode!
     st.markdown("""
         <style>
-        /* Destrói o vídeo e volta para o fundo cinza claro no sistema */
         video { display: none !important; }
-        .stApp { background-image: none !important; background-color: #F4F6F9 !important; animation: none !important;}
-        header[data-testid="stHeader"] { background: #F4F6F9 !important; display: flex !important;}
-        
-        div[data-testid="metric-container"] {
-            background-color: #FFFFFF !important; border: 1px solid #E5E7EB !important;
-            padding: 20px !important; border-radius: 12px !important;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.05) !important; border-left: 5px solid #002395 !important;
-        }
-        .stTabs [aria-selected="true"] { border-bottom-color: #002395 !important; color: #002395 !important; }
+        html, body, [data-testid="stAppViewContainer"], .block-container { overflow: auto !important; }
+        .stApp { background-image: none !important; animation: none !important;}
+        header[data-testid="stHeader"] { display: flex !important;}
         
         div.stButton > button { background-color: #002395 !important; border: none !important; }
         div.stButton > button * { color: #FFFFFF !important; font-weight: bold !important; }
-        div.stButton > button:hover { background-color: #4A69BD !important; }
         </style>
     """, unsafe_allow_html=True)
+
+    # Botão Injetado via Javascript para imprimir em PDF
+    st.components.v1.html("""
+        <script>
+        function printPDF() { window.parent.print(); }
+        </script>
+        <button onclick="printPDF()" style="background-color:#002395;color:white;padding:10px 20px;border:none;border-radius:5px;cursor:pointer;font-weight:bold;width:100%;">🖨️ Exportar Tela para PDF</button>
+    """, height=50)
 
     def extrair_dados_pdf(texto_bruto):
         dados = []
@@ -302,9 +267,9 @@ else:
                 
                 tag = match_tag.group(1)
                 linha = {
-                    "Data": data_pac, "Código_Paciente": cod_pac, "Material_Exame": f"[{tag}]", 
-                    "Resultado": "Negativo", "Bactéria": "N/A", "Indicados (S)": "", 
-                    "Resistentes (R)": "", "Unidade": unidade_pac, "Período_Arquivo": periodo_doc
+                    "Data": data_pac, "Código_Paciente": cod_pac, "Idade": "Não Informada", "Sexo": "Não Informado",
+                    "Material_Exame": f"[{tag}]", "Resultado": "Negativo", "Bactéria": "N/A", 
+                    "Indicados (S)": "", "Resistentes (R)": "", "Unidade": unidade_pac, "Período_Arquivo": periodo_doc
                 }
                 
                 match_mat = re.search(r'(?:MAT(?:ERIAL)?):\s*(.*?)(?=RES|1:|\.1:|[A-Z]{3}2?:|\n|$)', sub)
@@ -323,8 +288,7 @@ else:
                     
                     if match_bac:
                         bac_str = match_bac.group(1).replace(":", "").strip()
-                        if "Não houve" not in bac_str and "Aplic" not in bac_str:
-                            linha["Bactéria"] = padronizar_bacteria(bac_str)
+                        if "Não houve" not in bac_str and "Aplic" not in bac_str: linha["Bactéria"] = padronizar_bacteria(bac_str)
                     else:
                         for bac_name in ["Escherichia", "Proteus", "Enterobacter", "Pseudomonas", "Klebsiella", "Staphylococcus", "Streptococcus", "Enterococcus"]:
                             if bac_name.lower() in sub.lower():
@@ -342,9 +306,7 @@ else:
                 dados.append(linha)
         return pd.DataFrame(dados)
 
-    try: st.sidebar.image("logo.png", use_container_width=True)
-    except: st.sidebar.empty() 
-
+    st.sidebar.markdown("<h3 style='text-align: center; color:#002395;'>Sistema BI - Laboratorial</h3>", unsafe_allow_html=True)
     nivel_atual = st.session_state.get('nivel_acesso', 'Visualizador')
     unid_perm = st.session_state.get('unidades_permitidas', 'Todas')
 
@@ -352,14 +314,13 @@ else:
     st.sidebar.markdown(f"<span style='color:#002395; font-weight:bold;'>• {nivel_atual}</span>", unsafe_allow_html=True)
     st.sidebar.markdown("---")
 
-    opcoes_menu = ["🏢 Análise por Unidade", "📈 Relatório Comparativo Avançado"]
+    opcoes_menu = ["🏢 Análise por Unidade", "📈 Relatório Comparativo", "🧬 Demografia (Idade e Sexo)"]
     if nivel_atual in ["Operador", "Administrador"] or st.session_state['usuario'] == "vhpezzeti":
         opcoes_menu.append("📂 Upload de Dados")
     if nivel_atual == "Administrador" or st.session_state['usuario'] == "vhpezzeti":
         opcoes_menu.append("⚙️ Painel do Administrador")
 
     menu = st.sidebar.radio("Navegação", opcoes_menu)
-
     st.sidebar.markdown("---")
     if st.sidebar.button("🚪 Sair da Conta", use_container_width=True):
         st.session_state['logado'] = False
@@ -374,242 +335,152 @@ else:
             unidades_liberadas = [u.strip() for u in unid_perm.split(",")]
             df_historico = df_historico[df_historico['Unidade'].isin(unidades_liberadas)]
 
+    # ========================== MÓDULOS DO DASHBOARD ==========================
     if menu == "⚙️ Painel do Administrador":
         st.title("⚙️ Painel de Controle Administrativo")
-        st.markdown("Gerencie acessos e defina **quais unidades** cada funcionário pode visualizar.")
-        st.markdown("<br>", unsafe_allow_html=True)
         
+        if st.button("🧪 Gerar 100 Dados de Demonstração (MOCK)", use_container_width=True):
+            df_mock = gerar_dados_teste()
+            df_atual = conn.read(worksheet="Página1", ttl=0).dropna(how="all")
+            df_novo = pd.concat([df_atual, df_mock])
+            salvar_dados(df_novo)
+            st.success("✅ 100 laudos fictícios foram injetados no sistema com sucesso!")
+            time.sleep(2)
+            st.rerun()
+
         tab1, tab2, tab3 = st.tabs(["➕ Cadastrar Novo", "✏️ Editar / Excluir", "📋 Lista de Acessos"])
-        
         df_users_adm = carregar_usuarios()
         lista_usuarios = df_users_adm['Usuario'].tolist() if not df_users_adm.empty else []
 
         with tab1:
-            st.markdown("#### Criar Nova Credencial")
             with st.form("form_cadastro"):
-                col1, col2 = st.columns(2)
-                with col1: novo_usuario = st.text_input("Login do Funcionário:")
-                with col2: nova_senha = st.text_input("Senha de Acesso:", type="password")
-                
-                st.markdown("---")
-                col3, col4 = st.columns(2)
-                with col3: 
-                    novo_nivel = st.selectbox("Nível de Permissão:", ["Visualizador (Apenas Gráficos)", "Operador (Gráficos + Upload)", "Administrador (Acesso Total)"])
-                with col4:
-                    nova_unid_perm = st.multiselect("Unidades Permitidas (Deixe vazio para dar acesso a TODAS):", UNIDADES_OFICIAIS)
-                
-                st.markdown("<br>", unsafe_allow_html=True)
-                submit_cadastro = st.form_submit_button("Salvar Cadastro ✔️", use_container_width=True)
-                
-                if submit_cadastro:
-                    if novo_usuario and nova_senha:
-                        if novo_usuario in lista_usuarios:
-                            st.error("❌ Este login já existe no sistema.")
-                        else:
-                            senha_salva = f"'{nova_senha}" if nova_senha.isdigit() else nova_senha
-                            nivel_salvo = novo_nivel.split(" ")[0]
-                            str_unidades = ", ".join(nova_unid_perm) if nova_unid_perm else "Todas"
-                            
-                            novo_registro = pd.DataFrame([{"Usuario": novo_usuario, "Senha": senha_salva, "Nivel_Acesso": nivel_salvo, "Unidades_Permitidas": str_unidades}])
-                            df_users_atualizado = pd.concat([df_users_adm, novo_registro], ignore_index=True)
-                            salvar_novo_usuario(df_users_atualizado)
-                            st.success(f"✅ Funcionário cadastrado com sucesso!")
-                            time.sleep(1)
-                            st.rerun()
-                    else:
-                        st.warning("Preencha Login e Senha antes de salvar.")
-                        
-        with tab2:
-            st.markdown("#### Atualizar Credencial Existente")
-            with st.container(border=True):
-                if not lista_usuarios:
-                    st.info("Nenhum usuário cadastrado no momento.")
-                else:
-                    usuario_editar = st.selectbox("Selecione o Usuário para Editar:", [""] + lista_usuarios)
-                    if usuario_editar:
-                        user_data = df_users_adm[df_users_adm['Usuario'] == usuario_editar].iloc[0]
-                        nivel_atual_ed = user_data.get('Nivel_Acesso', 'Visualizador')
-                        unid_atual_ed = user_data.get('Unidades_Permitidas', 'Todas')
-                        
-                        opcoes_niveis = ["Visualizador", "Operador", "Administrador"]
-                        idx_nivel = opcoes_niveis.index(nivel_atual_ed) if nivel_atual_ed in opcoes_niveis else 0
-                        vetor_unid_atual = [] if unid_atual_ed == "Todas" else [u.strip() for u in str(unid_atual_ed).split(",")]
-                        
-                        with st.form("form_edicao"):
-                            col_e1, col_e2 = st.columns(2)
-                            with col_e1: nova_senha_ed = st.text_input("Nova Senha (deixe em branco para manter a atual):", type="password")
-                            with col_e2: novo_nivel_ed = st.selectbox("Novo Nível:", opcoes_niveis, index=idx_nivel)
-                            
-                            novo_vetor_unid = st.multiselect("Alterar Unidades Permitidas (Vazio = Todas):", UNIDADES_OFICIAIS, default=[u for u in vetor_unid_atual if u in UNIDADES_OFICIAIS])
-                            
-                            st.markdown("<br>", unsafe_allow_html=True)
-                            col_btn1, col_btn2 = st.columns(2)
-                            with col_btn1: submit_editar = st.form_submit_button("Atualizar Usuário 🔄", use_container_width=True)
-                            with col_btn2: submit_excluir = st.form_submit_button("🗑️ Excluir Usuário", use_container_width=True)
-                            
-                            if submit_editar:
-                                idx_row = df_users_adm.index[df_users_adm['Usuario'] == usuario_editar][0]
-                                if nova_senha_ed:
-                                    df_users_adm.at[idx_row, 'Senha'] = f"'{nova_senha_ed}" if nova_senha_ed.isdigit() else nova_senha_ed
-                                df_users_adm.at[idx_row, 'Nivel_Acesso'] = novo_nivel_ed
-                                df_users_adm.at[idx_row, 'Unidades_Permitidas'] = ", ".join(novo_vetor_unid) if novo_vetor_unid else "Todas"
-                                salvar_novo_usuario(df_users_adm)
-                                st.success(f"✅ Conta de {usuario_editar} atualizada!")
-                                time.sleep(1)
-                                st.rerun()
-                                    
-                            if submit_excluir:
-                                if usuario_editar == st.session_state['usuario']:
-                                    st.error("Você não pode excluir sua própria conta enquanto está logado!")
-                                else:
-                                    df_users_adm = df_users_adm[df_users_adm['Usuario'] != usuario_editar]
-                                    salvar_novo_usuario(df_users_adm)
-                                    st.success("✅ Conta excluída com sucesso!")
-                                    time.sleep(1)
-                                    st.rerun()
+                c1, c2 = st.columns(2)
+                novo_usuario = c1.text_input("Login:")
+                nova_senha = c2.text_input("Senha:", type="password")
+                c3, c4 = st.columns(2)
+                novo_nivel = c3.selectbox("Nível:", ["Visualizador", "Operador", "Administrador"])
+                nova_unid = c4.multiselect("Unidades (Vazio = Todas):", UNIDADES_OFICIAIS)
+                if st.form_submit_button("Salvar") and novo_usuario and nova_senha:
+                    if novo_usuario not in lista_usuarios:
+                        str_unidades = ", ".join(nova_unid) if nova_unid else "Todas"
+                        novo_registro = pd.DataFrame([{"Usuario": novo_usuario, "Senha": f"'{nova_senha}", "Nivel_Acesso": novo_nivel, "Unidades_Permitidas": str_unidades}])
+                        salvar_novo_usuario(pd.concat([df_users_adm, novo_registro], ignore_index=True))
+                        st.success("✅ Salvo!")
+                        time.sleep(1); st.rerun()
 
-        with tab3:
-            st.markdown("#### Tabela de Permissões")
-            st.dataframe(df_users_adm, use_container_width=True, hide_index=True)
+        with tab2:
+            usr_editar = st.selectbox("Editar Usuário:", [""] + lista_usuarios)
+            if usr_editar:
+                udata = df_users_adm[df_users_adm['Usuario'] == usr_editar].iloc[0]
+                with st.form("form_edicao"):
+                    n_senha = st.text_input("Nova Senha (vazio mantém):", type="password")
+                    n_nivel = st.selectbox("Nível:", ["Visualizador", "Operador", "Administrador"], index=["Visualizador", "Operador", "Administrador"].index(udata['Nivel_Acesso']))
+                    if st.form_submit_button("Atualizar"):
+                        idx = df_users_adm.index[df_users_adm['Usuario'] == usr_editar][0]
+                        if n_senha: df_users_adm.at[idx, 'Senha'] = f"'{n_senha}"
+                        df_users_adm.at[idx, 'Nivel_Acesso'] = n_nivel
+                        salvar_novo_usuario(df_users_adm)
+                        st.success("✅ Atualizado!"); time.sleep(1); st.rerun()
+                    if st.form_submit_button("🗑️ Excluir"):
+                        salvar_novo_usuario(df_users_adm[df_users_adm['Usuario'] != usr_editar])
+                        st.success("✅ Excluído!"); time.sleep(1); st.rerun()
+        with tab3: st.dataframe(df_users_adm)
 
     elif menu == "📂 Upload de Dados":
-        st.title("📂 Importação de Resultados PDF")
-        st.markdown("Faça o upload dos arquivos gerados pelo sistema do laboratório. O robô irá higienizar e organizar os dados na Nuvem.")
-        
-        with st.container(border=True):
-            arquivo_upload = st.file_uploader("Arraste seu arquivo PDF aqui 👇", type=['pdf', 'txt'])
-            if arquivo_upload is not None:
-                if st.button("Processar e Salvar no Banco de Dados ☁️", use_container_width=True):
-                    with st.spinner('Lendo arquivo, aplicando filtros de inteligência e salvando...'):
-                        texto_dados = ""
-                        if arquivo_upload.name.endswith('.pdf'):
-                            leitor_pdf = PyPDF2.PdfReader(arquivo_upload)
-                            for pagina in leitor_pdf.pages:
-                                texto = pagina.extract_text()
-                                if texto: texto_dados += texto + "\n"
-                        else:
-                            texto_dados = arquivo_upload.read().decode("utf-8")
-                            
-                        df_novo = extrair_dados_pdf(texto_dados)
-                        if not df_novo.empty:
-                            df_puro = conn.read(worksheet="Página1", ttl=0).dropna(how="all") if not df_historico.empty else pd.DataFrame(columns=COLUNAS_DB)
-                            df_final = pd.concat([df_puro, df_novo]).drop_duplicates(subset=['Data', 'Código_Paciente', 'Material_Exame', 'Unidade'])
-                            salvar_dados(df_final)
-                            st.success(f"✅ Extração Concluída! {len(df_novo)} registros limpos e salvos na Nuvem.")
-                            st.balloons()
-                        else:
-                            st.error("Não foi possível encontrar dados válidos neste PDF.")
+        st.title("📂 Importação de PDF")
+        arq = st.file_uploader("Arraste o PDF", type=['pdf', 'txt'])
+        if arq and st.button("Processar e Salvar"):
+            txt = ""
+            if arq.name.endswith('.pdf'):
+                for p in PyPDF2.PdfReader(arq).pages: txt += p.extract_text() + "\n"
+            else: txt = arq.read().decode("utf-8")
+            df_novo = extrair_dados_pdf(txt)
+            if not df_novo.empty:
+                df_puro = conn.read(worksheet="Página1", ttl=0).dropna(how="all")
+                salvar_dados(pd.concat([df_puro, df_novo]).drop_duplicates(subset=['Data', 'Código_Paciente', 'Material_Exame', 'Unidade']))
+                st.success(f"✅ {len(df_novo)} registros salvos!")
+            else: st.error("Falha ao ler dados.")
 
     elif menu == "🏢 Análise por Unidade":
-        st.title("🏢 Análise Geral de Culturas")
-        if df_historico.empty:
-            st.info("⚠️ Não há dados disponíveis para as unidades que você tem permissão.")
+        st.title("🏢 Análise Geral Multifiltros")
+        if df_historico.empty: st.info("Sem dados.")
         else:
-            with st.container(border=True):
-                col_f1, col_f2 = st.columns(2)
-                with col_f1:
-                    periodos = ["Todos os Meses"] + sorted(list(df_historico[df_historico['Mês/Ano'] != 'Desconhecido']['Mês/Ano'].unique()))
-                    periodo_sel = st.selectbox("📅 Selecione o Mês:", periodos)
-                with col_f2:
-                    unidades = ["Todas as Unidades"] + sorted(list(df_historico['Unidade'].unique()))
-                    unidade_sel = st.selectbox("🏢 Selecione a Unidade:", unidades)
-            
-            df_f = df_historico.copy()
-            if periodo_sel != "Todos os Meses": df_f = df_f[df_f['Mês/Ano'] == periodo_sel]
-            if unidade_sel != "Todas as Unidades": df_f = df_f[df_f['Unidade'] == unidade_sel]
-                
-            t_pos = len(df_f[df_f['Resultado'] == 'Positivo'])
-            
-            st.markdown("<br>", unsafe_allow_html=True)
             c1, c2, c3 = st.columns(3)
-            c1.metric("Total de Exames Lidos", len(df_f))
-            c2.metric("Resultados Positivos 🦠", t_pos)
-            c3.metric("Resultados Negativos 🛡️", len(df_f[df_f['Resultado'] == 'Negativo']))
+            # Filtros Múltiplos
+            meses_disp = sorted(list(df_historico[df_historico['Mês/Ano'] != 'Desconhecido']['Mês/Ano'].unique()))
+            meses_sel = c1.multiselect("📅 Meses Analisados", meses_disp, default=meses_disp)
             
-            if t_pos > 0:
-                df_pos = df_f[df_f['Resultado'] == 'Positivo']
-                st.markdown("<br>", unsafe_allow_html=True)
-                
-                c_graf1, c_graf2 = st.columns(2)
-                with c_graf1:
-                    st.markdown("#### 📊 Distribuição Positivos x Negativos")
-                    fig_pizza = px.pie(df_f, names='Resultado', hole=0.5, color='Resultado', color_discrete_map={'Positivo': COR_AZUL_BIC, 'Negativo': COR_CINZA})
-                    st.plotly_chart(fig_pizza, use_container_width=True, theme="streamlit")
-                    
-                with c_graf2:
-                    st.markdown("#### 🧫 Frequência Bacteriana")
-                    df_percent = df_pos['Bactéria'].value_counts(normalize=True).mul(100).round(2).reset_index()
-                    df_percent.columns = ['Bactéria', '%']
-                    fig_bac = px.bar(df_percent, x='%', y='Bactéria', orientation='h', text_auto=True, color='Bactéria', color_discrete_sequence=PALETA_CORES)
-                    fig_bac.update_layout(yaxis={'categoryorder':'total ascending'})
-                    st.plotly_chart(fig_bac, use_container_width=True, theme="streamlit")
-
-                st.markdown("#### 📋 Detalhamento dos Pacientes (Positivos)")
-                st.dataframe(df_pos[['Data', 'Código_Paciente', 'Unidade', 'Material_Exame', 'Bactéria', 'Indicados (S)', 'Resistentes (R)']], use_container_width=True, hide_index=True)
-
-    elif menu == "📈 Relatório Comparativo Avançado":
-        st.title("📈 Inteligência Analítica e Tendências")
-        if df_historico.empty:
-            st.info("⚠️ Não há dados disponíveis para as unidades que você tem permissão.")
-        else:
-            with st.container(border=True):
-                col_filtro1, col_filtro2, col_filtro3 = st.columns(3)
-                with col_filtro1:
-                    opcoes_mes = ["Todos os Meses"] + sorted(list(df_historico[df_historico['Mês/Ano'] != 'Desconhecido']['Mês/Ano'].unique()))
-                    mes_comparativo = st.selectbox("📅 Filtrar Mês:", opcoes_mes)
-                with col_filtro2:
-                    opcoes_unidade = ["Todas as Unidades"] + sorted(list(df_historico['Unidade'].unique()))
-                    unidade_comparativo = st.selectbox("🏢 Filtrar Unidade:", opcoes_unidade)
-                with col_filtro3:
-                    opcoes_exame = ["Todos os Exames"] + sorted(list(df_historico['Material_Exame'].unique()))
-                    exame_comparativo = st.selectbox("🧪 Filtrar Material:", opcoes_exame)
-
-            df_comp = df_historico.copy()
-            if mes_comparativo != "Todos os Meses": df_comp = df_comp[df_comp['Mês/Ano'] == mes_comparativo]
-            if unidade_comparativo != "Todas as Unidades": df_comp = df_comp[df_comp['Unidade'] == unidade_comparativo]
-            if exame_comparativo != "Todos os Exames": df_comp = df_comp[df_comp['Material_Exame'] == exame_comparativo]
-
-            df_pos_comp = df_comp[df_comp['Resultado'] == 'Positivo']
-
-            if not df_pos_comp.empty:
-                bacteria_top = df_pos_comp['Bactéria'].value_counts().idxmax()
-                if mes_comparativo == "Todos os Meses":
-                    mes_pico = df_pos_comp['Mês/Ano'].value_counts().idxmax()
-                    texto_mes_pico = f"Mês de Pico: {mes_pico}"
-                else:
-                    texto_mes_pico = f"Mês Analisado: {mes_comparativo}"
-                    
-                st.markdown("<br>", unsafe_allow_html=True)
-                c_m1, c_m2, c_m3 = st.columns(3)
-                c_m1.metric("Total de Positivos Filtrados", len(df_pos_comp))
-                c_m2.metric("Bactéria Mais Detectada 🦠", bacteria_top)
-                c_m3.metric("Indicador de Volume 📈", texto_mes_pico)
-
-                st.markdown("---")
-                col_g1, col_g2 = st.columns(2)
-                
-                with col_g1:
-                    st.markdown("#### 📊 Crescimento de Positivos")
-                    agrupado_tempo = df_pos_comp.groupby('Mês/Ano').size().reset_index(name='Casos')
-                    fig_linha = px.area(agrupado_tempo, x='Mês/Ano', y='Casos', markers=True, color_discrete_sequence=[COR_AZUL_BIC])
-                    st.plotly_chart(fig_linha, use_container_width=True, theme="streamlit")
-                    
-                with col_g2:
-                    st.markdown("#### 🎯 Top 5 Incidências")
-                    agrupado_bac = df_pos_comp['Bactéria'].value_counts(normalize=True).mul(100).round(2).reset_index()
-                    agrupado_bac.columns = ['Bactéria', '%']
-                    fig_bar_bac = px.bar(agrupado_bac.head(5), x='%', y='Bactéria', orientation='h', text_auto=True, color='Bactéria', color_discrete_sequence=PALETA_CORES)
-                    fig_bar_bac.update_layout(yaxis={'categoryorder':'total ascending'})
-                    st.plotly_chart(fig_bar_bac, use_container_width=True, theme="streamlit")
-
-                st.markdown("#### 📌 Detalhamento Estratégico (% Do Total Filtrado)")
-                df_percent_final = df_pos_comp.groupby(['Unidade', 'Material_Exame', 'Bactéria']).size().reset_index(name='Casos')
-                df_percent_final['%'] = (df_percent_final['Casos'] / len(df_pos_comp) * 100).round(2)
-                df_percent_final = df_percent_final.sort_values(by='%', ascending=False)
-                st.dataframe(df_percent_final, use_container_width=True, hide_index=True)
-                
-                st.markdown("#### 📋 Histórico Individual")
-                st.dataframe(df_pos_comp[['Data', 'Código_Paciente', 'Unidade', 'Material_Exame', 'Bactéria', 'Indicados (S)', 'Resistentes (R)']], use_container_width=True, hide_index=True)
-
+            unid_disp = sorted(list(df_historico['Unidade'].unique()))
+            unid_sel = c2.multiselect("🏢 Unidades", unid_disp, default=unid_disp)
+            
+            exame_disp = sorted(list(df_historico['Material_Exame'].unique()))
+            exame_sel = c3.multiselect("🧪 Exames", exame_disp, default=exame_disp)
+            
+            df_f = df_historico[df_historico['Mês/Ano'].isin(meses_sel) & df_historico['Unidade'].isin(unid_sel) & df_historico['Material_Exame'].isin(exame_sel)]
+            
+            if df_f.empty: st.warning("Nenhum dado encontrado para esta combinação.")
             else:
-                st.info("Não houve nenhum registro positivo encontrado com os filtros selecionados acima.")
+                t_pos = len(df_f[df_f['Resultado'] == 'Positivo'])
+                t_neg = len(df_f[df_f['Resultado'] == 'Negativo'])
+                qtd_meses = len(meses_sel) if len(meses_sel) > 0 else 1
+                
+                m1, m2, m3, m4 = st.columns(4)
+                m1.metric("Total de Exames", len(df_f))
+                m2.metric("Positivos 🦠", t_pos)
+                m3.metric("Negativos 🛡️", t_neg)
+                m4.metric("Média / Mês Selecionado", round(len(df_f) / qtd_meses, 1))
+
+                if t_pos > 0:
+                    df_pos = df_f[df_f['Resultado'] == 'Positivo']
+                    
+                    st.markdown("---")
+                    g1, g2 = st.columns(2)
+                    with g1:
+                        st.markdown("#### 📊 % Positivos x Negativos")
+                        st.plotly_chart(px.pie(df_f, names='Resultado', hole=0.5, color='Resultado', color_discrete_map={'Positivo': COR_AZUL_BIC, 'Negativo': COR_CINZA}), use_container_width=True)
+                    with g2:
+                        st.markdown("#### 🧫 % Ocorrência Bacteriana")
+                        df_pct = df_pos['Bactéria'].value_counts(normalize=True).mul(100).round(2).reset_index()
+                        df_pct.columns = ['Bactéria', '%']
+                        st.plotly_chart(px.bar(df_pct, x='%', y='Bactéria', orientation='h', text_auto=True, color='Bactéria', color_discrete_sequence=PALETA_CORES).update_layout(yaxis={'categoryorder':'total ascending'}), use_container_width=True)
+
+                    st.markdown("#### 📋 Detalhamento dos Pacientes Positivos")
+                    st.dataframe(df_pos[['Data', 'Código_Paciente', 'Idade', 'Sexo', 'Unidade', 'Material_Exame', 'Bactéria', 'Indicados (S)', 'Resistentes (R)']], use_container_width=True, hide_index=True)
+
+    elif menu == "📈 Relatório Comparativo":
+        st.title("📈 Tendências e Campeões")
+        if not df_historico.empty:
+            df_pos_comp = df_historico[df_historico['Resultado'] == 'Positivo']
+            if not df_pos_comp.empty:
+                b_top = df_pos_comp['Bactéria'].value_counts().idxmax()
+                exame_top = df_pos_comp['Material_Exame'].value_counts().idxmax()
+                
+                c1, c2, c3 = st.columns(3)
+                c1.metric("Bactéria de Maior Risco", b_top)
+                c2.metric("Exame com Mais Positivos", exame_top)
+                c3.metric("Mês com Mais Casos", df_pos_comp['Mês/Ano'].value_counts().idxmax())
+                
+                st.markdown("#### 📉 Curva Epidemiológica")
+                agrupado = df_pos_comp.groupby('Mês/Ano').size().reset_index(name='Casos')
+                st.plotly_chart(px.area(agrupado, x='Mês/Ano', y='Casos', markers=True, color_discrete_sequence=[COR_AZUL_BIC]), use_container_width=True)
+                
+                st.markdown("#### 🏆 Top Bactérias por Tipo de Exame")
+                top_b_exame = df_pos_comp.groupby(['Material_Exame', 'Bactéria']).size().reset_index(name='Qtd').sort_values(['Material_Exame', 'Qtd'], ascending=[True, False])
+                st.dataframe(top_b_exame.groupby('Material_Exame').head(2), use_container_width=True, hide_index=True)
+
+    elif menu == "🧬 Demografia (Idade e Sexo)":
+        st.title("🧬 Análise Demográfica de Infecções")
+        if df_historico.empty: st.info("Sem dados.")
+        else:
+            df_demo = df_historico[(df_historico['Resultado'] == 'Positivo') & (df_historico['Idade'] != 'Não Informada')]
+            if df_demo.empty: st.warning("⚠️ Você precisa gerar dados de teste ou fazer upload de PDFs que contenham idade.")
+            else:
+                df_demo['Idade'] = pd.to_numeric(df_demo['Idade'])
+                
+                d1, d2 = st.columns(2)
+                with d1:
+                    st.markdown("#### 👥 Infecções por Sexo")
+                    st.plotly_chart(px.pie(df_demo, names='Sexo', hole=0.4, color_discrete_sequence=['#ff4b4b', '#002395']), use_container_width=True)
+                with d2:
+                    st.markdown("#### 📊 Faixa Etária dos Positivos")
+                    st.plotly_chart(px.histogram(df_demo, x='Idade', nbins=10, color_discrete_sequence=[COR_AZUL_BIC], text_auto=True), use_container_width=True)
