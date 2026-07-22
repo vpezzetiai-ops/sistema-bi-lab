@@ -44,7 +44,7 @@ except Exception as e:
     st.stop()
 
 # ==========================================
-# 3. MOTOR DE DADOS E REGEX
+# 3. MOTOR DE DADOS E REGEX (ATUALIZADO PARA UNIDADES)
 # ==========================================
 def padronizar_unidade(unidade):
     if pd.isna(unidade) or str(unidade).strip() == "" or "Não Informada" in str(unidade): return "Sede / Sem Unidade"
@@ -81,7 +81,12 @@ def extrair_dados_pdf(texto_bruto):
         if not match_header: continue
         data_pac, cod_pac = match_header.group(1), match_header.group(2)
         unidade_pac = "Sede / Sem Unidade"
-        match_unidade = re.search(r'Unidade Sigla:\s*(\d+)', bloco)
+        
+        # --- NOVA BUSCA INTELIGENTE DE UNIDADE ---
+        match_unidade = re.search(r'(?:Unidade|Sigla|Posto|Origem)[\s\w]*?[:=]?\s*(\d+)', bloco, re.IGNORECASE)
+        if not match_unidade:
+            match_unidade = re.search(r'UN\s*[:=]?\s*(\d+)', bloco, re.IGNORECASE)
+            
         if match_unidade: unidade_pac = padronizar_unidade(match_unidade.group(1))
         if unidade_pac == "Excluir": continue 
             
@@ -104,14 +109,14 @@ def extrair_dados_pdf(texto_bruto):
                     for bac_name in ["Escherichia", "Proteus", "Enterobacter", "Pseudomonas", "Klebsiella", "Staphylococcus", "Streptococcus", "Enterococcus"]:
                         if bac_name.lower() in sub.lower(): linha["bacteria"] = padronizar_bacteria(bac_name); break
                             
-                sensiveis, resistentes = [], []
-                matches_atb = re.findall(r'([A-Z]{2,5})\d*[\s:=]+([SR])\b', sub)
-                for atb, status in matches_atb:
-                    if status == 'S': sensiveis.append(atb)
-                    elif status == 'R': resistentes.append(atb)
-                    
-                linha["indicados_s"] = ", ".join(sorted(list(set(sensiveis))))
-                linha["resistentes_r"] = ", ".join(sorted(list(set(resistentes))))
+            sensiveis, resistentes = [], []
+            matches_atb = re.findall(r'([A-Z]{2,5})\d*[\s:=]+([SR])\b', sub)
+            for atb, status in matches_atb:
+                if status == 'S': sensiveis.append(atb)
+                elif status == 'R': resistentes.append(atb)
+                
+            linha["indicados_s"] = ", ".join(sorted(list(set(sensiveis))))
+            linha["resistentes_r"] = ", ".join(sorted(list(set(resistentes))))
             dados.append(linha)
     return pd.DataFrame(dados)
 
@@ -124,11 +129,10 @@ if 'nivel_acesso' not in st.session_state: st.session_state['nivel_acesso'] = "V
 if 'unidades_permitidas' not in st.session_state: st.session_state['unidades_permitidas'] = "Todas"
 
 # ==========================================
-# 5. TELA DE LOGIN (DESIGN ENTERPRISE - ESTÁVEL)
+# 5. TELA DE LOGIN
 # ==========================================
 if not st.session_state['logado']:
     
-    # Injeção segura do vídeo de fundo
     video_fundo_b64 = get_base64_file(ARQUIVO_VIDEO_FUNDO)
     if video_fundo_b64:
         st.markdown(f'''
@@ -137,13 +141,11 @@ if not st.session_state['logado']:
         </video>
         ''', unsafe_allow_html=True)
 
-    # CSS Limpo e Moderno (Sem quebrar os inputs do Streamlit)
     st.markdown("""
     <style>
     #MainMenu {visibility: hidden;} header {visibility: hidden;} footer {visibility: hidden;}
     .block-container { padding-top: 5vh !important; max-width: 100% !important; }
     
-    /* Container de Vidro para o Form (Seguro e Responsivo) */
     [data-testid="stForm"] {
         background: rgba(15, 23, 42, 0.7) !important;
         backdrop-filter: blur(20px) !important; -webkit-backdrop-filter: blur(20px) !important;
@@ -156,7 +158,6 @@ if not st.session_state['logado']:
     
     [data-testid="stForm"] p { color: #94a3b8 !important; font-weight: 600; font-size: 14px;}
     
-    /* Botão Enterprise */
     [data-testid="stFormSubmitButton"] button {
         background: linear-gradient(90deg, #0284c7, #2563eb) !important; color: white !important;
         border: none !important; border-radius: 8px !important; padding: 10px !important;
@@ -167,16 +168,13 @@ if not st.session_state['logado']:
     </style>
     """, unsafe_allow_html=True)
 
-    # Uso das colunas nativas do Streamlit para manter o formulário perfeitamente centralizado
     col_vazia1, col_centro, col_vazia2 = st.columns([1, 1.2, 1])
 
     with col_centro:
-        # Logo Superior
         logo_b64 = get_base64_file(ARQUIVO_LOGO_LOGIN)
         if logo_b64:
             st.markdown(f'<div style="text-align: center; margin-bottom: 20px;"><img src="data:image/png;base64,{logo_b64}" style="height: 120px; filter: drop-shadow(0 10px 15px rgba(0,0,0,0.8));"></div>', unsafe_allow_html=True)
         
-        # Formulário Enterprise
         with st.form(key="login_form"):
             st.markdown("<h2 style='text-align: center; color: white; margin-bottom: 5px; font-weight: 800; letter-spacing: 2px;'>S.I.B.C.</h2>", unsafe_allow_html=True)
             st.markdown("<p style='text-align: center; color: #00eeff; margin-bottom: 30px; font-size: 12px; letter-spacing: 1px; font-weight: bold;'>SISTEMA INTEGRADO DE BIOLOGIA COMPUTACIONAL</p>", unsafe_allow_html=True)
@@ -186,7 +184,6 @@ if not st.session_state['logado']:
             submit_button = st.form_submit_button("AUTENTICAR")
             
             if submit_button:
-                # Verificação direto no Supabase
                 try:
                     resposta = supabase.table("usuarios").select("*").eq("usuario", usuario_input).execute()
                     usuarios_encontrados = resposta.data
@@ -202,7 +199,6 @@ if not st.session_state['logado']:
                 except Exception as e:
                     st.error(f"Erro de comunicação com o banco de dados. {e}")
 
-        # Assinatura Inferior
         assinatura_b64 = get_base64_file(ARQUIVO_ASSINATURA)
         if assinatura_b64:
             st.markdown(f'<div style="text-align: center; margin-top: 30px;"><img src="data:image/png;base64,{assinatura_b64}" style="height: 45px; opacity: 0.7;"></div>', unsafe_allow_html=True)
@@ -222,7 +218,6 @@ else:
         div[data-testid="metric-container"] label { color: #94a3b8 !important; font-size: 14px !important;}
         div[data-testid="metric-container"] div { color: white !important; }
         
-        /* OTIMIZAÇÃO DE IMPRESSÃO (NÃO TIRA A COR DO GRÁFICO, APENAS LIMPA O FUNDO) */
         @media print {
             @page { size: A4 landscape !important; margin: 10mm !important; }
             body, html, .stApp, .main, .block-container { background-color: white !important; color: black !important; }
@@ -236,16 +231,13 @@ else:
         </style>
     """, unsafe_allow_html=True)
 
-    # Botão de Impressão Global
     st.components.v1.html("""<script>function doPrint() { window.parent.print(); }</script><button onclick="doPrint()" style="background: #2563eb; color:white; padding:12px; border:none; border-radius:6px; cursor:pointer; font-weight:bold; width:100%; box-shadow: 0 4px 6px rgba(0,0,0,0.2);">🖨️ Exportar Relatório Oficial (PDF)</button>""", height=50)
 
-    # Puxar dados do Supabase
     df_reais = pd.DataFrame()
     try:
         res = supabase.table("laudos").select("*").execute()
         if len(res.data) > 0:
             df_todos_dados = pd.DataFrame(res.data)
-            # Adaptando nomes das colunas para os gráficos manterem compatibilidade
             df_todos_dados = df_todos_dados.rename(columns={
                 "data_exame": "Data", "codigo_paciente": "Código_Paciente", "idade": "Idade", "sexo": "Sexo",
                 "material_exame": "Material_Exame", "resultado": "Resultado", "bacteria": "Bactéria",
@@ -279,7 +271,6 @@ else:
 
     menu = st.sidebar.radio("Navegação", opcoes_menu)
     
-    # Filtros Inteligentes
     df_f = pd.DataFrame()
     if menu in ["📊 Painel Principal", "📈 Análise e Tendências"] and not df_reais.empty:
         st.sidebar.markdown("---")
@@ -375,6 +366,11 @@ else:
     elif menu == "📂 Ingestão de Dados":
         st.title("Processamento de Laudos em Lote")
         
+        # --- BLOCO DE DEBUG (Descomente se precisar descobrir como o PDF está lendo a Unidade) ---
+        # if 'texto_bruto_debug' not in st.session_state: st.session_state['texto_bruto_debug'] = ""
+        # if st.session_state['texto_bruto_debug']: 
+        #     st.text_area("COMO O SISTEMA ESTÁ LENDO O PDF (Copie um pedaço e me mande):", st.session_state['texto_bruto_debug'][:2000], height=300)
+
         arq = st.file_uploader("Arraste os documentos (PDF/TXT)", type=['pdf', 'txt'])
         if arq and st.button("Sincronizar com Servidor", use_container_width=True):
             texto_bruto = ""
@@ -386,9 +382,10 @@ else:
                     except Exception as e: st.error(f"Erro na leitura do arquivo: {e}")
                 else: texto_bruto = arq.read().decode("utf-8")
                 
+                # st.session_state['texto_bruto_debug'] = texto_bruto # Salva para o bloco de debug acima
+                
                 df_novo = extrair_dados_pdf(texto_bruto)
                 if not df_novo.empty:
-                    # Inserir no Supabase (converte DataFrame para lista de dicionários)
                     records = df_novo.to_dict(orient="records")
                     try:
                         supabase.table("laudos").upsert(records).execute()
