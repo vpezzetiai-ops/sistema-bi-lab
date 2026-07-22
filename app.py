@@ -44,7 +44,7 @@ except Exception as e:
     st.stop()
 
 # ==========================================
-# 3. MOTOR DE DADOS E REGEX (ATUALIZADO PARA UNIDADES)
+# 3. MOTOR DE DADOS E REGEX (TANQUE DE GUERRA)
 # ==========================================
 def padronizar_unidade(unidade):
     if pd.isna(unidade) or str(unidade).strip() == "" or "Não Informada" in str(unidade): return "Sede / Sem Unidade"
@@ -58,7 +58,7 @@ def padronizar_bacteria(nome):
     n = str(nome).strip().lower()
     for bac in ["coli", "escherichia"]: 
         if bac in n: return "Escherichia coli"
-    for bac_sp in ["proteus", "enterobacter", "pseudomonas", "klebsiella", "staphylococcus", "streptococcus", "enterococcus"]:
+    for bac_sp in ["proteus", "enterobacter", "pseudomonas", "klebsiella", "staphylococcus", "streptococcus", "enterococcus", "acinetobacter", "citrobacter"]:
         if bac_sp in n: return f"{bac_sp.capitalize()} sp."
     return str(nome).strip().title()
 
@@ -74,41 +74,79 @@ def extrair_dados_pdf(texto_bruto):
     match_per = re.search(r'Per[íi]odo de (\d{2}/\d{2}/\d{4}) [àa] (\d{2}/\d{2}/\d{4})', texto_bruto, re.IGNORECASE)
     if match_per: periodo_doc = f"{match_per.group(1)} a {match_per.group(2)}"
 
-    blocos = re.split(r'(?=\b\d{2}/\d{2}/\d{4}\s+\d{4,}\b)', texto_bruto)
+    # Separa os pacientes pela Data
+    blocos = re.split(r'(?=\b\d{2}/\d{2}/\d{4}\s+)', texto_bruto)
+    
     for bloco in blocos:
-        if not bloco.strip(): continue
-        match_header = re.search(r'(\d{2}/\d{2}/\d{4})\s+(\d{4,})', bloco)
-        if not match_header: continue
-        data_pac, cod_pac = match_header.group(1), match_header.group(2)
-        unidade_pac = "Sede / Sem Unidade"
+        if len(bloco.strip()) < 20: continue # Ignora blocos vazios ou muito curtos
         
-        # --- NOVA BUSCA INTELIGENTE DE UNIDADE ---
-        match_unidade = re.search(r'(?:Unidade|Sigla|Posto|Origem)[\s\w]*?[:=]?\s*(\d+)', bloco, re.IGNORECASE)
+        # 1. DATA E CÓDIGO DO PACIENTE (Agora aceita letras, traços, etc)
+        match_header = re.search(r'(\d{2}/\d{2}/\d{4})\s+([A-Za-z0-9\-\.]+)', bloco)
+        if not match_header: continue
+        data_pac = match_header.group(1)
+        cod_pac = match_header.group(2)
+
+        # 2. IDADE (Busca flexível)
+        idade_pac = "Não Informada"
+        match_idade = re.search(r'(?:Idade|I\s*d\s*a\s*d\s*e)[\s:=]*(\d+\s*(?:[aA]nos?|[aA]\b|m[eé]ses)?)', bloco, re.IGNORECASE)
+        if match_idade: idade_pac = match_idade.group(1).replace(" ", "").upper()
+
+        # 3. SEXO (Busca flexível)
+        sexo_pac = "Não Informado"
+        match_sexo = re.search(r'(?:Sexo|S\s*e\s*x\s*o)[\s:=]*([FfMm]|Feminino|Masculino)', bloco, re.IGNORECASE)
+        if match_sexo:
+            s_letra = match_sexo.group(1).upper()[0]
+            sexo_pac = "Feminino" if s_letra == 'F' else "Masculino"
+
+        # 4. UNIDADE (Busca flexível)
+        unidade_pac = "Sede / Sem Unidade"
+        match_unidade = re.search(r'(?:Unidade|Sigla|Posto|Origem|Local)[\s\w]*?[:=]?\s*(\d+)', bloco, re.IGNORECASE)
         if not match_unidade:
             match_unidade = re.search(r'UN\s*[:=]?\s*(\d+)', bloco, re.IGNORECASE)
-            
         if match_unidade: unidade_pac = padronizar_unidade(match_unidade.group(1))
+        
         if unidade_pac == "Excluir": continue 
             
         sub_blocos = re.split(r'(?=\[\s*[A-Z]+\s*\])', bloco)
+        if len(sub_blocos) <= 1: sub_blocos = [bloco] # Se não achar colchetes, analisa o bloco todo
+            
         for sub in sub_blocos:
-            linha = {"data_exame": data_pac, "codigo_paciente": cod_pac, "idade": "Não Informada", "sexo": "Não Informado", "material_exame": "Não Informado", "resultado": "Negativo", "bacteria": "N/A", "indicados_s": "", "resistentes_r": "", "unidade": unidade_pac, "periodo_arquivo": periodo_doc}
-            match_mat = re.search(r'(?:MAT(?:ERIAL)?):\s*(.*?)(?=RES|1:|\.1:|[A-Z]{3}2?:|\n|$)', sub)
+            linha = {
+                "data_exame": data_pac, "codigo_paciente": cod_pac, 
+                "idade": idade_pac, "sexo": sexo_pac, "material_exame": "Não Informado", 
+                "resultado": "Negativo", "bacteria": "N/A", 
+                "indicados_s": "", "resistentes_r": "", 
+                "unidade": unidade_pac, "periodo_arquivo": periodo_doc
+            }
+            
+            # MATERIAL DO EXAME
+            match_mat = re.search(r'(?:MAT(?:ERIAL)?|AMOSTRA)[\s:=]+([A-Za-zÀ-ÿ\s]+?)(?:(?=RES|M[EÉ]TODO|DATA|IDADE|UNIDADE|\n|1:|\.1:|$))', sub, re.IGNORECASE)
             if match_mat: linha["material_exame"] = padronizar_material(match_mat.group(1))
             
-            if "Não houve desenvolvimento" in sub or "Não houve crescimento" in sub: 
+            # RESULTADO E BACTÉRIA
+            if "Não houve desenvolvimento" in sub or "Não houve crescimento" in sub or "ausência" in sub.lower(): 
                 linha["resultado"] = "Negativo"
             else:
                 linha["resultado"] = "Positivo"
-                regex_bac = r'(?i:identificado|MIC|\b1|\.1|aer[oó]bia[^:]*|anaer[oó]bia[^:]*)\s*:\s*([A-Z][a-z]{2,}(?:\s+[a-z]{2,})?(?:\s+sp\.?)?)'
+                
+                # Tenta achar a bactéria pelo padrão primário
+                regex_bac = r'(?i:identificado|MIC|isolado\s*\d*|\b1|\.1|aer[oó]bia[^:]*|anaer[oó]bia[^:]*)\s*:\s*([A-Z][a-z]{2,}(?:\s+[a-z]{2,})?(?:\s+sp\.?)?)'
                 match_bac = re.search(regex_bac, sub)
+                
                 if match_bac:
                     bac_str = match_bac.group(1).replace(":", "").strip()
-                    if "Não houve" not in bac_str and "Aplic" not in bac_str: linha["bacteria"] = padronizar_bacteria(bac_str)
-                else:
-                    for bac_name in ["Escherichia", "Proteus", "Enterobacter", "Pseudomonas", "Klebsiella", "Staphylococcus", "Streptococcus", "Enterococcus"]:
-                        if bac_name.lower() in sub.lower(): linha["bacteria"] = padronizar_bacteria(bac_name); break
+                    if "Não houve" not in bac_str and "Aplic" not in bac_str: 
+                        linha["bacteria"] = padronizar_bacteria(bac_str)
+                
+                # PLANO B: Se a bactéria ainda for N/A, varre o texto procurando nomes conhecidos
+                if linha["bacteria"] == "N/A" or linha["bacteria"] == "":
+                    lista_bacterias = ["escherichia coli", "klebsiella", "proteus", "pseudomonas", "staphylococcus", "streptococcus", "enterococcus", "enterobacter", "acinetobacter", "citrobacter", "morganella", "salmonella"]
+                    for bac in lista_bacterias:
+                        if bac in sub.lower():
+                            linha["bacteria"] = padronizar_bacteria(bac)
+                            break
                             
+            # ANTIBIOGRAMA (S e R)
             sensiveis, resistentes = [], []
             matches_atb = re.findall(r'([A-Z]{2,5})\d*[\s:=]+([SR])\b', sub)
             for atb, status in matches_atb:
@@ -117,7 +155,9 @@ def extrair_dados_pdf(texto_bruto):
                 
             linha["indicados_s"] = ", ".join(sorted(list(set(sensiveis))))
             linha["resistentes_r"] = ", ".join(sorted(list(set(resistentes))))
+            
             dados.append(linha)
+            
     return pd.DataFrame(dados)
 
 # ==========================================
@@ -366,10 +406,8 @@ else:
     elif menu == "📂 Ingestão de Dados":
         st.title("Processamento de Laudos em Lote")
         
-        # --- BLOCO DE DEBUG (Descomente se precisar descobrir como o PDF está lendo a Unidade) ---
-        # if 'texto_bruto_debug' not in st.session_state: st.session_state['texto_bruto_debug'] = ""
-        # if st.session_state['texto_bruto_debug']: 
-        #     st.text_area("COMO O SISTEMA ESTÁ LENDO O PDF (Copie um pedaço e me mande):", st.session_state['texto_bruto_debug'][:2000], height=300)
+        # --- BLOCO DE DEBUG ATIVADO ---
+        if 'texto_bruto_debug' not in st.session_state: st.session_state['texto_bruto_debug'] = ""
 
         arq = st.file_uploader("Arraste os documentos (PDF/TXT)", type=['pdf', 'txt'])
         if arq and st.button("Sincronizar com Servidor", use_container_width=True):
@@ -382,7 +420,8 @@ else:
                     except Exception as e: st.error(f"Erro na leitura do arquivo: {e}")
                 else: texto_bruto = arq.read().decode("utf-8")
                 
-                # st.session_state['texto_bruto_debug'] = texto_bruto # Salva para o bloco de debug acima
+                # Salva o texto bruto na sessão para mostrar na tela se precisar
+                st.session_state['texto_bruto_debug'] = texto_bruto 
                 
                 df_novo = extrair_dados_pdf(texto_bruto)
                 if not df_novo.empty:
@@ -394,6 +433,12 @@ else:
                     except Exception as e:
                         st.error(f"Erro ao inserir no Supabase: {e}")
                 else: st.error("Nenhum padrão clínico identificado neste documento.")
+
+        # Exibe a caixa de debug após o processamento
+        if st.session_state['texto_bruto_debug']: 
+            st.markdown("---")
+            st.warning("⚠️ MODO DIAGNÓSTICO: Se alguma informação ainda estiver faltando na tabela acima, copie um pedaço do texto abaixo referente a 1 paciente e mande para o desenvolvedor.")
+            st.text_area("VISUALIZADOR DE DADOS BRUTOS (Matriz do PDF):", st.session_state['texto_bruto_debug'][:3000], height=300)
 
     # ========================================================
     # TELA 4: ADMINISTRAÇÃO SUPABASE
