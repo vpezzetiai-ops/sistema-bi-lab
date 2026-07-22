@@ -8,6 +8,7 @@ import time
 import base64
 import os
 from datetime import datetime
+import io
 
 # ==========================================
 # 1. CONFIGURAÇÕES GERAIS E ARQUIVOS
@@ -44,7 +45,7 @@ except Exception as e:
     st.stop()
 
 # ==========================================
-# 3. MOTOR DE DADOS E REGEX (TANQUE DE GUERRA)
+# 3. MOTOR DE DADOS: TEXTO DESESTRUTURADO (PDF/TXT)
 # ==========================================
 def padronizar_unidade(unidade):
     if pd.isna(unidade) or str(unidade).strip() == "" or "Não Informada" in str(unidade): return "Sede / Sem Unidade"
@@ -71,94 +72,166 @@ def padronizar_material(material):
 def extrair_dados_pdf(texto_bruto):
     dados = []
     periodo_doc = "Período Indefinido"
-    match_per = re.search(r'Per[íi]odo de (\d{2}/\d{2}/\d{4}) [àa] (\d{2}/\d{2}/\d{4})', texto_bruto, re.IGNORECASE)
+    match_per = re.search(r'PER[ÍI]ODO DE (\d{2}/\d{2}/\d{4}) [AÀ] (\d{2}/\d{2}/\d{4})', texto_bruto, re.IGNORECASE)
     if match_per: periodo_doc = f"{match_per.group(1)} a {match_per.group(2)}"
 
-    # Separa os pacientes pela Data
-    blocos = re.split(r'(?=\b\d{2}/\d{2}/\d{4}\s+)', texto_bruto)
+    # NOVO: Corta os pacientes EXATAMENTE onde tem "Data + Código Numérico" 
+    # Isso garante que ele puxe TODOS os pacientes da lista, sem pular nenhum.
+    blocos = re.split(r'(?=\b\d{2}/\d{2}/\d{4}\s+\d+)', texto_bruto)
     
     for bloco in blocos:
-        if len(bloco.strip()) < 20: continue # Ignora blocos vazios ou muito curtos
+        if len(bloco.strip()) < 20: continue 
         
-        # 1. DATA E CÓDIGO DO PACIENTE (Agora aceita letras, traços, etc)
-        match_header = re.search(r'(\d{2}/\d{2}/\d{4})\s+([A-Za-z0-9\-\.]+)', bloco)
+        # 1. CÓDIGO DO PACIENTE (Força pegar só números, ignorando a palavra 'Nome')
+        match_header = re.search(r'(\d{2}/\d{2}/\d{4})\s+(\d+)', bloco)
         if not match_header: continue
         data_pac = match_header.group(1)
         cod_pac = match_header.group(2)
 
-        # 2. IDADE (Busca flexível)
-        idade_pac = "Não Informada"
-        match_idade = re.search(r'(?:Idade|I\s*d\s*a\s*d\s*e)[\s:=]*(\d+\s*(?:[aA]nos?|[aA]\b|m[eé]ses)?)', bloco, re.IGNORECASE)
-        if match_idade: idade_pac = match_idade.group(1).replace(" ", "").upper()
-
-        # 3. SEXO (Busca flexível)
+        # 2. SEXO INFERIDO PELO NOME (IA Simbólica)
         sexo_pac = "Não Informado"
-        match_sexo = re.search(r'(?:Sexo|S\s*e\s*x\s*o)[\s:=]*([FfMm]|Feminino|Masculino)', bloco, re.IGNORECASE)
-        if match_sexo:
-            s_letra = match_sexo.group(1).upper()[0]
-            sexo_pac = "Feminino" if s_letra == 'F' else "Masculino"
+        match_nome = re.search(r'Nome:\s*([^\n]+)', bloco, re.IGNORECASE)
+        if match_nome:
+            nome = match_nome.group(1).strip().upper()
+            primeiro_nome = nome.split()[0].replace(' ', '')
+            if primeiro_nome.endswith('A') or primeiro_nome in ['LOURDES', 'STHEFANIE', 'ALINE', 'VIVIANE', 'CARMEM', 'ESTER', 'RUTH', 'STHEF', 'SUELI', 'ROSELI', 'CLEIDE', 'IVONE', 'MIRIAN', 'RAQUEL', 'ELISABETE', 'BEATRIZ', 'IRIS']:
+                sexo_pac = "Feminino"
+            elif primeiro_nome.endswith('O') or primeiro_nome in ['LUIS', 'GABRIEL', 'DANIEL', 'IGOR', 'VITOR', 'ARTHUR', 'DAVI', 'RAFAEL', 'MIGUEL', 'LUCAS', 'GIOVANI', 'KAUE', 'THIAGO', 'WILLIAN', 'JEFFERSON']:
+                sexo_pac = "Masculino"
 
-        # 4. UNIDADE (Busca flexível)
+        # 3. IDADE (Flexível)
+        idade_pac = "Não Informada"
+        match_idade = re.search(r'(?:Idade|I\s*d\s*a\s*d\s*e)[\s:=]*(\d+)', bloco, re.IGNORECASE)
+        if match_idade: idade_pac = match_idade.group(1)
+
+        # 4. UNIDADE (Lê o texto inteiro da unidade e converte)
         unidade_pac = "Sede / Sem Unidade"
-        match_unidade = re.search(r'(?:Unidade|Sigla|Posto|Origem|Local)[\s\w]*?[:=]?\s*(\d+)', bloco, re.IGNORECASE)
-        if not match_unidade:
-            match_unidade = re.search(r'UN\s*[:=]?\s*(\d+)', bloco, re.IGNORECASE)
-        if match_unidade: unidade_pac = padronizar_unidade(match_unidade.group(1))
-        
+        match_unidade = re.search(r'Unidade:\s*([^\n]+)', bloco, re.IGNORECASE)
+        if match_unidade:
+            u_str = match_unidade.group(1).upper()
+            if "MONTE ALEGRE" in u_str: unidade_pac = "5 - Monte Alegre"
+            elif "SERRA NEGRA" in u_str: unidade_pac = "1 - Serra Negra"
+            elif "AME" in u_str: unidade_pac = "3 - AME"
+            elif "AMPARO" in u_str and "4" in u_str: unidade_pac = "4 - Amparo Unidade 4"
+            elif "LIND" in u_str and "AGUAS" not in u_str and "ÁGUAS" not in u_str: unidade_pac = "6 - Lindóia"
+            elif "CENAM" in u_str: unidade_pac = "9 - Cenam"
+            elif "BPA" in u_str: unidade_pac = "10 - Amparo Unidade BPA"
+            elif "AGUAS" in u_str or "ÁGUAS" in u_str: unidade_pac = "12 - Águas de Lindóia"
+
         if unidade_pac == "Excluir": continue 
-            
-        sub_blocos = re.split(r'(?=\[\s*[A-Z]+\s*\])', bloco)
-        if len(sub_blocos) <= 1: sub_blocos = [bloco] # Se não achar colchetes, analisa o bloco todo
-            
-        for sub in sub_blocos:
-            linha = {
-                "data_exame": data_pac, "codigo_paciente": cod_pac, 
-                "idade": idade_pac, "sexo": sexo_pac, "material_exame": "Não Informado", 
-                "resultado": "Negativo", "bacteria": "N/A", 
-                "indicados_s": "", "resistentes_r": "", 
-                "unidade": unidade_pac, "periodo_arquivo": periodo_doc
-            }
-            
-            # MATERIAL DO EXAME
-            match_mat = re.search(r'(?:MAT(?:ERIAL)?|AMOSTRA)[\s:=]+([A-Za-zÀ-ÿ\s]+?)(?:(?=RES|M[EÉ]TODO|DATA|IDADE|UNIDADE|\n|1:|\.1:|$))', sub, re.IGNORECASE)
+
+        linha = {
+            "data_exame": data_pac, "codigo_paciente": cod_pac, 
+            "idade": idade_pac, "sexo": sexo_pac, "material_exame": "Não Informado", 
+            "resultado": "Negativo", "bacteria": "N/A", 
+            "indicados_s": "", "resistentes_r": "", 
+            "unidade": unidade_pac, "periodo_arquivo": periodo_doc
+        }
+        
+        # Limpa quebras de linha que o PDF joga no meio das palavras (ex: micro-or ganismos)
+        bloco_limpo = re.sub(r'\s+', ' ', bloco) 
+        
+        # 5. MATERIAL DO EXAME (Mapeamento Direto)
+        if "URO1" in bloco_limpo or "URINA" in bloco_limpo.upper(): linha["material_exame"] = "Urina"
+        elif "HEMOCULTURA" in bloco_limpo.upper() or "SANGUE" in bloco_limpo.upper(): linha["material_exame"] = "Sangue"
+        elif "SECRE" in bloco_limpo.upper(): linha["material_exame"] = "Secreção"
+        elif "FEZES" in bloco_limpo.upper() or "COPRO" in bloco_limpo.upper(): linha["material_exame"] = "Fezes"
+        else:
+            match_mat = re.search(r'(?:MAT(?:ERIAL)?|AMOSTRA)[\s:=]+([A-Za-zÀ-ÿ\s]+?)(?:(?=RES|M[EÉ]TODO|DATA|IDADE|UNIDADE|\n|1:|\.1:|$))', bloco, re.IGNORECASE)
             if match_mat: linha["material_exame"] = padronizar_material(match_mat.group(1))
+        
+        # 6. RESULTADO E BACTÉRIA
+        if re.search(r'N[ãa]o\s+houve\s+desenvolvimento', bloco_limpo, re.IGNORECASE) or "ausência" in bloco_limpo.lower() or "ausentes" in bloco_limpo.lower():
+            linha["resultado"] = "Negativo"
+        else:
+            linha["resultado"] = "Positivo"
             
-            # RESULTADO E BACTÉRIA
-            if "Não houve desenvolvimento" in sub or "Não houve crescimento" in sub or "ausência" in sub.lower(): 
-                linha["resultado"] = "Negativo"
-            else:
-                linha["resultado"] = "Positivo"
-                
-                # Tenta achar a bactéria pelo padrão primário
-                regex_bac = r'(?i:identificado|MIC|isolado\s*\d*|\b1|\.1|aer[oó]bia[^:]*|anaer[oó]bia[^:]*)\s*:\s*([A-Z][a-z]{2,}(?:\s+[a-z]{2,})?(?:\s+sp\.?)?)'
-                match_bac = re.search(regex_bac, sub)
-                
-                if match_bac:
-                    bac_str = match_bac.group(1).replace(":", "").strip()
-                    if "Não houve" not in bac_str and "Aplic" not in bac_str: 
-                        linha["bacteria"] = padronizar_bacteria(bac_str)
-                
-                # PLANO B: Se a bactéria ainda for N/A, varre o texto procurando nomes conhecidos
-                if linha["bacteria"] == "N/A" or linha["bacteria"] == "":
-                    lista_bacterias = ["escherichia coli", "klebsiella", "proteus", "pseudomonas", "staphylococcus", "streptococcus", "enterococcus", "enterobacter", "acinetobacter", "citrobacter", "morganella", "salmonella"]
-                    for bac in lista_bacterias:
-                        if bac in sub.lower():
-                            linha["bacteria"] = padronizar_bacteria(bac)
-                            break
-                            
-            # ANTIBIOGRAMA (S e R)
-            sensiveis, resistentes = [], []
-            matches_atb = re.findall(r'([A-Z]{2,5})\d*[\s:=]+([SR])\b', sub)
-            for atb, status in matches_atb:
-                if status == 'S': sensiveis.append(atb)
-                elif status == 'R': resistentes.append(atb)
-                
-            linha["indicados_s"] = ", ".join(sorted(list(set(sensiveis))))
-            linha["resistentes_r"] = ", ".join(sorted(list(set(resistentes))))
+            # Tenta achar a bactéria pelo padrão primário
+            regex_bac = r'(?i:identificado|MIC|isolado\s*\d*|\b1|\.1|aer[oó]bia[^:]*|anaer[oó]bia[^:]*)\s*:\s*([A-Z][a-z]{2,}(?:\s+[a-z]{2,})?(?:\s+sp\.?)?)'
+            match_bac = re.search(regex_bac, bloco_limpo)
             
-            dados.append(linha)
+            if match_bac:
+                bac_str = match_bac.group(1).replace(":", "").strip()
+                if "Não houve" not in bac_str and "Aplic" not in bac_str: 
+                    linha["bacteria"] = padronizar_bacteria(bac_str)
+            
+            # PLANO B: Caçador de Bactérias (varredura forçada)
+            if linha["bacteria"] == "N/A" or linha["bacteria"] == "":
+                lista_bacterias = ["escherichia coli", "klebsiella", "proteus", "pseudomonas", "staphylococcus", "streptococcus", "enterococcus", "enterobacter", "acinetobacter", "citrobacter", "morganella", "salmonella"]
+                for bac in lista_bacterias:
+                    if bac in bloco_limpo.lower():
+                        linha["bacteria"] = padronizar_bacteria(bac)
+                        break
+                        
+        # 7. ANTIBIOGRAMA (Sensíveis S e Resistentes R)
+        sensiveis, resistentes = [], []
+        matches_atb = re.findall(r'([A-Z]{2,5})\d*[\s:=]+([SR])\b', bloco_limpo)
+        for atb, status in matches_atb:
+            if status == 'S': sensiveis.append(atb)
+            elif status == 'R': resistentes.append(atb)
+            
+        linha["indicados_s"] = ", ".join(sorted(list(set(sensiveis))))
+        linha["resistentes_r"] = ", ".join(sorted(list(set(resistentes))))
+        
+        dados.append(linha)
             
     return pd.DataFrame(dados)
+
+# ==========================================
+# 3.1. MOTOR DE DADOS: PLANILHAS ESTRUTURADAS (EXCEL/CSV)
+# ==========================================
+def processar_planilha(file):
+    try:
+        # Lê o arquivo dependendo da extensão
+        if file.name.endswith('.csv'):
+            df = pd.read_csv(file)
+        else:
+            # engine=None faz o pandas usar o openpyxl (xlsx), xlrd (xls) ou odf (ods) automaticamente
+            df = pd.read_excel(file, engine=None) 
+            
+        # Padroniza nomes das colunas lidas para minúsculo e sem espaços, para facilitar o "match"
+        df.columns = [str(c).strip().lower().replace(" ", "_").replace("-", "_").replace(".", "") for c in df.columns]
+        
+        # Mapeamento Flexível de Colunas (O que vem do Excel -> Como o Supabase espera)
+        mapeamento = {
+            'data': 'data_exame', 'data_exame': 'data_exame', 'data_do_exame': 'data_exame', 'dataexame': 'data_exame',
+            'codigo': 'codigo_paciente', 'codigo_paciente': 'codigo_paciente', 'cod': 'codigo_paciente', 'paciente_id': 'codigo_paciente',
+            'idade': 'idade',
+            'sexo': 'sexo', 'genero': 'sexo',
+            'material': 'material_exame', 'material_exame': 'material_exame', 'exame': 'material_exame',
+            'resultado': 'resultado', 'status': 'resultado',
+            'bacteria': 'bacteria', 'patogeno': 'bacteria', 'micro_organismo': 'bacteria',
+            'indicados_s': 'indicados_s', 'sensiveis': 'indicados_s', 'antibiograma_s': 'indicados_s',
+            'resistentes_r': 'resistentes_r', 'resistentes': 'resistentes_r', 'antibiograma_r': 'resistentes_r',
+            'unidade': 'unidade', 'local': 'unidade', 'posto': 'unidade',
+            'periodo': 'periodo_arquivo', 'periodo_arquivo': 'periodo_arquivo'
+        }
+        
+        df = df.rename(columns=mapeamento)
+        
+        # Garante que todas as colunas necessárias existam (mesmo se vazias)
+        colunas_obrigatorias = ["data_exame", "codigo_paciente", "idade", "sexo", "material_exame", "resultado", "bacteria", "indicados_s", "resistentes_r", "unidade", "periodo_arquivo"]
+        for col in colunas_obrigatorias:
+            if col not in df.columns:
+                df[col] = "Não Informado" if col not in ["indicados_s", "resistentes_r"] else ""
+                
+        # Força tipos string e limpa NaN
+        df = df[colunas_obrigatorias]
+        df = df.fillna("Não Informado")
+        
+        # Padroniza dados
+        df['codigo_paciente'] = df['codigo_paciente'].astype(str)
+        df['unidade'] = df['unidade'].apply(padronizar_unidade)
+        
+        # Exclui linhas marcadas como "Excluir" pela padronização da unidade
+        df = df[df['unidade'] != "Excluir"]
+        
+        return df
+    
+    except Exception as e:
+        st.error(f"Erro ao ler a planilha: {e}")
+        return pd.DataFrame()
+
 
 # ==========================================
 # 4. CONTROLE DE SESSÃO
@@ -401,44 +474,54 @@ else:
                     st.plotly_chart(fig_unid, use_container_width=True)
 
     # ========================================================
-    # TELA 3: INGESTÃO DE DADOS (PDF -> SUPABASE)
+    # TELA 3: INGESTÃO DE DADOS (PDF/TXT/EXCEL -> SUPABASE)
     # ========================================================
     elif menu == "📂 Ingestão de Dados":
         st.title("Processamento de Laudos em Lote")
         
-        # --- BLOCO DE DEBUG ATIVADO ---
         if 'texto_bruto_debug' not in st.session_state: st.session_state['texto_bruto_debug'] = ""
 
-        arq = st.file_uploader("Arraste os documentos (PDF/TXT)", type=['pdf', 'txt'])
+        arq = st.file_uploader("Arraste os documentos (PDF/TXT/XLSX/CSV)", type=['pdf', 'txt', 'csv', 'xlsx', 'xls', 'xlsb', 'xlsm', 'ods'])
+        
         if arq and st.button("Sincronizar com Servidor", use_container_width=True):
-            texto_bruto = ""
+            df_novo = pd.DataFrame()
+            
             with st.spinner("Processando Inteligência de Dados..."):
-                if arq.name.endswith('.pdf'):
-                    try:
-                        leitor = PyPDF2.PdfReader(arq)
-                        for p in leitor.pages: texto_bruto += p.extract_text() + "\n"
-                    except Exception as e: st.error(f"Erro na leitura do arquivo: {e}")
-                else: texto_bruto = arq.read().decode("utf-8")
+                # Rota 1: Planilhas (Estruturado)
+                if arq.name.endswith(('.csv', '.xlsx', '.xls', '.xlsb', '.xlsm', '.ods')):
+                    df_novo = processar_planilha(arq)
                 
-                # Salva o texto bruto na sessão para mostrar na tela se precisar
-                st.session_state['texto_bruto_debug'] = texto_bruto 
+                # Rota 2: PDF ou TXT (Desestruturado)
+                else:
+                    texto_bruto = ""
+                    if arq.name.endswith('.pdf'):
+                        try:
+                            leitor = PyPDF2.PdfReader(arq)
+                            for p in leitor.pages: texto_bruto += p.extract_text() + "\n"
+                        except Exception as e: st.error(f"Erro na leitura do PDF: {e}")
+                    else: 
+                        texto_bruto = arq.read().decode("utf-8")
+                    
+                    st.session_state['texto_bruto_debug'] = texto_bruto 
+                    df_novo = extrair_dados_pdf(texto_bruto)
                 
-                df_novo = extrair_dados_pdf(texto_bruto)
+                # Envio para o Banco de Dados Central
                 if not df_novo.empty:
                     records = df_novo.to_dict(orient="records")
                     try:
+                        # O Upsert envia os blocos de dados. O Supabase converte automaticamente NaN para NULL.
                         supabase.table("laudos").upsert(records).execute()
                         st.success(f"✅ {len(df_novo)} registros processados e enviados para o banco de dados central com sucesso!")
                         st.dataframe(df_novo, use_container_width=True)
                     except Exception as e:
                         st.error(f"Erro ao inserir no Supabase: {e}")
-                else: st.error("Nenhum padrão clínico identificado neste documento.")
+                else: 
+                    st.error("Nenhum dado compatível identificado neste documento/planilha.")
 
-        # Exibe a caixa de debug após o processamento
         if st.session_state['texto_bruto_debug']: 
             st.markdown("---")
-            st.warning("⚠️ MODO DIAGNÓSTICO: Se alguma informação ainda estiver faltando na tabela acima, copie um pedaço do texto abaixo referente a 1 paciente e mande para o desenvolvedor.")
-            st.text_area("VISUALIZADOR DE DADOS BRUTOS (Matriz do PDF):", st.session_state['texto_bruto_debug'][:3000], height=300)
+            st.warning("⚠️ MODO DIAGNÓSTICO PARA PDF/TXT: Se faltar informação na tabela acima, copie um pedaço do texto abaixo referente a 1 paciente e mande para o desenvolvedor.")
+            st.text_area("VISUALIZADOR DE DADOS BRUTOS (Matriz):", st.session_state['texto_bruto_debug'][:3000], height=300)
 
     # ========================================================
     # TELA 4: ADMINISTRAÇÃO SUPABASE
